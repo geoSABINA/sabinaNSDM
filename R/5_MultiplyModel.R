@@ -1,7 +1,4 @@
 #' @export
-#' @import terra
-#' @importFrom terra rast writeRaster app
-
 NSH.SDM.Multiply.Models <- function(method="Arithmetic",rescale=FALSE,SpeciesName) #@@@##(CAREFUL! I added parameters speciesName, rescale, amd method, and removed  selectedModel
 {
   tryCatch({ 
