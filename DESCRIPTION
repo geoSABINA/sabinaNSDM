@@ -12,6 +12,9 @@ RoxygenNote: 7.2.3
 URL: https://github.com/JMoralBa/sabina
 BugReports: https://github.com/JMoralBa/sabina/issues
 Imports: 
+    biomod2,
+    covsel,
+    ecospat,
     fs,
     terra,
     biomod2,
