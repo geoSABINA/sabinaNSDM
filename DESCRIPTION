@@ -16,7 +16,4 @@ Imports:
     covsel,
     ecospat,
     fs,
-    terra,
-    biomod2,
-    covsel,
-    ecospat
+    terra
