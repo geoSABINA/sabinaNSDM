@@ -1,7 +1,7 @@
 #' @export
 NSH.SDM.Global.Model <- function(NSH.SDM.Data, NSH.SDM.Variables, ModelTechniques, CV.n.Repetitions=1, CV.Percentage=0.8,SpeciesName) #@@@##(CAREFUL! I added parameter speciesName, I also set defaults for CV.n.Repetitions and CV.Percentage parameters)
   {
-  library(biomod2)
+  #library(biomod2)
   tryCatch({ 
 	# Here we format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
 	myResp.xy <- rbind(NSH.SDM.Data$SpeciesData.XY.Global,NSH.SDM.Data$Background.XY.Global)

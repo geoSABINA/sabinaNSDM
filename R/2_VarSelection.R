@@ -1,9 +1,9 @@
 #' @export
 NSH.SDM.SelectVariables <- function(NSH.SDM.Data, VariablesPath, Max.nCov, Cor.Cutoff, ClimaticVariablesBands=NULL,SpeciesName) { # #@@@##(CAREFUL!!add parameter speciesName), also: set as default ClimaticVariablesBands = NULL,
-  library(covsel)
-  library(terra)
-  library(ecospat)
-  library(fs)
+  #library(covsel)
+  #library(terra)
+  #library(ecospat)
+  #library(fs)
   
   # Global scale
   # Global independent variables (environmental layers)  

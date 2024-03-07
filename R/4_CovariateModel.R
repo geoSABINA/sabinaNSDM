@@ -1,7 +1,7 @@
 #' @export
 NSH.SDM.Covariate.Models <- function(NSH.SDM.Data, NSH.SDM.Variables, ModelTechniques, CV.n.Repetitions, CV.Percentage, SpeciesName) #@@@##(CAREFUL! I added parameter speciesName, and removed ClimaticVariables)
 {
-  library(biomod2)
+  #library(biomod2)
   tryCatch({ 
     
     # Covariate model calibrated with all the independent variables #@@@##(I removed .noClimatic, now all results of regional with or without climatic data are stored as .Regional)

@@ -1,8 +1,8 @@
 #' @export
 NSH.SDM.PrepareData <- function(VariablesPath, SpeciesFilePath, SpeciesName, nPoints, Min.Dist.Global, Min.Dist.Regional) {
-  library(terra) ##@@@# specify the version
-  library(fs)
-  library(ecospat)
+  #library(terra) ##@@@# specify the version
+  #library(fs)
+  #library(ecospat)
   
   # Create directories to save results of the modeling process
   dir_create(c("Results/", "Results/Global/", "Results/Global/SpeciesXY/", "Results/Global/Values/", "Results/Global/Geotif/", "Results/Global/Images/", "Results/Global/Background/"))#@@@# (I dont like the name of the Geotif folder, would prefer projections or raster)
