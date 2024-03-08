@@ -64,7 +64,7 @@ nshsdm_data<-list()
     Background.XY.Global <- spatSample(Mask, nPoints, cell= TRUE, replace = FALSE, xy = TRUE, na.rm = TRUE, values = TRUE, as.df = TRUE)[,-1]
     Background.XY.Global <- na.omit(Background.XY.Global)[,c("x","y")]
     #Background.XY.Global <- as.data.frame(Background.XY.Global) #no es df si values=FALSE
-    #Background.XY.Global <- Background.XY.Global[,2:3] #@@@JMB# comprobar que no hay duplicados si quito cell=T arriba
+    #Background.XY.Global <- Background.XY.Global[,2:3] 
     write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"), row.names = F)
   } else {
     # Random background selection excluding species presence cells
@@ -74,7 +74,7 @@ nshsdm_data<-list()
     Background.XY.Global <- spatSample(Mask2, nPoints, cell= TRUE, replace = FALSE, xy = TRUE, na.rm = TRUE, values = TRUE, as.df = TRUE)[,-1] 
     Background.XY.Global <- na.omit(Background.XY.Global)[,c("x","y")]
     #Background.XY.Global <- as.data.frame(Background.XY.Global)
-    #Background.XY.Global <- Background.XY.Global[,2:3] #@@@JMB# comprobar que no hay duplicados si quito cell=T arriba
+    #Background.XY.Global <- Background.XY.Global[,2:3] 
     write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"), row.names = F)
   }
 
