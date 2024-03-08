@@ -145,6 +145,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     #write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"), row.names = F)
   }
 
+  nshsdm_data$Species.Name <- SpeciesName
   nshsdm_data$SpeciesData.XY.Global <- XY.final.Global
   nshsdm_data$Background.XY.Global <- Background.XY.Global
   nshsdm_data$SpeciesData.XY.Regional <- XY.final.Regional
