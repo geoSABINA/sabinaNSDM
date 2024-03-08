@@ -3,7 +3,8 @@ NSH.SDM.PrepareData <- function(VariablesPath,
 				SpeciesFilePath, 
 				SpeciesName, nPoints, 
 				Min.Dist.Global=1, 
-				Min.Dist.Regional=1) {
+				Min.Dist.Regional=1,
+				bckg.excluding.occu = FALSE) {
 nshsdm_data<-list()
   
   dir_create(c("Results/Global/SpeciesXY/", 
