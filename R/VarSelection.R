@@ -79,7 +79,6 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   
   # Select the best subset of independent variables for each species using covsel package
   myResp.xy.Regional <- rbind(nshsdm_input$SpeciesData.XY.Regional, nshsdm_input$Background.XY.Regional)
-  #names(myResp.xy.Regional) <- c("x", "y")
   row.names(myResp.xy.Regional) <- c(1:nrow(myResp.xy.Regional))
   myResp.Regional <- as.vector(c(rep(1, nrow(nshsdm_input$SpeciesData.XY.Regional)), rep(0, nrow(nshsdm_input$Background.XY.Regional))))
   myResp.Regional <- as.numeric(as.vector(myResp.Regional))
@@ -96,7 +95,6 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
       myExpl.covsel.Regional <- myExpl.covsel.Regional[-rows_na, , drop = FALSE]
       myResp.Regional <- myResp.Regional[-rows_na]
   
-
 
   # Variable selection process
   Covdata.filter.Regional <- covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = Cor.Cutoff)
