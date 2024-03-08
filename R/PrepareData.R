@@ -5,7 +5,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
 				nPoints=10000, 
 				Min.Dist.Global=1, 
 				Min.Dist.Regional=1,
-				bckg.excluding.occu = FALSE) {
+				bckg.excluding.occu = FALSE) { #@@@JMB# Only as a suggestion. Remove from valid cells those cells with species occurrences
   nshsdm_data<-list()
   
   dir_create(c("Results/Global/SpeciesXY/", 
@@ -59,7 +59,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   Sample.size <- Sample.size.temp[1] # Número de parcelas con presencias de esa especie
   #write.table(Sample.size, paste("Results/Global/Values/",SpeciesName,"_samplesize.csv", sep=""), sep=",",  row.names=F, col.names=T) 
 
-  # Generate random background points for model calibration #@@@JMB# Only as a suggestion
+  # Generate random background points for model calibration 
   if(bckg.excluding.occu == FALSE) {
     valid_cells <- which(!is.na(values(Mask)))
     if(length(valid_cells) < nPoints) {
@@ -120,9 +120,9 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   Sample.size.Regional <- Sample.size.temp.Regional[1]  #@@@#REMOVED: Número de parcelas con presencias de esa especie
   #write.table(Sample.size.Regional, paste("Results/Regional/Values/",SpeciesName,"_samplesize.csv", sep=""), sep=",",  row.names=F, col.names=T) 
 
-  # Generate random background points for model calibration #@@@JMB# only as a suggestion
+  # Generate random background points for model calibration
   if(bckg.excluding.occu == FALSE) {
-  valid_cells <- which(!is.na(values(Mask)))
+    valid_cells <- which(!is.na(values(Mask)))
     if(length(valid_cells) < nPoints) {
       stop("The requested number of bockground points exceeds the number of valid cells.")
     }
