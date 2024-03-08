@@ -2,7 +2,8 @@
 NSH.SDM.SelectVariables <- function(nshsdm_input, 
 				VariablesPath, 
 				Max.nCov=7, 
-				Cor.Cutoff=0.7, 
+				Cor.Cutoff=0.7,
+				algorithm=c("glm","gam","rf"), 
 				ClimaticVariablesBands=NULL) { # #@@@## set as default ClimaticVariablesBands = NULL,
   	  		#@@@JMB# pensar si dejamos poner background manually?
 
