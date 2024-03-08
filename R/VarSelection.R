@@ -65,7 +65,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
     stop("Global and Regional variables must have matching names.")
   }
   IndVar.Global.2 <- IndVar.Global[[Selected.Variables.Global]] #@@@## at global level to train the global model
-  IndVar.Global.3 <- IndVar.Regional.1[[Selected.Variables.Global]] #@@@## selected for global, but charged at regional scale to project the global model
+  IndVar.Global.3 <- IndVar.Regional[[Selected.Variables.Global]] #@@@## selected for global, but charged at regional scale to project the global model
   
   # Exclude climatic bands specified by the user. #@@@# I moved and change this so it only gives one result excluding or not the climatic vars
   if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
