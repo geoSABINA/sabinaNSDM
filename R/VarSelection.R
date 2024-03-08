@@ -83,7 +83,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   row.names(myResp.xy.Regional) <- c(1:nrow(myResp.xy.Regional))
   myResp.Regional <- as.vector(c(rep(1, nrow(nshsdm_input$SpeciesData.XY.Regional)), rep(0, nrow(nshsdm_input$Background.XY.Regional))))
   myResp.Regional <- as.numeric(as.vector(myResp.Regional))
-  myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, df=TRUE))[, -1]
+  myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, df=TRUE)[, -1]
   
   # Variable selection process
   Covdata.filter.Regional <- covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = Cor.Cutoff)
