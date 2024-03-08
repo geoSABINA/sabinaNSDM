@@ -78,7 +78,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
       stop("The requested number of bockground points exceeds the number of valid cells.")
     }
     sampled_indices <- sample(valid_cells, nPoints)
-    coords <- xyFromCell(Mask, sampled_indices)
+    coords <- xyFromCell(Mask2, sampled_indices)
     Background.XY.Global <- as.data.frame(coords)
     #write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"), row.names = F)
   }
@@ -134,7 +134,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     Mask.regional2 <- Mask.regional
     sp_cells.regional <- terra::extract(Mask.regional2, XY.final.Global, cells=T)$cell
     values(Mask.regional2)[sp_cells.regional] <- NA
-    valid_cells <- which(!is.na(values(Mask)))
+    valid_cells <- which(!is.na(values(Mask2)))
     if(length(valid_cells) < nPoints) {
       stop("The requested number of bockground points exceeds the number of valid cells.")
     }
