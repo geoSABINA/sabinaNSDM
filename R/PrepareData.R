@@ -1,7 +1,8 @@
 #' @export
 NSH.SDM.PrepareData <- function(VariablesPath, 
 				SpeciesFilePath, 
-				SpeciesName, nPoints, 
+				SpeciesName, 
+				nPoints=10000, 
 				Min.Dist.Global=1, 
 				Min.Dist.Regional=1,
 				bckg.excluding.occu = FALSE) {
