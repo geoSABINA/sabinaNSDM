@@ -4,6 +4,7 @@ NSH.SDM.PrepareData <- function(VariablesPath, SpeciesFilePath, SpeciesName, nPo
   #library(fs)
   #library(ecospat)
   #prueba github desktop
+NSH.SDM.PrepareData <- function(VariablesPath,
   nshsdm_data<-list()
   
   # Create directories to save results of the modeling process
