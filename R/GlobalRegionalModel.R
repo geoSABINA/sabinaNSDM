@@ -1,17 +1,17 @@
 #' @export
 ####################
-# 3. GLOBAL MODELS
+# 4. REGIONAL MODELS
 ####################
 
-NSH.SDM.Global.Model <- function(NSH.SDM.Data, NSHSDM_Variables, ModelTechniques, CV.n.Repetitions=1, CV.Percentage=0.8,SpeciesName) #@@@##(CAREFUL! I added parameter speciesName, I also set defaults for CV.n.Repetitions and CV.Percentage parameters)
+NSH.SDM.Global.Model <- function(NSHSDM_Data, NSHSDM_Variables, ModelTechniques, CV.n.Repetitions=1, CV.Percentage=0.8,SpeciesName) #@@@##(CAREFUL! I added parameter speciesName, I also set defaults for CV.n.Repetitions and CV.Percentage parameters)
   {
   #library(biomod2)
   tryCatch({ 
 	# Here we format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
-	myResp.xy <- rbind(NSH.SDM.Data$SpeciesData.XY.Global,NSH.SDM.Data$Background.XY.Global)
+	myResp.xy <- rbind(NSHSDM_Data$SpeciesData.XY.Global,NSHSDM_Data$Background.XY.Global)
 	names(myResp.xy)<-c("x","y")
 	row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-	myResp <- data.frame(c(rep(1,nrow(NSH.SDM.Data$SpeciesData.XY.Global)),rep(NA,nrow(NSH.SDM.Data$Background.XY.Global))));names(myResp)<-"pa"
+	myResp <- data.frame(c(rep(1,nrow(NSHSDM_Data$SpeciesData.XY.Global)),rep(NA,nrow(NSHSDM_Data$Background.XY.Global))));names(myResp)<-"pa"
 	row.names(myResp)<-c(1:nrow(myResp.xy)) 
 	myExpl <- data.frame (terra::extract (NSH.SDM.Variables$IndVar.Global.2, myResp.xy)[, -1]) #@@@## before it was taking regional variables  to train the model, now its training with global variables
 	
@@ -27,7 +27,7 @@ NSH.SDM.Global.Model <- function(NSH.SDM.Data, NSHSDM_Variables, ModelTechniques
 	                                     expl.var = myExpl, 
 	                                     resp.name = SpeciesName, 
 	                                     PA.nb.rep = 1, 
-	                                     PA.nb.absences = nrow(NSH.SDM.Data$Background.XY.Global), 
+	                                     PA.nb.absences = nrow(NSHSDM_Data$Background.XY.Global), 
 	                                     PA.strategy = "random")
 	
 
@@ -163,7 +163,7 @@ NSH.SDM.Global.Model <- function(NSH.SDM.Data, NSHSDM_Variables, ModelTechniques
 ####################
 # 4. REGIONAL MODELS
 ####################
-NSH.SDM.Regional.Models <- function(NSH.SDM.Data, NSH.SDM.Variables, ModelTechniques, CV.n.Repetitions=1, CV.Percentage=0.8,SpeciesName) #@@@##(CAREFUL! I added parameter speciesName, and I removed ClimaticVariables , I also set defaults for CV.n.Repe
+NSH.SDM.Regional.Models <- function(NSHSDM_Data, NSH.SDM.Variables, ModelTechniques, CV.n.Repetitions=1, CV.Percentage=0.8,SpeciesName) #@@@##(CAREFUL! I added parameter speciesName, and I removed ClimaticVariables , I also set defaults for CV.n.Repe
 {
   library(biomod2)
   tryCatch({ 
@@ -173,10 +173,10 @@ NSH.SDM.Regional.Models <- function(NSH.SDM.Data, NSH.SDM.Variables, ModelTechni
     # Regional model excluding climatic variables 
     #if("FALSE" %in% ClimaticVariables) { #@@@##(CAREFUL! I  removed ClimaticVariables)
       # Here we format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
-      myResp.xy <- rbind(NSH.SDM.Data$SpeciesData.XY.Regional ,NSH.SDM.Data$Background.XY.Regional)
+      myResp.xy <- rbind(NSHSDM_Data$SpeciesData.XY.Regional ,NSHSDM_Data$Background.XY.Regional)
       names(myResp.xy)<-c("x","y")
       row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-      myResp <- data.frame(c(rep(1,nrow(NSH.SDM.Data$SpeciesData.XY.Regional)),rep(NA,nrow(NSH.SDM.Data$Background.XY.Regional ))));names(myResp)<-"pa"
+      myResp <- data.frame(c(rep(1,nrow(NSHSDM_Data$SpeciesData.XY.Regional)),rep(NA,nrow(NSHSDM_Data$Background.XY.Regional ))));names(myResp)<-"pa"
       row.names(myResp)<-c(1:nrow(myResp.xy))
       myExpl <- data.frame (terra::extract (NSH.SDM.Variables$IndVar.Regional.2, myResp.xy)[, -1]) #@@@##(I removed .noClimatic, now all results of regional with or without climatic data are stored as .Regional)
       
@@ -186,7 +186,7 @@ NSH.SDM.Regional.Models <- function(NSH.SDM.Data, NSH.SDM.Variables, ModelTechni
                                            expl.var = myExpl, 
                                            resp.name = SpeciesName, 
                                            PA.nb.rep = 1, 
-                                           PA.nb.absences = nrow(NSH.SDM.Data$Background.XY.Regional), 
+                                           PA.nb.absences = nrow(NSHSDM_Data$Background.XY.Regional), 
                                            PA.strategy = "random")
       
       
