@@ -4,11 +4,14 @@ NSH.SDM.PrepareData <- function(VariablesPath, SpeciesFilePath, SpeciesName, nPo
   #library(fs)
   #library(ecospat)
   
+  nshsdm_data<-list()
+  
   # Create directories to save results of the modeling process
   dir_create(c("Results/", "Results/Global/", "Results/Global/SpeciesXY/", "Results/Global/Values/", "Results/Global/Geotif/", "Results/Global/Images/", "Results/Global/Background/"))#@@@# (I dont like the name of the Geotif folder, would prefer projections or raster)
   dir_create(c("Results/Regional/", "Results/Regional/SpeciesXY/", "Results/Regional/Background/", "Results/Regional/Values/", "Results/Regional/Geotif/", "Results/Regional/Images/")) 
   #dir_create(c("Results/RegionalNoClimatic/", "Results/RegionalNoClimatic/Values/", "Results/RegionalNoClimatic/Geotif/", "Results/RegionalNoClimatic/Images/")) #@@@# REMOVED, now creating only either with or without climate data, all stored in the same Regional folder. Also,it does not create the same folders as in regional, it lacks SpeciesXY and Background
   dir_create(c("Results/Global/Models/","Results/Regional/Models/")) #Added this to store BIOMOD models
+  
   
   
   # Global scale 
@@ -108,6 +111,13 @@ NSH.SDM.PrepareData <- function(VariablesPath, SpeciesFilePath, SpeciesName, nPo
   Sample.size.Regional <- Sample.size.temp.Regional[1]  #@@@#REMOVED: Número de parcelas con presencias de esa especie
   write.table(Sample.size.Regional, paste("Results/Regional/Values/",SpeciesName,"_samplesize.csv", sep=""), sep=",",  row.names=F, col.names=T) 
 
-  return(list(Background.XY.Global = Background.XY.Global, SpeciesData.XY.Global = XY.final.Global, SpeciesData.XY.Regional = XY.final.Regional, Background.XY.Regional = Background.XY.Regional))
+  nshsdm_data$SpeciesData.XY.Global <- XY.final.Global
+  nshsdm_data$Background.XY.Global <- Background.XY.Global
+  nshsdm_data$SpeciesData.XY.Regional <- XY.final.Regional
+  nshsdm_data$Background.XY.Regional <- Background.XY.Regional
+
+  attr(nshsdm_data, "class") <- "nshsdm.input"
+
+  return(nshsdm_data)
 }
 
