@@ -10,14 +10,14 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   
   dir_create(c("Results/Global/SpeciesXY/", 
                "Results/Global/Values/", 
-               "Results/Global/Geotif/",#@@@# (I dont like the name of the Geotif folder, would prefer projections or raster)
+               "Results/Global/Projections/",#@@@# (I dont like the name of the Geotif folder, would prefer projections or raster)
                "Results/Global/Images/",
                "Results/Global/Background/",
                "Results/Global/Models/"))
   dir_create(c("Results/Regional/SpeciesXY/",
                "Results/Regional/Background/",
                "Results/Regional/Values/",
-               "Results/Regional/Geotif/",
+               "Results/Regional/Projections/",
                "Results/Regional/Images/",
                "Results/Regional/Models/"))
   

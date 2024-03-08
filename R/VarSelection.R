@@ -36,7 +36,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   myExpl.covsel <- terra::extract(IndVar.Global, myResp.xy, as.df=TRUE)[, -1]
   
   # Variable selection process
-  Covdata.filter<-covsel.filteralgo(covdata=myExpl.covsel,pa=myResp,corcut=Cor.Cutoff)
+  Covdata.filter<-covsel.filteralgo(covdata=myExpl.covsel, pa=myResp, corcut=Cor.Cutoff)
   
   # Embedding selected variables
   if(is.null(Max.nCov)) { 		#@@@JMB# Las Max.nCov posibles son las que salen en Covdata.filter?? 
@@ -83,8 +83,21 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   row.names(myResp.xy.Regional) <- c(1:nrow(myResp.xy.Regional))
   myResp.Regional <- as.vector(c(rep(1, nrow(nshsdm_input$SpeciesData.XY.Regional)), rep(0, nrow(nshsdm_input$Background.XY.Regional))))
   myResp.Regional <- as.numeric(as.vector(myResp.Regional))
-  myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, df=TRUE)[, -1]
+  myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, rm.na=TRUE, df=TRUE)[, -1]
+      #sum(is.na(myExpl.covsel.Regional))
+      #e <- extract(IndVar.Regional, myResp.xy.Regional, xy=TRUE)
+      #yna <- myResp.xy.Regional[is.na(e[,names(IndVar.Regional)[1]]), ]
+      #plot(IndVar.Regional[[1]])
+      #points(yna) #tengo 2 xy fuera del raster. revisar extension y resolución de var regional y global de F1?
+      #zoom(IndVar.Regional[[1]])
+      #points(yna)        
+      # Para salir del paso:
+      rows_na <- which(rowSums(is.na(myExpl.covsel.Regional)) > 0)
+      myExpl.covsel.Regional <- myExpl.covsel.Regional[-rows_na, , drop = FALSE]
+      myResp.Regional <- myResp.Regional[-rows_na]
   
+
+
   # Variable selection process
   Covdata.filter.Regional <- covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = Cor.Cutoff)
   
