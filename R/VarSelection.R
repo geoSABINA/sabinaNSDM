@@ -3,8 +3,8 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
 				VariablesPath, 
 				Max.nCov=7, 
 				Cor.Cutoff=0.7,
-				algorithm=c("glm","gam","rf"), 
-				ClimaticVariablesBands=NULL) { # #@@@## set as default ClimaticVariablesBands = NULL,
+				algorithm=c("GLM","GAM","RF"), #@@@JMB lo ponemos cómo argumento?
+				ClimaticVariablesBands=NULL) {
   	  		#@@@JMB# pensar si dejamos poner background manually?
 
   nshsdm_name <- as.list(match.call())$nshsdm_input
@@ -12,20 +12,22 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
       stop("nshsdm_input must be an object of nshsdm.data class. Consider running NSH.SDM.PrepareData() function.")
   }
 
-  if(any(!algorithm %in% c("glm", "gam", "rf"))) {   #@@@JMB# Actualizar esta lista de algoritmos permitidos. Igualar con nombres de otrs funciones
-    stop("Please select a valid algorithm (\"glm\", \"gam\", or \"rf\").")
+    if(any(!algorithm %in% c("GLM", "GAM", "RF"))) {   #@@@JMB# Son todos lo que hay? va por defecto? Igualar con nombres con otras funciones?
+    stop("Please select a valid algorithm (\"GLM\", \"GAM\", or \"RF\").")
   }
+  algorithm <- tolower(algorithm)
 
   SpeciesName <- nshsdm_input$Species.Name
   
-  nshsdm_data<-list()
+  
+  nshsdm_data<-nshsdm_input
+  #nshsdm_data<-list()
 
   # GLOBAL SCALE
   # Global independent variables (environmental layers)  
   IndVar.Global <- terra::rast(paste0(VariablesPath,"/Global/Current.tif"))
   Mask <- prod(IndVar.Global)
   IndVar.Global <- terra::mask(IndVar.Global, Mask)
-  #IndVar.Global <- IndVar.Global[[names(IndVar.Global)]]  #@@@##  Esto para qué se hace?
   
   # Select the best subset of independent variables for each species using covsel package 
   myResp.xy <- rbind(nshsdm_input$SpeciesData.XY.Global, nshsdm_input$Background.XY.Global) 
@@ -61,16 +63,17 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
   
   # Subset the global independent variables for regional projections
-  if(!all(Selected.Variables.Global %in% names(IndVar.Regional))) { #@@@JMB# Esto es immportante??
-    stop("Global and Regional variables must have matching names.")
-  }
-  IndVar.Global.2 <- IndVar.Global[[Selected.Variables.Global]] #@@@## at global level to train the global model
+  #if(!all(Selected.Variables.Global %in% names(IndVar.Regional))) { #@@@JMB# Esto es immportante??
+  #  stop("Global and Regional variables must have matching names.")
+  #}
+  IndVar.Global.2 <- IndVar.Global[[Selected.Variables.Global]] #@@@## at global level to train the global model #@@@JMB rename object and varnames()
   IndVar.Global.3 <- IndVar.Regional[[Selected.Variables.Global]] #@@@## selected for global, but charged at regional scale to project the global model
   
-  # Exclude climatic bands specified by the user. #@@@# I moved and change this so it only gives one result excluding or not the climatic vars
+  # Exclude climatic bands specified by the user. 
   if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
     Number.bands <- nlyr(IndVar.Regional)
-    Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)#@@@# non eliminated variables
+    # Non eliminated variables
+    Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)
     IndVar.Regional <- IndVar.Regional[[Bands.climatic]] 
   } else {
     # If no bands are specified for exclusion, use all bands
@@ -82,19 +85,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   row.names(myResp.xy.Regional) <- c(1:nrow(myResp.xy.Regional))
   myResp.Regional <- as.vector(c(rep(1, nrow(nshsdm_input$SpeciesData.XY.Regional)), rep(0, nrow(nshsdm_input$Background.XY.Regional))))
   myResp.Regional <- as.numeric(as.vector(myResp.Regional))
-  myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, rm.na=TRUE, df=TRUE)[, -1]
-      #sum(is.na(myExpl.covsel.Regional))
-      #e <- extract(IndVar.Regional, myResp.xy.Regional, xy=TRUE)
-      #yna <- myResp.xy.Regional[is.na(e[,names(IndVar.Regional)[1]]), ]
-      #plot(IndVar.Regional[[1]])
-      #points(yna) #tengo 2 xy fuera del raster. revisar extension y resolución de var regional y global de F1?
-      #zoom(IndVar.Regional[[1]])
-      #points(yna)        
-      # Para salir del paso:
-      #rows_na <- which(rowSums(is.na(myExpl.covsel.Regional)) > 0)
-      #myExpl.covsel.Regional <- myExpl.covsel.Regional[-rows_na, , drop = FALSE]
-      #myResp.Regional <- myResp.Regional[-rows_na]
-  
+  myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, rm.na=TRUE, df=TRUE)[, -1] 
 
   # Variable selection process
   Covdata.filter.Regional <- covsel::covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = Cor.Cutoff)
@@ -120,7 +111,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   nshsdm_data$IndVar.Global.3 <- IndVar.Global.3 
   nshsdm_data$IndVar.Regional.2 <- IndVar.Regional.2 #@@@# Changed this to give only one regional result and the global variables at both global (to train the model) and regional (to project the model) scale
 
-  attr(nshsdm_data, "class") <- "nshsdm.varsel"
+  attr(nshsdm_data, "class") <- "nshsdm.input"
 
   return(nshsdm_data)
 
