@@ -9,7 +9,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
 
   nshsdm_name <- as.list(match.call())$nshsdm_input
   if(!inherits(nshsdm_input, "nshsdm.input")){
-      stop("NSHSDM must be an object of nshsdm.data class. Consider running NSHSDM_PrepareData() function.")
+      stop("nshsdm_input must be an object of nshsdm.data class. Consider running NSH.SDM.PrepareData() function.")
   }
 
   if(any(!algorithm %in% c("glm", "gam", "rf"))) {   #@@@JMB# Actualizar esta lista de algoritmos permitidos. Igualar con nombres de otrs funciones
@@ -22,9 +22,9 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
 
   # GLOBAL SCALE
   # Global independent variables (environmental layers)  
-  IndVar.Global <- rast(paste0(VariablesPath,"/Global/Current.tif"))
+  IndVar.Global <- terra::rast(paste0(VariablesPath,"/Global/Current.tif"))
   Mask <- prod(IndVar.Global)
-  IndVar.Global <- mask(IndVar.Global, Mask)
+  IndVar.Global <- terra::mask(IndVar.Global, Mask)
   #IndVar.Global <- IndVar.Global[[names(IndVar.Global)]]  #@@@##  Esto para qué se hace?
   
   # Select the best subset of independent variables for each species using covsel package 
@@ -36,14 +36,14 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   myExpl.covsel <- terra::extract(IndVar.Global, myResp.xy, as.df=TRUE)[, -1]
   
   # Variable selection process
-  Covdata.filter<-covsel.filteralgo(covdata=myExpl.covsel, pa=myResp, corcut=Cor.Cutoff)
+  Covdata.filter<-covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp, corcut=Cor.Cutoff)
   
   # Embedding selected variables
   if(is.null(Max.nCov)) { 		#@@@JMB# Las Max.nCov posibles son las que salen en Covdata.filter?? 
     Max.nCov <- ncol(Covdata.filter)
   }
 
-  Covdata.embed<-covsel.embed(covdata=Covdata.filter,
+  Covdata.embed<-covsel::covsel.embed(covdata=Covdata.filter,
                               pa=myResp,
                               algorithms=c('glm','gam','rf'), 
                               maxncov=Max.nCov, 
@@ -56,9 +56,9 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   
   # REGIONAL SCALE
   # Regional independent variables (environmental layers)
-  IndVar.Regional <- rast(paste0(VariablesPath,"/Regional/Current.tif")) 
+  IndVar.Regional <- terra::rast(paste0(VariablesPath,"/Regional/Current.tif")) 
   Mask.Regional <- prod(IndVar.Regional)
-  IndVar.Regional <- mask(IndVar.Regional, Mask.Regional)
+  IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
   
   # Subset the global independent variables for regional projections
   if(!all(Selected.Variables.Global %in% names(IndVar.Regional))) { #@@@JMB# Esto es immportante??
@@ -91,16 +91,16 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
       #zoom(IndVar.Regional[[1]])
       #points(yna)        
       # Para salir del paso:
-      rows_na <- which(rowSums(is.na(myExpl.covsel.Regional)) > 0)
-      myExpl.covsel.Regional <- myExpl.covsel.Regional[-rows_na, , drop = FALSE]
-      myResp.Regional <- myResp.Regional[-rows_na]
+      #rows_na <- which(rowSums(is.na(myExpl.covsel.Regional)) > 0)
+      #myExpl.covsel.Regional <- myExpl.covsel.Regional[-rows_na, , drop = FALSE]
+      #myResp.Regional <- myResp.Regional[-rows_na]
   
 
   # Variable selection process
-  Covdata.filter.Regional <- covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = Cor.Cutoff)
+  Covdata.filter.Regional <- covsel::covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = Cor.Cutoff)
   
   # Embedding selected variables
-  Covdata.embed.Regional <- covsel.embed(covdata = Covdata.filter.Regional,
+  Covdata.embed.Regional <- covsel::covsel.embed(covdata = Covdata.filter.Regional,
                                          pa = myResp.Regional,
                                          algorithms = c('glm', 'gam', 'rf'),
                                          maxncov = Max.nCov,

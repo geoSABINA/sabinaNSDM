@@ -79,14 +79,14 @@ NSH.SDM.PrepareData <- function(VariablesPath,
       stop("The requested number of bockground points exceeds the number of valid cells.")
     }
     sampled_indices <- sample(valid_cells, nPoints)
-    coords <- xyFromCell(Mask2, sampled_indices)
+    coords <- terra::xyFromCell(Mask2, sampled_indices)
     Background.XY.Global <- as.data.frame(coords)
     #write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"), row.names = F)
   }
 
   # REGIONAL SCALE 
   # Generate random background points for model calibration
-  Mask.regional <- rast(paste0(VariablesPath,"/Regional/Current.tif"))
+  Mask.regional <- terra::rast(paste0(VariablesPath,"/Regional/Current.tif"))
   Mask.regional <- prod(Mask.regional)
 
   # Load species presence data at regional scale
@@ -122,12 +122,12 @@ NSH.SDM.PrepareData <- function(VariablesPath,
 
   # Generate random background points for model calibration
   if(bckg.excluding.occu == FALSE) {
-    valid_cells <- which(!is.na(values(Mask)))
+    valid_cells <- which(!is.na(values(Mask.regional)))
     if(length(valid_cells) < nPoints) {
       stop("The requested number of bockground points exceeds the number of valid cells.")
     }
     sampled_indices <- sample(valid_cells, nPoints)
-    coords <- xyFromCell(Mask, sampled_indices)
+    coords <- terra::xyFromCell(Mask.regional, sampled_indices)
     Background.XY.Regional <- as.data.frame(coords)
     #write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"), row.names = F)
   } else {
@@ -135,12 +135,12 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     Mask.regional2 <- Mask.regional
     sp_cells.regional <- terra::extract(Mask.regional2, XY.final.Global, cells=T)$cell
     values(Mask.regional2)[sp_cells.regional] <- NA
-    valid_cells <- which(!is.na(values(Mask2)))
+    valid_cells <- which(!is.na(values(Mask.regional2)))
     if(length(valid_cells) < nPoints) {
       stop("The requested number of bockground points exceeds the number of valid cells.")
     }
     sampled_indices <- sample(valid_cells, nPoints)
-    coords <- xyFromCell(Mask, sampled_indices)
+    coords <- terra::xyFromCell(Mask.regional2, sampled_indices)
     Background.XY.Regional <- as.data.frame(coords)
     #write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"), row.names = F)
   }
