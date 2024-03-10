@@ -1,168 +1,168 @@
 #' @export
-NSH.SDM.Covariate.Models <- function(NSH.SDM.Data, NSH.SDM.Variables, ModelTechniques, CV.n.Repetitions, CV.Percentage, SpeciesName) #@@@##(CAREFUL! I added parameter speciesName, and removed ClimaticVariables)
-{
-  #library(biomod2)
+NSH.SDM.Covariate.Models <- function(nshsdm_selvars, 
+				models=c("GAM","GBM", "RF", "MAXNET","GLM"),
+				CV.nb.rep=1, 
+				CV.perc=0.8) {
+
+  nshsdm_global <- as.list(match.call())$nshsdm_selvars
+  if(!inherits(nshsdm_selvars, "nshsdm.input")){
+      stop("nshsdm_selvars must be an object of nshsdm.input class.")
+  }
+
+  SpeciesName <- nshsdm_selvars$Species.Name
+
   tryCatch({ 
-    
-    # Covariate model calibrated with all the independent variables #@@@##(I removed .noClimatic, now all results of regional with or without climatic data are stored as .Regional)
-    
-    # Regional model excluding climatic variables #@@@##(I removed .noClimatic, now all results of regional with or without climatic data are stored as .Regional)
-    #if("FALSE" %in% ClimaticVariables) { #@@@##(I removed .noClimatic, now all results of regional with or without climatic data are stored as .Regional)
-      # Create directories to save results of the modeling process
-      dir_create(c("Results/Covariate/", "Results/Covariate/Values/", "Results/Covariate/Geotif/", "Results/Covariate/Images/"))
+	# Covariate model calibrated with all the independent variables.
+    	# Regional model excluding climatic variables.
+	
+	# Create directories to save results of the modeling process
+      	dir_create(c("Results/Covariate/Values/", "Results/Covariate/Projections/"))
       
-      #  Format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2 #@@@## (REMOVEthis line)
-      # Add the global model as an additional variable for the regional model#@@@## INSTEAD OF:Load Global model
-      SDM.global <- rast(paste("Results/Global/Geotif/",SpeciesName,".Current.tif",sep=""))
-      names(SDM.global) <- c("SDM.global") 
-      IndVar.Regional.temp <- NSH.SDM.Variables$IndVar.Regional.2 #@@@##(I removed .noClimatic, now all results of regional with or without climatic data are stored as .Regional)
-      IndVar.Regional.2 <- c(IndVar.Regional.temp, SDM.global)
+	# Add the global model as an additional variable for the regional model.
+	SDM.global <- terra::rast(paste0("Results/Global/Projections/",SpeciesName,".Current.tif"))
+	names(SDM.global) <- c("SDM.global") 
+	IndVar.Regional.temp <- nshsdm_selvars$IndVar.Regional.2
+	IndVar.Regional.2 <- c(IndVar.Regional.temp, SDM.global)
       
-      myResp.xy <- rbind(NSH.SDM.Data$SpeciesData.XY.Regional ,NSH.SDM.Data$Background.XY.Regional)
-      names(myResp.xy)<-c("x","y")
-      row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-      myResp <- data.frame(c(rep(1,nrow(NSH.SDM.Data$SpeciesData.XY.Regional)),rep(NA,nrow(NSH.SDM.Data$Background.XY.Regional ))));names(myResp)<-"pa"
-      row.names(myResp)<-c(1:nrow(myResp.xy))
-      myExpl <- data.frame (terra::extract (IndVar.Regional.2 , myResp.xy)[, -1])
+	myResp.xy <- rbind(nshsdm_selvars$SpeciesData.XY.Regional, nshsdm_selvars$Background.XY.Regional)
+	names(myResp.xy)<-c("x","y")
+	row.names(myResp.xy)<-c(1:nrow(myResp.xy))
+	myResp <- data.frame(c(rep(1,nrow(nshsdm_selvars$SpeciesData.XY.Regional)),rep(NA,nrow(nshsdm_selvars$Background.XY.Regional ))))
+	names(myResp)<-"pa"
+	row.names(myResp)<-c(1:nrow(myResp.xy))
+	myExpl <- terra::extract(IndVar.Regional.2, myResp.xy, as.df=TRUE)[, -1]
       
-      # Data required for the biomod2 package
-      myBiomodData <- BIOMOD_FormatingData(resp.var = myResp, 
-                                           resp.xy = myResp.xy, 
-                                           expl.var = myExpl, 
-                                           resp.name = SpeciesName, 
-                                           PA.nb.rep = 1, 
-                                           PA.nb.absences = nrow(NSH.SDM.Data$Background.XY.Regional), 
-                                           PA.strategy = "random")
+	# Data required for the biomod2 package.
+	myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp, 
+					resp.xy = myResp.xy, 
+					expl.var = myExpl, 
+					resp.name = SpeciesName, 
+					PA.nb.rep = 1, 
+					PA.nb.absences = nrow(nshsdm_selvars$Background.XY.Regional), 
+					PA.strategy = "random")
       
-      # Calibrate and evaluate individual models with specified statistical algorithms #@@@## (I changed this from "Ensamble models" to "Train individual models", their are not ensambled yet)
-      myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData, 
-                                          modeling.id = "AllModels", 
-                                        #  bm.options = myThecniquesOptions,
-                                          models = ModelTechniques, 
-                                          CV.strategy = "random", 
-                                          CV.nb.rep = CV.n.Repetitions, CV.perc = CV.Percentage, 
-                                          weights = NULL, var.import = 3, 
-                                          metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"), 
-                                          scale.models = FALSE, do.progress = TRUE, 
-                                          prevalence = 0.5, seed.val = 42, 
-                                          CV.do.full.models = FALSE) # "CV.do.full.models = FALSE" and "var.import=0" to make it faster
+	# Calibrate and evaluate individual models with specified statistical algorithms.
+	myBiomodModelOut <- biomod2::BIOMOD_Modeling(bm.format = myBiomodData, 
+					modeling.id = "AllModels", 
+					#  bm.options = myThecniquesOptions,
+					models = models, 
+					CV.strategy = "random", 
+					CV.nb.rep = CV.nb.rep, 
+					CV.perc = CV.perc, 
+					weights = NULL, 
+					var.import = 3, 
+					metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"), 
+					scale.models = FALSE, 
+					do.progress = TRUE, 
+					prevalence = 0.5, 
+					seed.val = 42, 
+ 					CV.do.full.models = FALSE)
       
-      # Generate and evaluate a single ensemble (i.e.,consensus) model that averages the individual models weighted by the value of the AUC statistic, eliminating the replicas whose AUC value is less than 0.8 #@@@## (Instead of: "Generate a single consensus model that is the average of the replicas generated in the previous step weighted by the value of the area under the ROC curve statistic, eliminating the replicas whose AUC value is less than 0.8"
-      myBiomodEM.ROC  <- BIOMOD_EnsembleModeling(bm.mod = myBiomodModelOut,
+	# Generate and evaluate a single ensemble (i.e.,consensus) model that averages the individual models weighted
+	# by the value of the AUC statistic.
+	myBiomodEM.ROC  <- biomod2::BIOMOD_EnsembleModeling(bm.mod = myBiomodModelOut,
                                                  models.chosen = 'all',
                                                  em.by = 'all',
                                                  em.algo = c("EMwmean"),
                                                  metric.select = c('ROC'),
-                                                 metric.select.thresh = c(0.8),
+                                                 metric.select.thresh = NULL,
                                                  var.import = 3,
                                                  metric.eval = c('ROC', "TSS", "KAPPA"),
                                                  seed.val = 42) 
       
-      
-      # Project the 30 replicas in the study area  #@@@## (which 30?? I would say: Project the individual models to the study area at regional scale under training conditions)
-      myBiomodProj <- BIOMOD_Projection(bm.mod = myBiomodModelOut,
+   	# Project the individual models to the study area at regional scale under training conditions.
+	myBiomodProj <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
                                         new.env = IndVar.Regional.2,
                                         proj.name = "Current",
                                         models.chosen = 'all',
-                                        build.clamping.mask = FALSE) # Faster 
+                                        build.clamping.mask = FALSE) 
       
-      # Project the ensemble model to the study area at regional scale under training conditions #@@@## (Instead of: "Final consensus model")
-      BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC, 
-                                 bm.proj = myBiomodProj,
-                                 models.chosen = 'all',
-                                 metric.binary = 'all',
-                                 metric.filter = 'all',
-                                 build.clamping.mask = FALSE) # Faster
+	# Project the ensemble model to the study area at regional scale under training conditions.
+	biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC, 
+					bm.proj = myBiomodProj,
+					models.chosen = 'all',
+					metric.binary = 'all',
+					metric.filter = 'all',
+					build.clamping.mask = FALSE)
       
-      # Load the model stored by biomod2 and save it in geotif format
-      sp.name<-myBiomodData@sp.name
-      Pred.ROC <- rast (paste(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif",sep="")) 
-      terra::writeRaster (Pred.ROC, paste("Results/Covariate/Geotif/",SpeciesName,".Current.tif",sep=""), overwrite=TRUE)
+	# Load the model stored by biomod2 and save it in geotif format
+	sp.name<-myBiomodData@sp.name
+	Pred.ROC <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif")) 
+	terra::writeRaster(Pred.ROC, paste0("Results/Covariate/Projections/",SpeciesName,".Current.tif"), overwrite=TRUE)
       
-      # Binary models
-      Pred.bin.ROC <- rast (paste(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_ROCbin.tif",sep="")) 
-      terra::writeRaster(Pred.bin.ROC, paste("Results/Covariate/Geotif/",SpeciesName,".Current.bin.ROC.tif", sep = "" ), overwrite=TRUE)
+	# Binary models
+	Pred.bin.ROC <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_ROCbin.tif")) 
+	terra::writeRaster(Pred.bin.ROC, paste0("Results/Covariate/Projections/",SpeciesName,".Current.bin.ROC.tif"), overwrite=TRUE)
       
-      Pred.bin.TSS <- rast (paste(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_TSSbin.tif",sep="")) 
-      terra::writeRaster(Pred.bin.TSS, paste("Results/Covariate/Geotif/",SpeciesName,".Current.bin.TSS.tif", sep = "" ), overwrite=TRUE)
+	Pred.bin.TSS <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_TSSbin.tif")) 
+	terra::writeRaster(Pred.bin.TSS, paste0("Results/Covariate/Projections/",SpeciesName,".Current.bin.TSS.tif"), overwrite=TRUE)
       
+       # Save some results
+	# Values of the statistics for each of the replicates   
+	myEMeval.replicas <- biomod2::get_evaluations(myBiomodModelOut)
+	write.csv(myEMeval.replicas,file=paste0("Results/Covariate/Values/",SpeciesName,"_replica.csv"))
+	# Values of the statistics of the consensus model   
+	myEMeval.Consenso <- biomod2::get_evaluations(myBiomodEM.ROC)
+	write.csv(myEMeval.Consenso,file=paste0("Results/Covariate/Values/",SpeciesName,"_ensemble.csv"))
+	# Variable importance
+	myModelsVarImport <- biomod2::get_variables_importance(myBiomodModelOut)
+	write.table(myModelsVarImport, file = paste0("Results/Covariate/Values/",SpeciesName,"_indvar.csv"), row.names = T, col.names = T)
       
-      # Save some results
-      # Values of the statistics for each of the replicates   
-      myEMeval.replicas <- get_evaluations(myBiomodModelOut)
-      write.csv(myEMeval.replicas,file=paste("Results/Covariate/Values/",SpeciesName,"_replica.csv",sep=""))
-      # Values of the statistics of the consensus model   
-      myEMeval.Consenso <- get_evaluations(myBiomodEM.ROC)
-      write.csv(myEMeval.Consenso,file=paste("Results/Covariate/Values/",SpeciesName,"_ensemble.csv",sep=""))
-      # Variable importance
-      myModelsVarImport <- get_variables_importance(myBiomodModelOut)
-      write.table(myModelsVarImport, file = paste("Results/Covariate/Values/", SpeciesName, "_indvar.csv", sep = ""), row.names = T, col.names = T, sep = ",") #@@@##  I changed this so is stored also as csv
-      
-      # Model projections for future climate scenarios
-      ################################################
-      Scenarios.temp <- list.files(paste0(VariablesPath,"/Regional"))
-      Scenanios.dim <- length(Scenarios.temp)
-      Scenarios.temp <- Scenarios.temp[-which(Scenarios.temp =="Current.tif")] #@@@## I changed this from Scenarios.temp[c(-1)]
-      Scenario <- gsub(".tif","", Scenarios.temp, fixed=TRUE)
-      
-      # i <- 1
-      if (Scenanios.dim == 1) {
-        stop("Only current projection, there are no future climate variables")
-      } else {
-      
-      # i <- 1
-      for  (i in 1:length(Scenario)) {  
-        Scenario.name <- Scenario[i]
-        NewClim.temp <- c(rast(paste0(VariablesPath,"/Regional/",Scenario[i],".tif")))[[NSH.SDM.Variables$Selected.Variables.Regional  ]]#@@@##(I removed .noClimatic, now all results of regional with or without climatic data are stored as .Regional)
+	# Model projections for future climate scenarios
+	################################################
+	Scenarios <- dir_ls(paste0(VariablesPath,"/Regional"), pattern="tif")
+        Scenarios <- Scenarios[!grepl("Current.tif", Scenarios)][1:2] # para probar con 2
+
+	if(length(Scenarios) == 0) {
+	  stop("There are no future climate variables")
+	}
         
-        SDM.global.future <- rast(paste("Results/Global/Geotif/",SpeciesName,".",Scenario.name,".tif",sep=""))
-        names(SDM.global.future) <- c("SDM.global")
-        NewClim <- c(NewClim.temp, SDM.global.future)
+	walk(Scenarios, function(projmodel) { 
+	  NewClim.temp <- terra::rast(projmodel)[[nshsdm_selvars$Selected.Variables.Regional]]
+	  Scenario.name <- path_file(projmodel) |> path_ext_remove()
+     
+	  SDM.global.future <- terra::rast(paste0("Results/Global/Projections/",SpeciesName,".",Scenario.name,".tif"))
+	  names(SDM.global.future) <- c("SDM.global")
+	  NewClim <- c(NewClim.temp, SDM.global.future)
         
-        myBiomomodProjScenario <- BIOMOD_Projection(
-          bm.mod = myBiomodModelOut,
-          new.env = NewClim,
-          proj.name = Scenario.name,
-          models.chosen = "all"
-        )
+	  myBiomomodProjScenario <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
+						new.env = NewClim,
+						proj.name = Scenario.name,
+						models.chosen = "all")
         
-        BIOMOD_EnsembleForecasting(
-          bm.em = myBiomodEM.ROC,
-          bm.proj = myBiomomodProjScenario,
-          models.chosen = "all",
-          metric.binary = "all",
-          metric.filter = "all"
-        )
+	  biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
+					bm.proj = myBiomomodProjScenario,
+					models.chosen = "all",
+					metric.binary = "all",
+					metric.filter = "all")
         
-  
-        Pred.ROC.Scenario <- rast(paste(sp.name, "/proj_", Scenario.name, "/proj_", Scenario.name, "_", sp.name, "_ensemble.tif", sep = ""))
-        terra::writeRaster(Pred.ROC.Scenario, paste("Results/Covariate/Geotif/", SpeciesName, ".", Scenario.name, ".tif", sep = ""), overwrite = TRUE)
+	  Pred.ROC.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
+	  terra::writeRaster(Pred.ROC.Scenario, paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".tif"), overwrite = TRUE)
         
         
-        # Binarized models
-        Pred.bin.TSS.Scenario <- rast(paste(sp.name, "/proj_", Scenario.name, "/proj_", Scenario.name, "_", sp.name, "_ensemble_ROCbin.tif", sep = ""))
-        terra::writeRaster(Pred.bin.TSS.Scenario, paste("Results/Covariate/Geotif/", SpeciesName, ".", Scenario.name, ".bin.TSS.tif", sep = ""), overwrite = TRUE)
+	  # Binarized models
+          Pred.bin.TSS.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
+          terra::writeRaster(Pred.bin.TSS.Scenario, paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.TSS.tif"), overwrite = TRUE)
         
-        Pred.bin.ROC.Scenario <- rast(paste(sp.name, "/proj_", Scenario.name, "/proj_", Scenario.name, "_", sp.name, "_ensemble_ROCbin.tif", sep = "")) # terra
-        terra::writeRaster(Pred.bin.ROC.Scenario, paste("Results/Covariate/Geotif/", SpeciesName, ".", Scenario.name, ".bin.ROC.tif", sep = ""), overwrite = TRUE)
-        
-      }
+          Pred.bin.ROC.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
+          terra::writeRaster(Pred.bin.ROC.Scenario, paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif"), overwrite = TRUE)
+
+	  gc()	
+	}) 
       
-      save.image(paste("Results/Covariate/Images/", SpeciesName, ".RData", sep = ""))
-      gc()
-      }  
-      
-      #@@@@## Move biomod2 results to Results/Covariate/Models folder
-      source_folder <- sp.name
-      destination_folder <- "Results/Covariate/Models"
-      if (file.exists(destination_folder)) {
-        unlink(destination_folder, recursive = TRUE)}
-      file.rename(from = source_folder, to = destination_folder)
+	#@@@@## Move biomod2 results to Results/Covariate/Models folder
+	source_folder <- sp.name
+	destination_folder <- "Results/Covariate/Models"
+	if(file.exists(destination_folder)) {
+          unlink(destination_folder, recursive = TRUE)
+	}
+	file.rename(from = source_folder, to = destination_folder)
     
-    # Logs success or error messages 
-    message("NSH.SDM.Covariate.Models executed successfully")
+  # Logs success or error messages 
+  message("\nNSH.SDM.Covariate.Models executed successfully.\n")
   }, error = function(err) {
     message("Error in NSH.SDM.Covariate.Models:", conditionMessage(err))
     return(list(result = NULL, error = err))
   })
 }
+

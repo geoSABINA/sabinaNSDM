@@ -5,9 +5,8 @@ NSH.SDM.PrepareData <- function(VariablesPath,
 				nPoints=10000, 
 				Min.Dist.Global=1, 
 				Min.Dist.Regional=1,
-				bckg.excluding.occu = TRUE, #@@@JMB# Remove from valid cells those cells with species occurrences
-				verbose = FALSE) { 
- cat("prueba")
+				bckg.excluding.occu = TRUE) { #@@@JMB# Remove from valid cells those cells with species occurrences
+		#@@@JMB# Pendiente: si dejamos poner background manually añadir argumento bckg=NULL/path a background, y añadir a la función
   nshsdm_data<-list()
   
   dir_create(c("Results/Global/SpeciesXY/", 
@@ -26,10 +25,10 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   # from Global independent variables (environmental layers)  
   Mask <- terra::rast(paste0(VariablesPath,"/Global/Current.tif"))
   # expand NAs
-  Mask <- prod(Mask)  
-  
+  Mask <- prod(Mask)
+
   # Load species data at global scale
-  SpeciesData.XY.Global <- read_csv(paste0(SpeciesFilePath,"/Global/",SpeciesName,".csv"))
+  SpeciesData.XY.Global <- read.csv(paste0(SpeciesFilePath,"/Global/",SpeciesName,".csv"))
   names(SpeciesData.XY.Global) <- c("x","y")
 
   # Occurrences from sites with no NAs
@@ -52,7 +51,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   message(paste("Global data thinning: from", dim(XY), "to", dim(XY.final.Global), "species presences"))
 
   # Save thinning presence data for each species
-  write_csv(XY.final.Global, paste0("Results/Global/SpeciesXY/",SpeciesName,".csv"))
+  write.csv(XY.final.Global, paste0("Results/Global/SpeciesXY/",SpeciesName,".csv"))
   
   # Sample size 
   Sample.size.temp <- dim(XY.final.Global)
@@ -68,7 +67,6 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     sampled_indices <- sample(valid_cells, nPoints)
     coords <- terra::xyFromCell(Mask, sampled_indices)
     Background.XY.Global <- as.data.frame(coords)
-    write_csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
   } else {
     # Random background selection excluding species presence cells
     Mask2 <- Mask
@@ -81,8 +79,9 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     sampled_indices <- sample(valid_cells, nPoints)
     coords <- terra::xyFromCell(Mask2, sampled_indices)
     Background.XY.Global <- as.data.frame(coords)
-    write_csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
   }
+  
+  write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
 
   # REGIONAL SCALE 
   # Generate random background points for model calibration
@@ -90,7 +89,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   Mask.regional <- prod(Mask.regional)
 
   # Load species presence data at regional scale
-  SpeciesData.XY.Regional <- read_csv(paste0(SpeciesFilePath,"/Regional/", SpeciesName, ".csv"))
+  SpeciesData.XY.Regional <- read.csv(paste0(SpeciesFilePath,"/Regional/", SpeciesName, ".csv"))
   names(SpeciesData.XY.Regional) <- c("x","y")
 
   # Occurrences from sites with no NA
@@ -113,12 +112,12 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   message(paste("Regional data thinning: from", dim(XY.Regional), "to", dim(XY.final.Regional), "species presences"))
 
   # Save filtered presence data for each species 
-  write_csv(XY.final.Regional, paste0("Results/Regional/SpeciesXY/", SpeciesName, ".csv"))
+  write.csv(XY.final.Regional, paste0("Results/Regional/SpeciesXY/", SpeciesName, ".csv"))
   
   # Save sample size 
   Sample.size.temp.Regional <- dim(XY.final.Regional)
   Sample.size.Regional <- Sample.size.temp.Regional[1]
-  #write.table(Sample.size.Regional, paste("Results/Regional/Values/",SpeciesName,"_samplesize.csv", sep=""), sep=",",  row.names=F, col.names=T) 
+  write.table(Sample.size.Regional, paste0("Results/Regional/Values/",SpeciesName,"_samplesize.csv"), sep=",",  row.names=F, col.names=T) 
 
   # Generate random background points for model calibration
   if(bckg.excluding.occu == FALSE) {
@@ -129,7 +128,6 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     sampled_indices <- sample(valid_cells, nPoints)
     coords <- terra::xyFromCell(Mask.regional, sampled_indices)
     Background.XY.Regional <- as.data.frame(coords)
-    write_csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
   } else {
     # Random background selection excluding spcies presence locations
     Mask.regional2 <- Mask.regional
@@ -142,8 +140,9 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     sampled_indices <- sample(valid_cells, nPoints)
     coords <- terra::xyFromCell(Mask.regional2, sampled_indices)
     Background.XY.Regional <- as.data.frame(coords)
-    write_csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
   }
+
+  write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
 
   nshsdm_data$Species.Name <- SpeciesName
   nshsdm_data$SpeciesData.XY.Global <- XY.final.Global
