@@ -16,4 +16,6 @@ Imports:
     covsel,
     ecospat,
     fs,
-    terra
+    terra,
+    purrr,
+    tidyverse
