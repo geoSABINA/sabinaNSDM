@@ -1,53 +1,79 @@
 #' @export
-NSH.SDM.SelectVariables <- function(NSH.SDM.Data, VariablesPath, Max.nCov, Cor.Cutoff, ClimaticVariablesBands=NULL,SpeciesName) { # #@@@##(CAREFUL!!add parameter speciesName), also: set as default ClimaticVariablesBands = NULL,
-  #library(covsel)
-  #library(terra)
-  #library(ecospat)
-  #library(fs)
+NSH.SDM.SelectVariables <- function(nshsdm_input, 
+				VariablesPath, 
+				maxncov=7, 
+				corcut=0.7,
+				algorithms=c("GLM","GAM","RF"), #@@@JMB lo ponemos cómo argumento?
+				ClimaticVariablesBands=NULL) {
+		#@@@JMB# Pendiente: Buscar solución a sobreescritura de Results si ClimaticVariablesBands=NULL/o no null
+  	  		
+  nshsdm_name <- as.list(match.call())$nshsdm_input
+  if(!inherits(nshsdm_input, "nshsdm.input")){
+      stop("nshsdm_input must be an object of nshsdm.input class. Consider running NSH.SDM.PrepareData() function.")
+  }
+
+  if(any(!algorithms %in% c("GLM", "GAM", "RF"))) {   #@@@JMB# Son todos lo que hay? va por defecto? Igualar con nombres con otras funciones?
+    stop("Please select a valid algorithms (\"GLM\", \"GAM\", or \"RF\").")
+  }
+  algorithms <- tolower(algorithms)
+
+  SpeciesName <- nshsdm_input$Species.Name
   
-  # Global scale
+  
+  nshsdm_data<-nshsdm_input
+  #nshsdm_data<-list()
+
+  # GLOBAL SCALE
   # Global independent variables (environmental layers)  
-  IndVar.Global <- rast(paste0(VariablesPath,"/Global/Current.tif")) 
-  IndVar.Global <- IndVar.Global[[names(IndVar.Global)]]  #@@@##  Esto para qué se hace?
+  IndVar.Global <- terra::rast(paste0(VariablesPath,"/Global/Current.tif"))
+  Mask <- prod(IndVar.Global)
+  IndVar.Global <- terra::mask(IndVar.Global, Mask)
   
   # Select the best subset of independent variables for each species using covsel package 
-  myResp.xy <- rbind(NSH.SDM.Data$SpeciesData.XY.Global ,NSH.SDM.Data$Background.XY.Global) 
+  myResp.xy <- rbind(nshsdm_input$SpeciesData.XY.Global, nshsdm_input$Background.XY.Global) 
   names(myResp.xy)<-c("x","y")
   row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-  myResp <- as.vector(c(rep(1,nrow(NSH.SDM.Data$SpeciesData.XY.Global)),rep(0,nrow(NSH.SDM.Data$Background.XY.Global))))
+  myResp <- as.vector(c(rep(1,nrow(nshsdm_input$SpeciesData.XY.Global)),rep(0,nrow(nshsdm_input$Background.XY.Global))))
   myResp <- as.numeric(as.vector(myResp))
-  myExpl.covsel <- data.frame (terra::extract (IndVar.Global, myResp.xy))[, -1]
+  myExpl.covsel <- terra::extract(IndVar.Global, myResp.xy, as.df=TRUE)[, -1]
   
   # Variable selection process
-  Covdata.filter<-covsel.filteralgo(covdata=myExpl.covsel,pa=myResp,corcut=Cor.Cutoff)
+  Covdata.filter<-covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp, corcut=corcut)
   
   # Embedding selected variables
-  Covdata.embed<-covsel.embed(covdata=Covdata.filter,
+  if(is.null(maxncov)) { 		#@@@JMB# Las maxncov posibles son las que salen en Covdata.filter?? 
+    maxncov <- ncol(Covdata.filter)
+  }
+
+  Covdata.embed<-covsel::covsel.embed(covdata=Covdata.filter,
                               pa=myResp,
                               algorithms=c('glm','gam','rf'), 
-                              maxncov=Max.nCov, 
+                              maxncov=maxncov, 
                               nthreads=detectCores()/2)  
   
-  # Get selected variables #@@@##(remove this)
-  Selected.Variables.Global <- labels(Covdata.embed$covdata)[[2]] 
   
   # Save selected variables for each species
-  write.csv(Selected.Variables.Global, paste("Results/Global/Values/", SpeciesName, ".variables.csv", sep = "")) #@@@##(CAREFUL!!if its saved with the species name, it should be given as a parameter)
+  Selected.Variables.Global <- labels(Covdata.embed$covdata)[[2]]  
+  write.csv(Selected.Variables.Global, paste0("Results/Global/Values/",SpeciesName,".variables.csv"))
+  
+  # REGIONAL SCALE
+  # Regional independent variables (environmental layers)
+  IndVar.Regional <- terra::rast(paste0(VariablesPath,"/Regional/Current.tif")) 
+  Mask.Regional <- prod(IndVar.Regional)
+  IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
   
   # Subset the global independent variables for regional projections
-  IndVar.Regional.1 <- rast(paste0(VariablesPath,"/Regional/Current.tif")) 
-  IndVar.Global.2 <- IndVar.Global[[Selected.Variables.Global]] #@@@## at global level to train the global model
-  IndVar.Global.3 <- IndVar.Regional.1[[Selected.Variables.Global]] #@@@## selected for global, but charged at regional scale to project the global model
+  #if(!all(Selected.Variables.Global %in% names(IndVar.Regional))) { #@@@JMB# Esto es immportante??
+  #  stop("Global and Regional variables must have matching names.")
+  #}
+  IndVar.Global.2 <- IndVar.Global[[Selected.Variables.Global]] #@@@## at global level to train the global model #@@@JMB rename object and varnames()
+  IndVar.Global.3 <- IndVar.Regional[[Selected.Variables.Global]] #@@@## selected for global, but charged at regional scale to project the global model
   
-  # Regional scale
-  # Regional independent variables (environmental layers)
-  IndVar.Regional <- rast(paste0(VariablesPath, "/Regional/Current.tif"))
-  IndVar.Regional <- IndVar.Regional[[names(IndVar.Regional)]]  #@@@# what is this for??
-  
-  # Exclude climatic bands specified by the user. #@@@# I moved and change this so it only gives one result excluding or not the climatic vars
-  if (!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
+  # Exclude climatic bands specified by the user. 
+  if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
     Number.bands <- nlyr(IndVar.Regional)
-    Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)#@@@# non eliminated variables
+    # Non eliminated variables
+    Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)
     IndVar.Regional <- IndVar.Regional[[Bands.climatic]] 
   } else {
     # If no bands are specified for exclusion, use all bands
@@ -55,31 +81,38 @@ NSH.SDM.SelectVariables <- function(NSH.SDM.Data, VariablesPath, Max.nCov, Cor.C
   }
   
   # Select the best subset of independent variables for each species using covsel package
-  myResp.xy.Regional <- rbind(NSH.SDM.Data$SpeciesData.XY.Regional, NSH.SDM.Data$Background.XY.Regional)
-  names(myResp.xy.Regional) <- c("x", "y")
+  myResp.xy.Regional <- rbind(nshsdm_input$SpeciesData.XY.Regional, nshsdm_input$Background.XY.Regional)
   row.names(myResp.xy.Regional) <- c(1:nrow(myResp.xy.Regional))
-  myResp.Regional <- as.vector(c(rep(1, nrow(NSH.SDM.Data$SpeciesData.XY.Regional)), rep(0, nrow(NSH.SDM.Data$Background.XY.Regional))))
+  myResp.Regional <- as.vector(c(rep(1, nrow(nshsdm_input$SpeciesData.XY.Regional)), rep(0, nrow(nshsdm_input$Background.XY.Regional))))
   myResp.Regional <- as.numeric(as.vector(myResp.Regional))
-  myExpl.covsel.Regional <- data.frame(terra::extract(IndVar.Regional, myResp.xy.Regional))[, -1]
-  
+  myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, rm.na=TRUE, df=TRUE)[, -1] 
+
   # Variable selection process
-  Covdata.filter.Regional <- covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = Cor.Cutoff)
+  Covdata.filter.Regional <- covsel::covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = corcut)
   
   # Embedding selected variables
-  Covdata.embed.Regional <- covsel.embed(covdata = Covdata.filter.Regional,
+  Covdata.embed.Regional <- covsel::covsel.embed(covdata = Covdata.filter.Regional,
                                          pa = myResp.Regional,
-                                         algorithms = c('glm', 'gam', 'rf'),
-                                         maxncov = Max.nCov,
+                                         algorithms = algorithms,
+                                         maxncov = maxncov,
                                          nthreads = detectCores() / 2)
   
-  # Get selected variables #@@@##(Remove this)
-  Selected.Variables.Regional <- labels(Covdata.embed.Regional$covdata)[[2]]
   
   # Save selected variables for each species
-  write.csv(Selected.Variables.Regional, paste0("Results/Regional/Values/", SpeciesName, ".variables.csv"), row.names = FALSE) #@@@##(CAREFUL!!if its saved with the species name, it should be given as a parameter)
+  Selected.Variables.Regional <- labels(Covdata.embed.Regional$covdata)[[2]]
+  write.csv(Selected.Variables.Regional, paste0("Results/Regional/Values/", SpeciesName, ".variables.csv"))
   
   # Subset the regional independent variables for regional projections
   IndVar.Regional.2 <- IndVar.Regional[[Selected.Variables.Regional]]
 
-  return(list(Selected.Variables.Global = Selected.Variables.Global, Selected.Variables.Regional = Selected.Variables.Regional, IndVar.Global.2 = IndVar.Global.2, IndVar.Global.3 =IndVar.Global.3, IndVar.Regional.2= IndVar.Regional.2)) #@@@# Changed this to give only one regional result and the global variables at both global (to train the model) and regional (to project the model) scale
+  nshsdm_data$Selected.Variables.Global <- Selected.Variables.Global 
+  nshsdm_data$Selected.Variables.Regional <- Selected.Variables.Regional 
+  nshsdm_data$IndVar.Global.2 <- IndVar.Global.2 
+  nshsdm_data$IndVar.Global.3 <- IndVar.Global.3 
+  nshsdm_data$IndVar.Regional.2 <- IndVar.Regional.2 #@@@# Changed this to give only one regional result and the global variables at both global (to train the model) and regional (to project the model) scale
+
+  attr(nshsdm_data, "class") <- "nshsdm.input"
+
+  return(nshsdm_data)
+
 }
