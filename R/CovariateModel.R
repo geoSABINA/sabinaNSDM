@@ -10,6 +10,7 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
   }
 
   SpeciesName <- nshsdm_selvars$Species.Name
+	##prueba RGM
 
   tryCatch({ 
 	# Covariate model calibrated with all the independent variables.
