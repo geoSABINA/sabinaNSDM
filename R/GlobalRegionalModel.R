@@ -7,7 +7,9 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
 				models=c("GAM","GBM", "RF", "MAXNET","GLM"),
 				CV.nb.rep=1, 
 				CV.perc=0.8,
-				save.output=TRUE) {
+				#CustomModelOptions=NULL, #@@@
+				save.output=TRUE,
+				rm.biomod.folder=TRUE) {
   
   #nshsdm_global <- as.list(match.call())$nshsdm_selvars
   if(!inherits(nshsdm_selvars, "nshsdm.input")){
@@ -195,20 +197,44 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
 	#}) #walk
 	} #for
 
+	if(rm.biomod.folder){
 	# Remove species folder create by biomod2
-	unlink(paste(SpeciesName, sep = ""), recursive = TRUE)
+	unlink(paste0(SpeciesName))
+	} else {
+	# Move biomod2 results to Results/Global/Models folder
+  	dir_create(paste0("Results/Global/Models/",sp.name))
+	source_folder <- sp.name
+	destination_folder <- paste0("Results/Global/Models/",sp.name)
+	if (file.exists(destination_folder)) {
+	  unlink(destination_folder, recursive = TRUE)}
+	file.rename(from = source_folder, to = destination_folder)
+	nshsdm_data$links$biomod.folder <- destination_folder
+	} 
+
   	gc()
 
 	attr(nshsdm_data, "class") <- "nshsdm.predict"
 
-  	return(nshsdm_data)
-
   # Logs success or error messages
-  message("NSH.SDM.Global.Model executed successfully")
+  message("\nNSH.SDM.Global.Model executed successfully!\n")
+  if(save.output){
+  message("Results saved in the following locations:")
+  message(paste(
+    " - Current projections: /Results/Global/Projections/\n",
+    "- ReplicateS statistics: /Results/Global/Values/\n",
+    "- Consensus model statistics: /Results/Global/Values/\n",
+    "- Variable importance: /Results/Global/Values/\n",
+    "- New projections: /Results/Global/Projections/\n"
+  ))
+  }  	
+
   #}, error = function(err) {
   #  message("Error in NSH.SDM.Global.Model:", conditionMessage(err))
   #return(list(result = NULL, error = err))
-  #})
+  #}) 
+
+  return(nshsdm_data)
+
 }
 
 
@@ -219,7 +245,8 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
 NSH.SDM.Regional.Models <- function(nshsdm_selvars, 
 				models=c("GAM","GBM", "RF", "MAXNET","GLM"),
 				CV.nb.rep=1, 
-				CV.perc=0.8) {#,
+				CV.perc=0.8,
+				rm.biomod.folder=TRUE) {#,
 				#save.output=TRUE) {
   
   #nshsdm_global <- as.list(match.call())$nshsdm_selvars
@@ -408,21 +435,45 @@ NSH.SDM.Regional.Models <- function(nshsdm_selvars,
 	  #}
 	  #nshsdm_data$new.projections$Pred.bin.ROC.Scenario <- setNames(Pred.bin.ROC.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
 
-	}) # end walk
-	#} # end for
+	}) #walk
+	#} #for
 
+	if(rm.biomod.folder){
 	# Remove species folder create by biomod2
-	unlink(paste(SpeciesName, sep = ""), recursive = TRUE)
+	unlink(paste0(SpeciesName))
+	} else {
+	# Move biomod2 results to Results/Regional/Models folder
+  	dir_create(paste0("Results/Regional/Models/",sp.name))
+	source_folder <- sp.name
+	destination_folder <- paste0("Results/Regional/Models/",sp.name)
+	if (file.exists(destination_folder)) {
+	  unlink(destination_folder, recursive = TRUE)}
+	file.rename(from = source_folder, to = destination_folder)
+	nshsdm_data$links$biomod.folder <- destination_folder
+	} 
+
   	gc()
 
 	attr(nshsdm_data, "class") <- "nshsdm.predict"
 
-  	return(nshsdm_data)
-
   # Logs success or error messages 
-  print("NSH.SDM.Regional.Model executed successfully")
+  message("\nNSH.SDM.Regional.Models executed successfully!\n")
+  #if(save.output){
+  message("Results saved in the following locations:")
+  message(paste(
+    " - Current projections: /Results/Regional/Projections/\n",
+    "- ReplicateS statistics: /Results/Regional/Values/\n",
+    "- Consensus model statistics: /Results/Regional/Values/\n",
+    "- Variable importance: /Results/Regional/Values/\n",
+    "- New projections: /Results/Regional/Projections/\n"
+  ))  
+  #}
+
   #}, error = function(err) {
   #  message("Error in NSH.SDM.Regional.Model:", conditionMessage(err))
   #  return(list(result = NULL, error = err))
   #})
+
+  return(nshsdm_data)
+
 }

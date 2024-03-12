@@ -21,7 +21,11 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   SpeciesName <- nshsdm_input$Species.Name
   
   nshsdm_data<-nshsdm_input
-  #nshsdm_data<-list()
+  nshsdm_data$args <- list()
+  nshsdm_data$args$VariablesPath <- VariablesPath
+  nshsdm_data$args$maxncov <- maxncov
+  nshsdm_data$args$corcut <- corcut
+  nshsdm_data$args$algorithms <- algorithms
 
   # GLOBAL SCALE
   # Global independent variables (environmental layers)  
