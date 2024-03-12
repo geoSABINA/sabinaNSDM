@@ -5,20 +5,25 @@ NSH.SDM.PrepareData <- function(VariablesPath,
 				nPoints=10000, 
 				Min.Dist.Global=1, 
 				Min.Dist.Regional=1,
-				bckg.excluding.occu = TRUE) { #@@@JMB# Remove from valid cells those cells with species occurrences
-		#@@@JMB# Pendiente: si dejamos poner background manually añadir argumento bckg=NULL/path a background, y añadir a la función
+				background=NULL,
+				save.output=TRUE) {
+		
+  if (!is.null(background) && !(is.data.frame(background) && ncol(background) == 2 && all(c("x", "y") %in% names(background)))) {
+    stop("background must be a data.frame with two columns 'x' and 'y'.")
+  }
+
   nshsdm_data<-list()
   
+  if(save.output){
   dir_create(c("Results/Global/SpeciesXY/", 
                "Results/Global/Values/", 
                "Results/Global/Projections/",
-               "Results/Global/Background/",
-               "Results/Global/Models/"))
+               "Results/Global/Background/"))
   dir_create(c("Results/Regional/SpeciesXY/",
                "Results/Regional/Background/",
                "Results/Regional/Values/",
-               "Results/Regional/Projections/",
-               "Results/Regional/Models/"))
+               "Results/Regional/Projections/"))
+  }
   
   # GLOBAL SCALE
   # Generate random background points for model calibration 
@@ -27,7 +32,27 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   # expand NAs
   Mask <- prod(Mask)
 
-  # Load species data at global scale
+  # Generate random background points for model calibration
+  if(is.null(background)) {
+    valid_cells <- which(!is.na(values(Mask)))
+    if(length(valid_cells) < nPoints) {
+      stop("The requested number of bockground points exceeds the number of valid cells.")
+    }
+    sampled_indices <- sample(valid_cells, nPoints)
+    coords <- terra::xyFromCell(Mask, sampled_indices)
+    Background.XY.Global <- as.data.frame(coords)
+  } else {
+    Background.xy.temp <- background
+    Background.xy.1 <- terra::extract(Mask, Background.xy.temp)[, -1]
+    Background.temp2 <- cbind(Background.xy.1, Background.xy.temp)
+    Background.temp3 <- na.omit(Background.temp2)
+    Background.XY.Global <- Background.temp3[, c("x", "y")]
+  } 
+  if(save.output){
+  write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
+  }
+
+# Load species data at global scale
   SpeciesData.XY.Global <- read.csv(paste0(SpeciesFilePath,"/Global/",SpeciesName,".csv"))
   names(SpeciesData.XY.Global) <- c("x","y")
 
@@ -51,44 +76,43 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   message(paste("Global data thinning: from", dim(XY), "to", dim(XY.final.Global), "species presences"))
 
   # Save thinning presence data for each species
+  if(save.output){
   write.csv(XY.final.Global, paste0("Results/Global/SpeciesXY/",SpeciesName,".csv"))
+  }
   
   # Sample size 
   Sample.size.temp <- dim(XY.final.Global)
   Sample.size <- Sample.size.temp[1]
+  if(save.output){
   write.table(Sample.size, paste0("Results/Global/Values/",SpeciesName,"_samplesize.csv", sep=""), sep=",",  row.names=F, col.names=T) 
-
-  # Generate random background points for model calibration 
-  if(bckg.excluding.occu == FALSE) {
-    valid_cells <- which(!is.na(values(Mask)))
-    if(length(valid_cells) < nPoints) {
-      stop("The requested number of bockground points exceeds the number of valid cells.")
-    }
-    sampled_indices <- sample(valid_cells, nPoints)
-    coords <- terra::xyFromCell(Mask, sampled_indices)
-    Background.XY.Global <- as.data.frame(coords)
-  } else {
-    # Random background selection excluding species presence cells
-    Mask2 <- Mask
-    sp_cells <- terra::extract(Mask2, XY.final.Global, cells=T)$cell
-    values(Mask2)[sp_cells] <- NA
-    valid_cells <- which(!is.na(values(Mask2)))
-    if(length(valid_cells) < nPoints) {
-      stop("The requested number of bockground points exceeds the number of valid cells.")
-    }
-    sampled_indices <- sample(valid_cells, nPoints)
-    coords <- terra::xyFromCell(Mask2, sampled_indices)
-    Background.XY.Global <- as.data.frame(coords)
   }
-  
-  write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
 
   # REGIONAL SCALE 
   # Generate random background points for model calibration
   Mask.regional <- terra::rast(paste0(VariablesPath,"/Regional/Current.tif"))
   Mask.regional <- prod(Mask.regional)
 
-  # Load species presence data at regional scale
+  # Generate random background points for model calibration
+  if(is.null(background)) {
+    valid_cells <- which(!is.na(values(Mask.regional)))
+    if(length(valid_cells) < nPoints) {
+      stop("The requested number of bockground points exceeds the number of valid cells.")
+    }
+    sampled_indices <- sample(valid_cells, nPoints)
+    coords <- terra::xyFromCell(Mask.regional, sampled_indices)
+    Background.XY.Regional <- as.data.frame(coords)
+  } else {
+    Background.XY.temp <- background
+    Background.xy.1 <- terra::extract(Mask.regional, Background.xy.temp)[, -1]
+    Background.temp2 <- cbind(Background.xy.1, Background.xy.temp)
+    Background.temp3 <- na.omit(Background.temp2)
+    Background.XY.Regional <- Background.temp3[, c("x", "y")]
+  } 
+  if(save.output){
+  write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
+  }
+
+# Load species presence data at regional scale
   SpeciesData.XY.Regional <- read.csv(paste0(SpeciesFilePath,"/Regional/", SpeciesName, ".csv"))
   names(SpeciesData.XY.Regional) <- c("x","y")
 
@@ -112,37 +136,16 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   message(paste("Regional data thinning: from", dim(XY.Regional), "to", dim(XY.final.Regional), "species presences"))
 
   # Save filtered presence data for each species 
+  if(save.output){
   write.csv(XY.final.Regional, paste0("Results/Regional/SpeciesXY/", SpeciesName, ".csv"))
-  
+  }
+
   # Save sample size 
   Sample.size.temp.Regional <- dim(XY.final.Regional)
   Sample.size.Regional <- Sample.size.temp.Regional[1]
+  if(save.output){
   write.table(Sample.size.Regional, paste0("Results/Regional/Values/",SpeciesName,"_samplesize.csv"), sep=",",  row.names=F, col.names=T) 
-
-  # Generate random background points for model calibration
-  if(bckg.excluding.occu == FALSE) {
-    valid_cells <- which(!is.na(values(Mask.regional)))
-    if(length(valid_cells) < nPoints) {
-      stop("The requested number of bockground points exceeds the number of valid cells.")
-    }
-    sampled_indices <- sample(valid_cells, nPoints)
-    coords <- terra::xyFromCell(Mask.regional, sampled_indices)
-    Background.XY.Regional <- as.data.frame(coords)
-  } else {
-    # Random background selection excluding spcies presence locations
-    Mask.regional2 <- Mask.regional
-    sp_cells.regional <- terra::extract(Mask.regional2, XY.final.Global, cells=T)$cell
-    values(Mask.regional2)[sp_cells.regional] <- NA
-    valid_cells <- which(!is.na(values(Mask.regional2)))
-    if(length(valid_cells) < nPoints) {
-      stop("The requested number of bockground points exceeds the number of valid cells.")
-    }
-    sampled_indices <- sample(valid_cells, nPoints)
-    coords <- terra::xyFromCell(Mask.regional2, sampled_indices)
-    Background.XY.Regional <- as.data.frame(coords)
   }
-
-  write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
 
   nshsdm_data$Species.Name <- SpeciesName
   nshsdm_data$SpeciesData.XY.Global <- XY.final.Global

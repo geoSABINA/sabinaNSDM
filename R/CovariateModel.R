@@ -2,22 +2,36 @@
 NSH.SDM.Covariate.Models <- function(nshsdm_selvars, 
 				models=c("GAM","GBM", "RF", "MAXNET","GLM"),
 				CV.nb.rep=1, 
-				CV.perc=0.8) {
+				CV.perc=0.8,
+				save.output = TRUE) {
 
-  nshsdm_global <- as.list(match.call())$nshsdm_selvars
+  #nshsdm_global <- as.list(match.call())$nshsdm_selvars
   if(!inherits(nshsdm_selvars, "nshsdm.input")){
       stop("nshsdm_selvars must be an object of nshsdm.input class.")
   }
 
   SpeciesName <- nshsdm_selvars$Species.Name
-	##prueba RGM
+
+  nshsdm_data<-list()
+  nshsdm_data$args <- list()
+  nshsdm_data$args$models <- models
+  nshsdm_data$args$CV.nb.rep <- CV.nb.rep
+  nshsdm_data$args$CV.perc <- CV.perc
+
+  current.projections <- list()
+  new.projections <- list()
+  new.projections$Pred.ROC.Scenario <- list()
+  new.projections$Pred.bin.TSS.Scenario <- list()
+  new.projections$Pred.bin.ROC.Scenario <- list()
 
   tryCatch({ 
 	# Covariate model calibrated with all the independent variables.
     	# Regional model excluding climatic variables.
 	
 	# Create directories to save results of the modeling process
+	if(save.output){
       	dir_create(c("Results/Covariate/Values/", "Results/Covariate/Projections/"))
+	}
       
 	# Add the global model as an additional variable for the regional model.
 	SDM.global <- terra::rast(paste0("Results/Global/Projections/",SpeciesName,".Current.tif"))
@@ -66,7 +80,7 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
                                                  em.by = 'all',
                                                  em.algo = c("EMwmean"),
                                                  metric.select = c('ROC'),
-                                                 metric.select.thresh = NULL,
+                                                 metric.select.thresh = 0.8,
                                                  var.import = 3,
                                                  metric.eval = c('ROC', "TSS", "KAPPA"),
                                                  seed.val = 42) 
@@ -88,37 +102,60 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
       
 	# Load the model stored by biomod2 and save it in geotif format
 	sp.name<-myBiomodData@sp.name
-	Pred.ROC <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif")) 
-	terra::writeRaster(Pred.ROC, paste0("Results/Covariate/Projections/",SpeciesName,".Current.tif"), overwrite=TRUE)
+	Pred.ROC <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
+	if(save.output){
+ 	terra::writeRaster(Pred.ROC, paste0("Results/Covariate/Projections/",SpeciesName,".Current.tif"), overwrite=TRUE)
+	}
+	nshsdm_data$current.projections$Pred.ROC <- setNames(Pred.ROC, paste0(SpeciesName, ".Current"))
       
 	# Binary models
 	Pred.bin.ROC <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_ROCbin.tif")) 
+	if(save.output){
 	terra::writeRaster(Pred.bin.ROC, paste0("Results/Covariate/Projections/",SpeciesName,".Current.bin.ROC.tif"), overwrite=TRUE)
+	}
+	nshsdm_data$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
       
 	Pred.bin.TSS <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_TSSbin.tif")) 
+	if(save.output){
 	terra::writeRaster(Pred.bin.TSS, paste0("Results/Covariate/Projections/",SpeciesName,".Current.bin.TSS.tif"), overwrite=TRUE)
-      
-       # Save some results
+	}
+	nshsdm_data$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS, paste0(SpeciesName,".Current.bin.TSS"))
+
+        # Save some results
 	# Values of the statistics for each of the replicates   
 	myEMeval.replicas <- biomod2::get_evaluations(myBiomodModelOut)
+	if(save.output){
 	write.csv(myEMeval.replicas,file=paste0("Results/Covariate/Values/",SpeciesName,"_replica.csv"))
+	}
+	nshsdm_data$myEMeval.replicates <- myEMeval.replicates
+
 	# Values of the statistics of the consensus model   
 	myEMeval.Consenso <- biomod2::get_evaluations(myBiomodEM.ROC)
+	if(save.output){
 	write.csv(myEMeval.Consenso,file=paste0("Results/Covariate/Values/",SpeciesName,"_ensemble.csv"))
+	}
+	nshsdm_data$myEMeval.Consenso <- myEMeval.Consenso
+
 	# Variable importance
 	myModelsVarImport <- biomod2::get_variables_importance(myBiomodModelOut)
+	if(save.output){
 	write.table(myModelsVarImport, file = paste0("Results/Covariate/Values/",SpeciesName,"_indvar.csv"), row.names = T, col.names = T)
+	}
+	nshsdm_data$myModelsVarImport <- myModelsVarImport
+
       
 	# Model projections for future climate scenarios
 	################################################
 	Scenarios <- dir_ls(paste0(VariablesPath,"/Regional"), pattern="tif")
-        Scenarios <- Scenarios[!grepl("Current.tif", Scenarios)][1:2] # para probar con 2
+        Scenarios <- Scenarios[!grepl("Current.tif", Scenarios)]
 
 	if(length(Scenarios) == 0) {
 	  stop("There are no future climate variables")
 	}
-        
-	walk(Scenarios, function(projmodel) { 
+
+	for(i in 1:length(Scenarios)) {   
+	  projmodel <- Scenarios[i]
+        #walk(Scenarios, function(projmodel) { 
 	  NewClim.temp <- terra::rast(projmodel)[[nshsdm_selvars$Selected.Variables.Regional]]
 	  Scenario.name <- path_file(projmodel) |> path_ext_remove()
      
@@ -138,27 +175,33 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 					metric.filter = "all")
         
 	  Pred.ROC.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
+	  if(save.output){
 	  terra::writeRaster(Pred.ROC.Scenario, paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".tif"), overwrite = TRUE)
-        
-        
+          }
+	  nshsdm_data$new.projections$Pred.ROC.Scenario[[i]] <- setNames(Pred.ROC.Scenario, paste0(SpeciesName,".",Scenario.name))
+
 	  # Binarized models
           Pred.bin.TSS.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
+	  if(save.output){
           terra::writeRaster(Pred.bin.TSS.Scenario, paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.TSS.tif"), overwrite = TRUE)
-        
-          Pred.bin.ROC.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
-          terra::writeRaster(Pred.bin.ROC.Scenario, paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif"), overwrite = TRUE)
+	  }
+	  nshsdm_data$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
-	  gc()	
-	}) 
-      
-	#@@@@## Move biomod2 results to Results/Covariate/Models folder
-	source_folder <- sp.name
-	destination_folder <- "Results/Covariate/Models"
-	if(file.exists(destination_folder)) {
-          unlink(destination_folder, recursive = TRUE)
-	}
-	file.rename(from = source_folder, to = destination_folder)
-    
+          Pred.bin.ROC.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
+	  if(save.output){
+          terra::writeRaster(Pred.bin.ROC.Scenario, paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif"), overwrite = TRUE)
+	  }
+	  nshsdm_data$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
+
+	#}) #walk
+	} #for
+
+	# Remove species folder create by biomod2
+	unlink(paste(SpeciesName, sep = ""), recursive = TRUE)
+  	gc()
+
+	return(nshsdm_data)
+
   # Logs success or error messages 
   message("\nNSH.SDM.Covariate.Models executed successfully.\n")
   }, error = function(err) {

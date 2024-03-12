@@ -3,6 +3,8 @@ NSH.SDM.Multiply.Models <- function(method="Arithmetic",
 				    rescale=FALSE,
 				    SpeciesName) {
 
+  nshsdm_data<-list()
+
   tryCatch({ 
   	Scenarios <- dir_ls(paste0(VariablesPath,"/Regional"))
   	Scenarios <- path_file(Scenarios) |> path_ext_remove()
@@ -51,9 +53,18 @@ NSH.SDM.Multiply.Models <- function(method="Arithmetic",
 
   	}) 
 
+  nshsdm_data$args <- list()
+  nshsdm_data$args$method <- method
+  nshsdm_data$args$rescale <- rescale
+
+  nshsdm_data$link <- list()
+  nshsdm_data$link$multiply.model <- "/Results/Multiply/Projections/"
+
+  return(nshsdm_data)
+
   # Logs success or error messages 
   message("\nNSH.SDM.Multiply.Models executed successfully.\n")
-  message("\nHierarchical Multiply Models saved in Results/Multiply/Images/ \n")
+  message("\nHierarchical Multiply Models saved in /Results/Multiply/Images/ \n")
 
   }, error = function(err) {
   message("\nError in NSH.SDM.Multiply.Models:", conditionMessage(err))
