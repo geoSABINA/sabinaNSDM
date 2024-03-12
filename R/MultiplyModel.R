@@ -1,14 +1,14 @@
 #' @export
-NSH.SDM.Multiply.Models <- function(method="Arithmetic",
-				    rescale=FALSE,
-				    SpeciesName) {
+NSH.SDM.Multiply.Models <- function(SpeciesName,
+				    method="Arithmetic",
+				    rescale=FALSE) {
 
   nshsdm_data<-list()
 
   tryCatch({ 
   	Scenarios <- dir_ls(paste0(VariablesPath,"/Regional"))
   	Scenarios <- path_file(Scenarios) |> path_ext_remove()
-	Scenarios <- Scenarios[1:3] #para probar
+	Scenarios <- Scenarios
 
   	walk(Scenarios, function(projmodel) {
 	  #projmodel <- Scenarios[1]
@@ -47,10 +47,8 @@ NSH.SDM.Multiply.Models <- function(method="Arithmetic",
     	  } else if(method=="Arithmetic")  {
     	    Stack.rasters <- c(Pred.global, Pred.regional)
     	    res.average <-  terra::mean(Stack.rasters)
-	  }  
-  	    
+	  }
           terra::writeRaster(res.average, paste0("Results/Multiply/Projections/",SpeciesName,".",projmodel,".tif"), overwrite = TRUE)
-
   	}) 
 
   nshsdm_data$args <- list()
@@ -58,16 +56,20 @@ NSH.SDM.Multiply.Models <- function(method="Arithmetic",
   nshsdm_data$args$rescale <- rescale
 
   nshsdm_data$link <- list()
-  nshsdm_data$link$multiply.model <- "/Results/Multiply/Projections/"
-
-  return(nshsdm_data)
+  nshsdm_data$link$multiply.models <- "/Results/Multiply/Projections/"
 
   # Logs success or error messages 
-  message("\nNSH.SDM.Multiply.Models executed successfully.\n")
-  message("\nHierarchical Multiply Models saved in /Results/Multiply/Images/ \n")
+  message("\nNSH.SDM.Multiply.Models executed successfully!\n")
+  message("Results saved in the following locations:")
+  message(paste(
+    " - Hierarchical Multiply Models: /Results/Multiply/Projections/\n"
+  )) 
 
   }, error = function(err) {
   message("\nError in NSH.SDM.Multiply.Models:", conditionMessage(err))
   return(list(result = NULL, error = err))
-  }) 
+  })
+
+  return(nshsdm_data)
+
 } 

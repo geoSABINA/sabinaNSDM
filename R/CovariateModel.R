@@ -3,6 +3,7 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 				models=c("GAM","GBM", "RF", "MAXNET","GLM"),
 				CV.nb.rep=1, 
 				CV.perc=0.8,
+				rm.biomod.folder=TRUE,
 				save.output = TRUE) {
 
   #nshsdm_global <- as.list(match.call())$nshsdm_selvars
@@ -24,7 +25,7 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
   new.projections$Pred.bin.TSS.Scenario <- list()
   new.projections$Pred.bin.ROC.Scenario <- list()
 
-  tryCatch({ 
+  #tryCatch({ 
 	# Covariate model calibrated with all the independent variables.
     	# Regional model excluding climatic variables.
 	
@@ -72,6 +73,13 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 					prevalence = 0.5, 
 					seed.val = 42, 
  					CV.do.full.models = FALSE)
+
+	# Replicates with ROC > 0.8	
+	df <- myBiomodModelOut@models.evaluation
+	df_slot <- slot(df, "val")
+	df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
+	percentage <- 100 * sum(df_slot$validation >= 0.8)/nrow(df_slot)
+	warning(sprintf("\n%.2f%% of replicates with AUC values >= 0.8.\n", percentage))
       
 	# Generate and evaluate a single ensemble (i.e.,consensus) model that averages the individual models weighted
 	# by the value of the AUC statistic.
@@ -123,9 +131,9 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 
         # Save some results
 	# Values of the statistics for each of the replicates   
-	myEMeval.replicas <- biomod2::get_evaluations(myBiomodModelOut)
+	myEMeval.replicates <- biomod2::get_evaluations(myBiomodModelOut)
 	if(save.output){
-	write.csv(myEMeval.replicas,file=paste0("Results/Covariate/Values/",SpeciesName,"_replica.csv"))
+	write.csv(myEMeval.replicates,file=paste0("Results/Covariate/Values/",SpeciesName,"_replica.csv"))
 	}
 	nshsdm_data$myEMeval.replicates <- myEMeval.replicates
 
@@ -196,17 +204,41 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 	#}) #walk
 	} #for
 
+	if(rm.biomod.folder){
 	# Remove species folder create by biomod2
-	unlink(paste(SpeciesName, sep = ""), recursive = TRUE)
+	unlink(paste0(SpeciesName))
+	} else {
+	# Move biomod2 results to Results/Covariate/Models folder
+  	dir_create(paste0("Results/Covariate/Models/",sp.name))
+	source_folder <- sp.name
+	destination_folder <- paste0("Results/Covariate/Models/",sp.name)
+	if (file.exists(destination_folder)) {
+	  unlink(destination_folder, recursive = TRUE)}
+	file.rename(from = source_folder, to = destination_folder)
+	nshsdm_data$links$biomod.folder <- destination_folder
+	} 
+
   	gc()
 
-	return(nshsdm_data)
-
   # Logs success or error messages 
-  message("\nNSH.SDM.Covariate.Models executed successfully.\n")
-  }, error = function(err) {
-    message("Error in NSH.SDM.Covariate.Models:", conditionMessage(err))
-    return(list(result = NULL, error = err))
-  })
+  message("\nNSH.SDM.Covariate.Models executed successfully!\n")
+  if(save.output){
+  message("Results saved in the following locations:")
+  message(paste(
+    " - Current projections: /Results/Covariate/Projections/\n",
+    "- ReplicateS statistics: /Results/Covariate/Values/\n",
+    "- Consensus model statistics: /Results/Covariate/Values/\n",
+    "- Variable importance: /Results/Covariate/Values/\n",
+    "- New projections: /Results/Covariate/Projections/\n"
+  ))
+  }  	
+
+  #}, error = function(err) {
+  #  message("Error in NSH.SDM.Covariate.Models:", conditionMessage(err))
+  #  return(list(result = NULL, error = err))
+  #})	
+
+  return(nshsdm_data)
+
 }
 
