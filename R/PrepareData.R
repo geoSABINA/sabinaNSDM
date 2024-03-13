@@ -7,6 +7,8 @@ NSH.SDM.PrepareData <- function(VariablesPath,
 				Min.Dist.Regional=1,
 				background=NULL,
 				save.output=TRUE) {
+
+##prueba
 		
   if (!is.null(background) && !(is.data.frame(background) && ncol(background) == 2 && all(c("x", "y") %in% names(background)))) {
     stop("background must be a data.frame with two columns 'x' and 'y'.")
