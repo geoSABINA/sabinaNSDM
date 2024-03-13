@@ -12,6 +12,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     stop("background must be a data.frame with two columns 'x' and 'y'.")
   }
 
+  #prueba_ter
   nshsdm_data<-list()
   
   if(save.output){
