@@ -41,7 +41,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   IndVar.Global <- rast(paste0(VariablesPath,"/Global/Current.tif")) 
   IndVar.Global <- IndVar.Global[[names(IndVar.Global)]] 
   Mask.Global <- prod(IndVar.Global, 1) 
-  
+  IndVar.Global <- terra::mask(IndVar.Global, Mask.Global) #@RGM creo que esto es necesario para evitar NODATA
   # Generate random background points for model calibration
   if(is.null(Background.Global)) {
     Valid.Cells.Global <- which(!is.na(values(Mask.Global)))
@@ -116,6 +116,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   IndVar.Regional <- terra::rast(paste0(VariablesPath,"/Regional/Current.tif")) 
   IndVar.Regional <- IndVar.Regional[[names(IndVar.Regional)]] 
   Mask.regional <- prod(IndVar.Regional)
+  IndVar.Regional <- terra::mask(IndVar.Regional, Mask.regional) #@RGM creo que esto es necesario para evitar NODATA
 
   # Generate random background points for model calibration
   if(is.null(Background.Regional)) {
@@ -187,6 +188,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   }
 
   nshsdm_data$Species.Name <- SpeciesName
+  nshsdm_data$VariablesPath <- VariablesPath #@RGM he añadido esto, para no tener que incluirlo en las siguientes funciones 
   nshsdm_data$SpeciesData.XY.Global <- XY.final.Global
   nshsdm_data$Background.XY.Global <- Background.XY.Global
   nshsdm_data$SpeciesData.XY.Regional <- XY.final.Regional
