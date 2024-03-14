@@ -193,6 +193,8 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   nshsdm_data$Background.XY.Global <- Background.XY.Global
   nshsdm_data$SpeciesData.XY.Regional <- XY.final.Regional
   nshsdm_data$Background.XY.Regional <- Background.XY.Regional
+  nshsdm_data$IndVar.Regional <- IndVar.Regional #@RGM he añadido esto, para no tener que incluirlo en las siguientes funciones 
+  nshsdm_data$IndVar.Global <- IndVar.Global #@RGM he añadido esto, para no tener que incluirlo en las siguientes funciones 
   #nshsdm_data$Sample.size.Global <- Sample.size.Global
   #nshsdm_data$Sample.size.Regional <- Sample.size.Regional
 

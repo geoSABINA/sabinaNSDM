@@ -19,7 +19,6 @@ NSH.SDM.SelectVariables <- function(nshsdm_input, # #@@@RGM he quitado 	Variable
 #  algorithms <- tolower(algorithms)
 
   SpeciesName <- nshsdm_input$Species.Name
-  VariablesPath <- nshsdm_data$VariablesPath #@RGM he añadido esto
   
   nshsdm_data<-nshsdm_input
   nshsdm_data$args <- list()
@@ -30,9 +29,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input, # #@@@RGM he quitado 	Variable
 
   # GLOBAL SCALE
   # Global independent variables (environmental layers)  
-  IndVar.Global <- terra::rast(paste0(VariablesPath,"/Global/Current.tif"))
-  Mask.Global <- prod(IndVar.Global)
-  IndVar.Global <- terra::mask(IndVar.Global, Mask.Global)
+  IndVar.Global <- nshsdm_input$IndVar.Global #@Ahora el stack se genera en la función anterior
   
   # Select the best subset of independent variables for each species using covsel package  #@@@RGM he cambio nombre de objetos
   myResp.xy.Global <- rbind(nshsdm_input$SpeciesData.XY.Global, nshsdm_input$Background.XY.Global) 
@@ -45,9 +42,9 @@ NSH.SDM.SelectVariables <- function(nshsdm_input, # #@@@RGM he quitado 	Variable
   # Variable selection process
   
   if(is.null(corcut)) { #@@@RGM he cambiado esto para que funcione con "null" (corcut=0.7) o corcut selecionado por el usuario
-    Covdata.filter.Global<-covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp, corcut=0.7)
+    Covdata.filter.Global<-covsel::covsel.filteralgo(covdata=myExpl.covsel.Global, pa=myResp.Global, corcut=0.7)
   } else {
-    Covdata.filter.Global<-covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp, corcut=corcut)
+    Covdata.filter.Global<-covsel::covsel.filteralgo(covdata=myExpl.covsel.Global, pa=myResp.Global, corcut=corcut)
   }
     
   # Embedding selected variables @RGM esto es necesario? 
@@ -57,7 +54,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input, # #@@@RGM he quitado 	Variable
 
   if(is.null(algorithms)) { #@@@RGM he cambiado esto para que funcione con "null" o algoritmos selecionados por el usuario
   Covdata.embed.Global<-covsel::covsel.embed(covdata=Covdata.filter.Global,
-                              pa=myResp,
+                              pa=myResp.Global,
                               algorithms=c('glm','gam','rf'), 
                               maxncov=maxncov, 
                               nthreads=detectCores()/2)  
@@ -77,9 +74,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input, # #@@@RGM he quitado 	Variable
   
   # REGIONAL SCALE
   # Regional independent variables (environmental layers)
-  IndVar.Regional <- terra::rast(paste0(VariablesPath,"/Regional/Current.tif")) 
-  Mask.Regional <- prod(IndVar.Regional)
-  IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
+  IndVar.Regional <- nshsdm_input$IndVar.Regional
   
   # Subset the global independent variables for regional projections
   IndVar.Global.Selected <- IndVar.Regional[[Selected.Variables.Global]]  #@RGM he cambiado el nombre y he quitado la proyección global, solo vamos a proyectar a escala regional. Proyectar a escalar global es como hacer un modelo "normal" lo pueden hacer con cualquier paquete de modelos

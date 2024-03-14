@@ -1,8 +1,9 @@
 #' @export
 NSH.SDM.Covariate.Models <- function(nshsdm_selvars, 
-				models=c("GAM","GBM", "RF", "MAXNET","GLM"),
-				CV.nb.rep=1, 
+				models,
+				CV.nb.rep=10, #@@@ he cambiado varias cosas aqui
 				CV.perc=0.8,
+				CustomModelOptions=NULL, #@@@ he cambiado varias cosas aqui,
 				rm.biomod.folder=TRUE,
 				save.output = TRUE) {
 
@@ -35,10 +36,10 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 	}
       
 	# Add the global model as an additional variable for the regional model.
-	SDM.global <- terra::rast(paste0("Results/Global/Projections/",SpeciesName,".Current.tif"))
+	SDM.global <- terra::rast(paste0("Results/Global/Projections/",SpeciesName,".Current.tif")) #@RGM Cuidado si no guardamos los resultados en el disco duro del ordenador esto no funcionaria. Quizá habría que poner un aviso. 
 	names(SDM.global) <- c("SDM.global") 
-	IndVar.Regional.temp <- nshsdm_selvars$IndVar.Regional.2
-	IndVar.Regional.2 <- c(IndVar.Regional.temp, SDM.global)
+	IndVar.Regional.temp <- nshsdm_selvars$IndVar.Regional.Selected #@RGM cambiado 
+	IndVar.Regional.Covariate <- c(IndVar.Regional.temp, SDM.global)
       
 	myResp.xy <- rbind(nshsdm_selvars$SpeciesData.XY.Regional, nshsdm_selvars$Background.XY.Regional)
 	names(myResp.xy)<-c("x","y")
@@ -46,7 +47,7 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 	myResp <- data.frame(c(rep(1,nrow(nshsdm_selvars$SpeciesData.XY.Regional)),rep(NA,nrow(nshsdm_selvars$Background.XY.Regional ))))
 	names(myResp)<-"pa"
 	row.names(myResp)<-c(1:nrow(myResp.xy))
-	myExpl <- terra::extract(IndVar.Regional.2, myResp.xy, as.df=TRUE)[, -1]
+	myExpl <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
       
 	# Data required for the biomod2 package.
 	myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp, 
@@ -58,21 +59,34 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 					PA.strategy = "random")
       
 	# Calibrate and evaluate individual models with specified statistical algorithms.
-	myBiomodModelOut <- biomod2::BIOMOD_Modeling(bm.format = myBiomodData, 
-					modeling.id = "AllModels", 
-					#  bm.options = myThecniquesOptions,
-					models = models, 
-					CV.strategy = "random", 
-					CV.nb.rep = CV.nb.rep, 
-					CV.perc = CV.perc, 
-					weights = NULL, 
-					var.import = 3, 
-					metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"), 
-					scale.models = FALSE, 
-					do.progress = TRUE, 
-					prevalence = 0.5, 
-					seed.val = 42, 
- 					CV.do.full.models = FALSE)
+	if (is.null(CustomModelOptions)) {
+	  # Use biomod2 default modeling options
+	  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,  #@@@## (This function saves outputs, check them and specify them in the description). Outputs: /NSHSDM/Larix.decidua/models/AllModels/Larix.decidua_PA1_RUN1_GBM
+	                                      modeling.id = "AllModels", 
+	                                      # bm.options = myThecniquesOptions,
+	                                      models = models, 
+	                                      CV.strategy = "random", 
+	                                      CV.nb.rep = CV.nb.rep, CV.perc = CV.perc, 
+	                                      weights = NULL, var.import = 3, #@@@## (var.import 3 or NULL) 
+	                                      metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"), 
+	                                      scale.models = FALSE, do.progress = TRUE, 
+	                                      prevalence = 0.5, seed.val = 42, 
+	                                      CV.do.full.models = FALSE) # "CV.do.full.models = FALSE" and "var.import=0" to make it faster
+	} else {
+	  # Use custom modeling options provided by the user
+	  # Model training using BIOMOD_Modeling
+	  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData, 
+	                                      modeling.id = "AllModels", 
+	                                      models = models, 
+	                                      bm.options = CustomModelOptions, # Use the specified or default modeling options
+	                                      CV.strategy = "random", 
+	                                      CV.nb.rep = CV.nb.rep, CV.perc = CV.perc, 
+	                                      weights = NULL, var.import = 3, 
+	                                      metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"), 
+	                                      scale.models = FALSE, do.progress = TRUE, 
+	                                      prevalence = 0.5, seed.val = 42, 
+	                                      CV.do.full.models = FALSE)
+	}
 
 	# Replicates with ROC > 0.8	
 	df <- myBiomodModelOut@models.evaluation
@@ -86,16 +100,16 @@ NSH.SDM.Covariate.Models <- function(nshsdm_selvars,
 	myBiomodEM.ROC  <- biomod2::BIOMOD_EnsembleModeling(bm.mod = myBiomodModelOut,
                                                  models.chosen = 'all',
                                                  em.by = 'all',
-                                                 em.algo = c("EMwmean"),
+                                                 em.algo = c("EMmean"),#@RGM cambiado 
                                                  metric.select = c('ROC'),
                                                  metric.select.thresh = 0.8,
-                                                 var.import = 3,
+                                                 var.import = 0, #@RGM esto lo he cambiado
                                                  metric.eval = c('ROC', "TSS", "KAPPA"),
                                                  seed.val = 42) 
       
    	# Project the individual models to the study area at regional scale under training conditions.
 	myBiomodProj <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
-                                        new.env = IndVar.Regional.2,
+                                        new.env = IndVar.Regional.Covariate, #@RGM cambiado 
                                         proj.name = "Current",
                                         models.chosen = 'all',
                                         build.clamping.mask = FALSE) 
