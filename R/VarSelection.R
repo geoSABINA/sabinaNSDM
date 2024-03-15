@@ -60,7 +60,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input, # #@@@RGM he quitado 	Variable
                               nthreads=detectCores()/2)  
   } else {
     Covdata.embed.Global<-covsel::covsel.embed(covdata=Covdata.filter.Global,
-                                        pa=myResp,
+                                        pa=myResp.Global,
                                         algorithms=algorithms, 
                                         maxncov=maxncov, 
                                         nthreads=detectCores()/2)  
