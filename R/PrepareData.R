@@ -54,6 +54,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   } else {
     Background.XY.Global <- Background.Global
   }
+
   if(save.output){
   write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
   }
@@ -82,7 +83,6 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     })
   }))
   message(paste("Global data thinning: from", nrow(XY.Global), "to", nrow(XY.final.Global), "species presences"))
-
 
   # Save thinning presence data for each species
   if(save.output){
@@ -115,6 +115,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   } else {
     Background.XY.Regional <- Background.Regional
   }
+
   if(save.output){
   write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
   }
@@ -145,8 +146,8 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     }))
     message(paste("Regional data thinning: from", nrow(XY.Regional), "to", nrow(XY.final.Regional), "species presences"))
 
-
   # Save filtered presence data for each species
+
   if(save.output){
   write.csv(XY.final.Regional, paste0("Results/Regional/SpeciesXY/", SpeciesName, ".csv"))
   }
