@@ -1,7 +1,7 @@
 #' @export
 NSH.SDM.SelectVariables <- function(nshsdm_input,
-				maxncov, #@@@#TG lo dejo sin valor por default, pero si no pone ninguna usa todas las no correlacionadas
-				corcut=0.7, #@@@TG lo dejo por defecto en 0.7 #0.8 me parece mucha correlacion, pero el usuario siempre lo puede poner lo que quiera
+				maxncov="All", #@@@#TG si usuario no pone ninguna usa todas las no correlacionadas
+				corcut=0.7, #@@@TG lo dejo por defecto en 0.7
 				algorithms=c('glm','gam','rf'), #@@@TG He puesto los tres como default, pero el usuario puede poner lo que quiera.
 				ClimaticVariablesBands=NULL,
 				save.output=TRUE) {
@@ -43,7 +43,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
 
 
   # Embedding selected variables
-  if(is.null(maxncov)) {
+  if(maxncov=="all") {
     maxncov <- ncol(Covdata.filter.Global)
   }
 
@@ -52,19 +52,17 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
                                         algorithms=algorithms,
                                         maxncov=maxncov,
                                         nthreads=detectCores()/2) #@@@#TG why only half of cores?
-  IndVar.Global.Selected <- IndVar.Regional[[Selected.Variables.Global]]  #@RGM he cambiado el nombre y he quitado la proyección global, solo vamos a proyectar a escala regional. Proyectar a escalar global es como hacer un modelo "normal" lo pueden hacer con cualquier paquete de modelos
-
 
   # Save selected variables for each species
   Selected.Variables.Global <- labels(Covdata.embed.Global$covdata)[[2]]
   if(save.output){
-    suffix <- 0
+    #suffix <- 0
     file_path <- paste0("Results/Global/Values/", SpeciesName, ".variables.csv")
-    old_path <- paste0("Results/Global/Values/", SpeciesName, ".variables.csv")
-    while (file.exists(file_path)) {
-      suffix <- suffix + 1
-      file_path <- gsub("\\.csv$", paste0("_", suffix, ".csv"), old_path)
-    }
+    #old_path <- paste0("Results/Global/Values/", SpeciesName, ".variables.csv")
+    # while (file.exists(file_path)) {
+    #   suffix <- suffix + 1
+    #   file_path <- gsub("\\.csv$", paste0("_", suffix, ".csv"), old_path)
+    # }
 
     write.csv(Selected.Variables.Global, file_path)
     message(paste("Selected variables at global level saved in:",file_path,cat("\033[1;34m")))
@@ -113,13 +111,13 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   # Save selected variables for each species
   Selected.Variables.Regional <- labels(Covdata.embed.Regional$covdata)[[2]]
   if(save.output){
-    suffix <- 0
+    #suffix <- 0
     file_path <- paste0("Results/Regional/Values/", SpeciesName, ".variables.csv")
-    old_path<-paste0("Results/Regional/Values/", SpeciesName, ".variables.csv")
-    while (file.exists(file_path)) {
-      suffix <- suffix + 1
-      file_path <- gsub("\\.csv$", paste0("_", suffix, ".csv"), old_path)
-    }
+    #old_path<-paste0("Results/Regional/Values/", SpeciesName, ".variables.csv")
+    # while (file.exists(file_path)) {
+    #   suffix <- suffix + 1
+    #   file_path <- gsub("\\.csv$", paste0("_", suffix, ".csv"), old_path)
+    # }
 
   write.csv(Selected.Variables.Regional, file_path)
   message(paste("Selected variables at regional level saved in:",file_path,cat("\033[1;34m")))
@@ -129,12 +127,38 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   # Subset the regional independent variables for regional projections
   IndVar.Regional.Selected <- IndVar.Regional[[Selected.Variables.Regional]]
 
+
+
   nshsdm_data$Selected.Variables.Global <- Selected.Variables.Global
   nshsdm_data$Selected.Variables.Regional <- Selected.Variables.Regional
   nshsdm_data$IndVar.Global.Selected <- IndVar.Global.Selected #@@@# at global resolution for training
   nshsdm_data$IndVar.Regional.Selected <- IndVar.Regional.Selected
   nshsdm_data$IndVar.Global.Selected.reg <- IndVar.Global.Selected.reg #@@@# at regional resolution for projecting
-  attr(nshsdm_data, "class") <- "nshsdm.input"
+  results<-  nshsdm_data$Summary
+  results<-rbind(results,
+                 c("Original number variables at global level",nlyr(nshsdm_data$IndVar.Global)),
+                 c("Final number variables at global level",length(nshsdm_data$Selected.Variables.Global)),
+                 c("Original number variables at regiona level",nlyr(nshsdm_data$IndVar.Regional)),
+                 c("Final number variables at regional level",length(nshsdm_data$Selected.Variables.Regional)))
+  if(save.output){
+    write.table(results, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
+  }
+  nshsdm_data$Summary<-results
+
+   attr(nshsdm_data, "class") <- "nshsdm.input"
+
+    # Logs success or error messages
+  # message("\nVarSelection executed successfully!\n",cat("\033[32m"))
+  # cat("\033[0m")
+  #
+  # if(save.output){
+  #   message("Results saved in the following locations:",cat("\033[1;34m"))
+  #   message(paste0(
+  #     " - Global level: Results/Global/Values/\n",
+  #     " - Regional level: Results/Regional/Values/\n"
+  #   ),cat("\033[1;34m"))
+  #   cat("\033[0m")
+  # }
 
   return(nshsdm_data)
 
