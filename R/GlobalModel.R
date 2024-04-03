@@ -126,7 +126,7 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
   nshsdm_data$current.projections$Pred <- c(setNames(Pred, paste0(SpeciesName, ".Current")))
 
   if(save.output){
-    dir_create(paste0("Results/",Level,"/Projections/")) #@@@JMB quito el recursive=T pq se crea una folder en Projections que se llama TRUE
+    dir_create(paste0("Results/",Level,"/Projections/")) #@@@JMB Pendiente revisar. Crea una folder en Projections que se llama TRUE
     file_path <- paste0("Results/",Level,"/Projections/",SpeciesName,".Current.tif")
     terra::writeRaster(Pred, file_path, overwrite=TRUE)
     #message(paste("Projections at global level under training conditions saved in:",file_path)) #@@@JMB todos estos message están resumidos también al final. Decirdir cual.
@@ -277,13 +277,15 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
   gc()
 
   # Summary
-  summary <- data.frame(Values = c(paste(toupper(algorithms),collapse = ", "), 
+  summary <- data.frame(Values = c(SpeciesName,
+				paste(toupper(algorithms),collapse = ", "), 
 				nrow(nshsdm_data$myEMeval.replicates), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
-  rownames(summary) <- c("Statistical algorithms at global level", 
+  rownames(summary) <- c("Species name",
+				"Statistical algorithms at global level", 
 				"Number of replicates with AUC > 0.8 at global level", 
 				"AUC of ensemble model at global level", 
 				"TSS of ensemble model at global level",

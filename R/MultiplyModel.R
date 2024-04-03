@@ -1,133 +1,150 @@
 #' @export
 NSH.SDM.Multiply.Models <- function(nshsdm_global,
                                     nshsdm_regional,
-                                    #SpeciesName, #@@@#TG charge from objects
                                     method="Arithmetic",
                                     rescale=FALSE,
                                     save.output=TRUE) {
 
-  SpeciesName <- nshsdm_regional$Species.Name
-  if(SpeciesName != nshsdm_regional$Species.Name){
+  if(!inherits(nshsdm_regional, "nshsdm.predict") || !inherits(nshsdm_global, "nshsdm.predict")) {
+    stop("Both nshsdm_regional and nshsdm_global must be objects of nshsdm.predict class.")
+  }
+
+  if(!method %in% c("Arithmetic", "Geometric")) {
+    stop("Please select Arithmetic or Geometric method.")
+  }
+
+  if(!identical(nshsdm_regional$Species.Name, nshsdm_global$Species.Name)) {
     stop("Different species in global and regional levels")
+  } else {
+    SpeciesName <- nshsdm_regional$Species.Name
   }
 
-  if(!inherits(nshsdm_regional, "nshsdm.predict")){
-    stop("nshsdm_regional must be an object of nshsdm.predict class.")
-  }
-
-  if(!inherits(nshsdm_global, "nshsdm.predict")){
-    stop("nshsdm_global must be an object of nshsdm.predict class.")
-  }
-
-
+  nshsdm_data<-nshsdm_global[names(nshsdm_global) %in% c("Species.Name", "VariablesPath")]
   nshsdm_data<-list()
   nshsdm_data$args <- list()
   nshsdm_data$args$method <- method
   nshsdm_data$args$rescale <- rescale
 
-  nshsdm_data$link <- list()
-  nshsdm_data$link$multiply.models <- "/Results/Multiply/Projections/"
+  Scenarios <- sapply(nshsdm_regional$new.projections$Pred.Scenario, names) #dir_ls(paste0(VariablesPath,"/Regional"))
+  Scenarios <- gsub(paste0(SpeciesName,"."),"",Scenarios) #path_file(Scenarios) |> path_ext_remove()
+  Scenarios <- c("Current",Scenarios)
 
-  tryCatch({
-  	Scenarios <- sapply(nshsdm_regional$new.projections$Pred.Scenario, names) #dir_ls(paste0(VariablesPath,"/Regional"))
-  	Scenarios <- gsub(paste0(SpeciesName,"."),"",Scenarios) #path_file(Scenarios) |> path_ext_remove()
-	  Scenarios <- c("Current",Scenarios)
+ for(i in 1:length(Scenarios)) {
+    projmodel <- Scenarios[i]
+    # Load raster data at global and regional scales
+    if(projmodel =="Current") {
+      Pred.global <- nshsdm_global$current.projections$Pred #terra::rast(paste0("Results/Global/Projections/",SpeciesName,".",projmodel,".tif"))
+      Pred.regional <- nshsdm_regional$current.projections$Pred #terra::rast(paste0("Results/Regional/Projections/",SpeciesName,".",projmodel,".tif"))
+    } else {
+      Pred.global <- nshsdm_global$new.projections$Pred.Scenario[[i-1]]
+      Pred.regional <- nshsdm_regional$new.projections$Pred.Scenario[[i-1]]
+    }
 
-	  for (i in 1:length(Scenarios)) {
+    # Rescale global prediction to a common range
+    if(rescale==FALSE) {
+      Pred.global <- Pred.global
+      Pred.regional <- Pred.regional
+    } else if(rescale==TRUE) {
+      # Calculate minimum and maximum values of global prediction
+      min_val <- min(terra::values(Pred.global), na.rm = TRUE)
+      max_val <- max(values(Pred.global), na.rm = TRUE)
 
-  	#walk(Scenarios, function(projmodel) {
-	  projmodel <- Scenarios[i]
-	  # Load raster data at global and regional scales
-	  if (projmodel =="Current") {
-	    Pred.global <- nshsdm_global$current.projections$Pred #terra::rast(paste0("Results/Global/Projections/",SpeciesName,".",projmodel,".tif"))
-	    Pred.regional <- nshsdm_regional$current.projections$Pred #terra::rast(paste0("Results/Regional/Projections/",SpeciesName,".",projmodel,".tif"))
+      Pred.global <- terra::app(Pred.global, fun = function(x) {
+      ((x - min_val) / (max_val - min_val) * 999) + 1})
+      # Calculate minimum and maximum values of regional prediction
+      min_val <- min(values(Pred.regional), na.rm = TRUE)
+      max_val <- max(values(Pred.regional), na.rm = TRUE)
 
-	    } else {
-	    Pred.global <- nshsdm_global$new.projections$Pred.Scenario[[i-1]]
-	    Pred.regional <- nshsdm_regional$new.projections$Pred.Scenario[[i-1]]
-	  }
+      Pred.regional <- terra::app(Pred.regional, fun = function(x) {
+      ((x - min_val) / (max_val - min_val) * 999) + 1})
+    }
 
-	  # Rescale global prediction to a common range
-	  if(rescale==FALSE) {
-	    Pred.global <- Pred.global
-	    Pred.regional <- Pred.regional
-	  } else if(rescale==TRUE) {
-	    # Calculate minimum and maximum values of global prediction
-	    min_val <- min(terra::values(Pred.global), na.rm = TRUE)
-	    max_val <- max(values(Pred.global), na.rm = TRUE)
+    # Average global and regional
+    if(method=="Geometric") {
+      Stack.rasters <- c(Pred.global, Pred.regional)
+      res.average <-  terra::app(Stack.rasters, function(...) exp(mean(log(c(...)))))
+    } else if(method=="Arithmetic")  {
+      Stack.rasters <- c(Pred.global, Pred.regional)
+      res.average <-  terra::mean(Stack.rasters)
+    }
 
-	    Pred.global <- terra::app(Pred.global, fun = function(x) {
-	    ((x - min_val) / (max_val - min_val) * 999) + 1})
-	    # Calculate minimum and maximum values of regional prediction
-	    min_val <- min(values(Pred.regional), na.rm = TRUE)
-	    max_val <- max(values(Pred.regional), na.rm = TRUE)
+    res.average<-terra::rast(wrap(res.average))
+    if(projmodel =="Current") {
+      nshsdm_data$current.projections$Pred <- setNames(res.average, paste0(SpeciesName, ".Current"))
+    } else {
+      nshsdm_data$new.projections$Pred.Scenario[[i]]<- setNames(res.average, paste0(SpeciesName,".", projmodel))
+    }
 
-	    Pred.regional <- terra::app(Pred.regional, fun = function(x) {
-	    ((x - min_val) / (max_val - min_val) * 999) + 1})
-      	  }
+    if(save.output){
+      #Create outoput folder
+      dir_create(c("Results/Multiply/Projections/"),recurse=TRUE)
+      file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",projmodel,".tif")
+      terra::writeRaster(res.average, file_path, overwrite = TRUE)
+      #message(paste("Multiply projections under",Scenarios[i] ,"conditions saved in:",file_path))
+    }
+  } # end for
 
-    	  # Average global and regional
-    	  if(method=="Geometric") {
-    	    Stack.rasters <- c(Pred.global, Pred.regional)
-    	    res.average <-  terra::app(Stack.rasters, function(...) exp(mean(log(c(...)))))
-    	  } else if(method=="Arithmetic")  {
-    	    Stack.rasters <- c(Pred.global, Pred.regional)
-    	    res.average <-  terra::mean(Stack.rasters)
-    	  }
 
-	  res.average<-terra::rast(wrap(res.average))
-	  if (projmodel =="Current") {
-	    nshsdm_data$current.projections$Pred <- setNames(res.average, paste0(SpeciesName, ".Current"))
-	  } else {
-	    nshsdm_data$new.projections$Pred.Scenario[[i]]<- setNames(res.average, paste0(SpeciesName,".", projmodel))
-	  }
+  # Evaluation multiply model 	#@@@JMB Esto queda pendiente de discusión (qué 0s usamos?)
+  myResp.xy <- rbind(nshsdm_regional$SpeciesData.XY.Regional, nshsdm_regional$Background.XY.Regional)
+  myResp <- data.frame(c(rep(1,nrow(nshsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nshsdm_regional$Background.XY.Regional))))
+  pred_df <- nshsdm_data$current.projections$Pred
+  pred_df <- terra::extract(pred_df, myResp.xy)[-1]
+  myResp <- as.vector(myResp)[[1]]
+  pred_df <- as.vector(pred_df)[[1]]
+ 
+  valROC<-bm_FindOptimStat(metric.eval = "ROC",
+ 			obs = myResp,
+ 			fit = pred_df)
+  valTSS<-bm_FindOptimStat(metric.eval = "TSS",
+ 			obs = myResp,
+ 			fit = pred_df)
+  valKAPPA<-bm_FindOptimStat(metric.eval = "KAPPA",
+ 			obs = myResp,
+ 			fit = pred_df)
 
-	  if(save.output){
-	    #Create outoput folder
-	    dir_create(c("Results/Multiply/Projections/"),recurse=TRUE)
-	    file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",projmodel,".tif")
-	    terra::writeRaster(res.average, file_path, overwrite = TRUE)
-	    message(paste("Multiply projections under",Scenarios[i] ,"conditions saved in:",file_path,cat("\033[1;34m")))
-	    cat("\033[0m")
-	  }
-  #	}) # walk
-} #for
+  # Summary
+  summary <- data.frame(Values = c(SpeciesName,
+				paste(nshsdm_regional$args$algorithms,collapse = ", "), 
+				nrow(nshsdm_regional$myEMeval.replicates), 
+				nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
+				nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
+				nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],
+				method,
+				round(valROC[,"best.stat"],3),
+				round(valTSS[,"best.stat"],3),
+				round(valKAPPA[,"best.stat"],3)))
+
+  rownames(summary) <- c("Species name",
+				"Statistical algorithms at regional level", 
+				"Number of replicates wit AUC > 0.8 at regional level", 
+				"AUC of ensemble model at regional level", 
+				"TSS of ensemble model at regional level",
+				"KAPPA of ensemble model at regional level",
+				"Multiply method",
+				"AUC of hierarchical multiply ensemble model",
+				"TSS of hierarchical multiply ensemble model",
+				"KAPPA of hierarchical multiply ensemble model")
+
+  #if(save.output){  #@@@JMB yo quitaría este bloque. Esta en el summary()
+  #  write.table(results, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
+  #}
+
+  nshsdm_data$Summary <- summary 
+
+  attr(nshsdm_data, "class") <- "nshsdm.predict"
 
   # Logs success or error messages
-  message("\nNSH.SDM.Multiply.Models executed successfully!\n",cat("\033[32m"))
-  cat("\033[0m")
+  #message("\nNSH.SDM.Multiply.Models executed successfully!\n")
 
   if(save.output){
-  message("Results saved in the following locations:",cat("\033[1;34m"))
+  message("Results saved in the following locations:")
   message(paste(
     " - Hierarchical Multiply Models: /Results/Multiply/Projections/\n"
-  ),cat("\033[1;34m"))
-  cat("\033[0m")
+  ))
   }
-
-  }, error = function(err) {
-  message("\nError in NSH.SDM.Multiply.Models:", conditionMessage(err))
-  return(list(result = NULL, error = err))
-  })
-
-  results<-nshsdm_global$Summary #@@@# careful! This is not charging the summaries of global!
-  results<-rbind(results,
-                 c("Statistical algorithms at regional level",paste(nshsdm_regional$args$models,collapse = ", ")),
-                 c("Number of replicates wit AUC > 0.8 at regional level",nrow(nshsdm_regional$myEMeval.replicates)),
-                 c("AUC of ensemble modle at regional level",nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")]),
-                 c("TSS of ensemble modle at regional level",nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")]),
-                 c("KAPPA of ensemble modle at regional level",nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")]),
-                 c("Multiply method",method), #@@@# we need to calculate the evaluation metrics for multiply
-                 c("AUC of hierarchical multiply ensemble modle","@@@@"), #@@@# we need to calculate the evaluation metrics for multiply
-                 c("TSS of hierarchical multiply ensemble modle","@@@@"),
-                 c("KAPPA of hierarchical multiply ensemble modle","@@@"))
-
-  if(save.output){
-    write.table(results, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
-  }
-  nshsdm_data$Summary<-results
-  nshsdm_selvars$Summary<-results
 
   return(nshsdm_data)
 
 }
+

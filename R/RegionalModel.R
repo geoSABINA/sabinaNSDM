@@ -267,13 +267,15 @@ NSH.SDM.Regional.Models <- function(nshsdm_selvars,
   gc()
 
   # Summary
-  summary <- data.frame(Values = c(paste(toupper(algorithms),collapse = ", "), 
+  summary <- data.frame(Values = c(SpeciesName,
+				paste(toupper(algorithms),collapse = ", "), 
 				nrow(nshsdm_data$myEMeval.replicates), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
-  rownames(summary) <- c("Statistical algorithms at regional level", 
+  rownames(summary) <- c("Species name",
+				"Statistical algorithms at regional level", 
 				"Number of replicates with AUC > 0.8 at regional level", 
 				"AUC of ensemble model at regional level", 
 				"TSS of ensemble model at regional level",
