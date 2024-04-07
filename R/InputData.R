@@ -70,15 +70,16 @@ NSH.SDM.InputData <- function(SpeciesName,
   }
 
   #
-  nshsdm_data <- list()
-  nshsdm_data$Species.Name <- SpeciesName
-  nshsdm_data$SpeciesData.XY.Global.0 <- spp.data.global
-  nshsdm_data$SpeciesData.XY.Regional.0 <- spp.data.regional
-  nshsdm_data$IndVar.Global <- expl.var.global
-  nshsdm_data$IndVar.Regional <- expl.var.regional
-  nshsdm_data$Scenarios <- new.env
-  nshsdm_data$Background.Global.0 <- Background.Global
-  nshsdm_data$Background.Regional.0 <- Background.Regional
+  nshsdm_data <- list(
+    Species.Name = SpeciesName,
+    SpeciesData.XY.Global.0 = spp.data.global,
+    SpeciesData.XY.Regional.0 = spp.data.regional,
+    IndVar.Global = expl.var.global,
+    IndVar.Regional = expl.var.regional,
+    Scenarios = new.env,
+    Background.Global.0 = Background.Global,
+    Background.Regional.0 = Background.Regional
+  )
   
   attr(nshsdm_data, "class") <- "nshsdm.data"
 
