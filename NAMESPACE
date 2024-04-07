@@ -2,8 +2,11 @@
 
 S3method(summary,nshsdm.input)
 S3method(summary,nshsdm.predict)
+S3method(summary,nshsdm.predict.g)
+S3method(summary,nshsdm.predict.r)
 export(NSH.SDM.Covariate.Models)
 export(NSH.SDM.Global.Model)
+export(NSH.SDM.InputData)
 export(NSH.SDM.Multiply.Models)
 export(NSH.SDM.PrepareData)
 export(NSH.SDM.Regional.Models)

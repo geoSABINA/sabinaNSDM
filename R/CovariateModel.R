@@ -8,8 +8,8 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
 				save.output = TRUE) {
 
   #nshsdm_global <- as.list(match.call())$nshsdm_global
-  if(!inherits(nshsdm_global, "nshsdm.predict")){
-      stop("nshsdm_global must be an object of nshsdm.predict class.") #@@@JMB si solo va con nshsdm_global, igual hay que cambiar el atributo de NSH.SDM.Global.Model y NSH.SDM.Regional.Model (nshsdm.predict.g y nshsdm.predict.r??).
+  if(!inherits(nshsdm_global, "nshsdm.predict.g")){
+      stop("nshsdm_global must be an object of nshsdm.predict.g class.") #@@@JMB si solo va con nshsdm_global, propongo cambiar el atributo de NSH.SDM.Global.Model y NSH.SDM.Regional.Model (nshsdm.predict.g y nshsdm.predict.r??).
   }
   models <- toupper(algorithms)
   if(any(!models %in% c( "GAM", "GBM", "GLM", "MARS", "MAXNET", "RF"))) {
@@ -182,19 +182,16 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
 
   # Model projections for future climate scenarios
   ################################################
-  #Scenarios <- nshsdm_global$Scenarios
-  Scenarios <- dir_ls(paste0(nshsdm_selvars$VariablesPath,"/Regional"), pattern="tif")
-  Scenarios <- Scenarios[!grepl("Current.tif", Scenarios)]
+  Scenarios <- nshsdm_global$Scenarios
 
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
   } else {
     for(i in 1:length(Scenarios)) {
-      projmodel <- Scenarios[i]
-      NewClim.temp <- terra::rast(projmodel)[[nshsdm_global$Selected.Variables.Regional]]
-      Scenario.name <- path_file(projmodel) |> path_ext_remove()
+      NewClim.temp <- Scenarios[[i]][[nshsdm_global$Selected.Variables.Regional]]
+      Scenario.name <- names(Scenarios[i])
 
-      SDM.global.future <- terra::rast(paste0("Results/Global/Projections/",SpeciesName,".",Scenario.name,".tif"))
+      SDM.global.future <- nshsdm_global$new.projections$Pred.Scenario[[i]]
       names(SDM.global.future) <- c("SDM.global")
       NewClim <- c(NewClim.temp, SDM.global.future)
 
@@ -259,25 +256,29 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
   gc()
 
   # Summary
-  summary <- data.frame(Values = c(SpeciesName,
+  summary <- data.frame(Values = c("",
+				#SpeciesName,
 				paste(toupper(algorithms),collapse = ", "), 
 				nrow(nshsdm_data$myEMeval.replicates), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
-  rownames(summary) <- c("Species name",
+  rownames(summary) <- c("  - Title 5:",
+				#"Species name",
 				"Statistical algorithms for covariate hierarchical model", 
 				"Number of replicates with AUC > 0.8 for covariate hierarchical model", 
 				"AUC of hierarchical covariate ensemble model", 
 				"TSS of hierarchical covariate ensemble model",
 				"KAPPA of hierarchical covariate ensemble model")
 
-  #if(save.output){  #@@@JMB yo quitaría este bloque. Esta en el summary()
-  #  write.table(results, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
-  #}
-
+  summary <- rbind(nshsdm_global$Summary, summary)
+  
   nshsdm_data$Summary <- summary 
+
+  #if(save.output){  #@@@JMB yo quitaría este bloque. Esta en el summary()
+  #  write.table(summary, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
+  #}
 
   attr(nshsdm_data, "class") <- "nshsdm.predict"
 

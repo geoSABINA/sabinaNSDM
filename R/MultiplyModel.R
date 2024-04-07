@@ -5,12 +5,12 @@ NSH.SDM.Multiply.Models <- function(nshsdm_global,
                                     rescale=FALSE,
                                     save.output=TRUE) {
 
-  if(!inherits(nshsdm_regional, "nshsdm.predict") || !inherits(nshsdm_global, "nshsdm.predict")) {
-    stop("Both nshsdm_regional and nshsdm_global must be objects of nshsdm.predict class.")
+  if(!inherits(nshsdm_regional, "nshsdm.predict.r") || !inherits(nshsdm_global, "nshsdm.predict.g")) {
+    stop("nshsdm_regional and nshsdm_global must be objects of class nshsdm.predict.r and nshsdm.predict.r, respectively.")
   }
 
   if(!method %in% c("Arithmetic", "Geometric")) {
-    stop("Please select Arithmetic or Geometric method.")
+    stop("Please select 'Arithmetic' or 'Geometric' method.")
   }
 
   if(!identical(nshsdm_regional$Species.Name, nshsdm_global$Species.Name)) {
@@ -19,22 +19,21 @@ NSH.SDM.Multiply.Models <- function(nshsdm_global,
     SpeciesName <- nshsdm_regional$Species.Name
   }
 
-  nshsdm_data<-nshsdm_global[names(nshsdm_global) %in% c("Species.Name", "VariablesPath")]
+  nshsdm_data<-nshsdm_global[names(nshsdm_global) %in% c("Species.Name")]
   nshsdm_data<-list()
   nshsdm_data$args <- list()
   nshsdm_data$args$method <- method
   nshsdm_data$args$rescale <- rescale
 
-  Scenarios <- sapply(nshsdm_regional$new.projections$Pred.Scenario, names) #dir_ls(paste0(VariablesPath,"/Regional"))
-  Scenarios <- gsub(paste0(SpeciesName,"."),"",Scenarios) #path_file(Scenarios) |> path_ext_remove()
+  Scenarios <- names(nshsdm_regional$Scenarios)
   Scenarios <- c("Current",Scenarios)
 
  for(i in 1:length(Scenarios)) {
     projmodel <- Scenarios[i]
     # Load raster data at global and regional scales
     if(projmodel =="Current") {
-      Pred.global <- nshsdm_global$current.projections$Pred #terra::rast(paste0("Results/Global/Projections/",SpeciesName,".",projmodel,".tif"))
-      Pred.regional <- nshsdm_regional$current.projections$Pred #terra::rast(paste0("Results/Regional/Projections/",SpeciesName,".",projmodel,".tif"))
+      Pred.global <- nshsdm_global$current.projections$Pred
+      Pred.regional <- nshsdm_regional$current.projections$Pred
     } else {
       Pred.global <- nshsdm_global$new.projections$Pred.Scenario[[i-1]]
       Pred.regional <- nshsdm_regional$new.projections$Pred.Scenario[[i-1]]
@@ -104,33 +103,37 @@ NSH.SDM.Multiply.Models <- function(nshsdm_global,
  			fit = pred_df)
 
   # Summary
-  summary <- data.frame(Values = c(SpeciesName,
-				paste(nshsdm_regional$args$algorithms,collapse = ", "), 
-				nrow(nshsdm_regional$myEMeval.replicates), 
-				nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
-				nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
-				nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],
+  summary <- data.frame(Values = c("",
+				#SpeciesName,
+				#paste(nshsdm_regional$args$algorithms,collapse = ", "), #@@@JMB si hacemos summary acumulado, todo esto ya está
+				#nrow(nshsdm_regional$myEMeval.replicates), 
+				#nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
+				#nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
+				#nshsdm_regional$myEMeval.Ensemble$calibration[which(nshsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],
 				method,
 				round(valROC[,"best.stat"],3),
 				round(valTSS[,"best.stat"],3),
 				round(valKAPPA[,"best.stat"],3)))
 
-  rownames(summary) <- c("Species name",
-				"Statistical algorithms at regional level", 
-				"Number of replicates wit AUC > 0.8 at regional level", 
-				"AUC of ensemble model at regional level", 
-				"TSS of ensemble model at regional level",
-				"KAPPA of ensemble model at regional level",
+  rownames(summary) <- c("  - Title 6:",
+				#"Species name",
+				#"Statistical algorithms at regional level", 
+				#"Number of replicates wit AUC > 0.8 at regional level", 
+				#"AUC of ensemble model at regional level", 
+				#"TSS of ensemble model at regional level",
+				#"KAPPA of ensemble model at regional level",
 				"Multiply method",
 				"AUC of hierarchical multiply ensemble model",
 				"TSS of hierarchical multiply ensemble model",
 				"KAPPA of hierarchical multiply ensemble model")
 
-  #if(save.output){  #@@@JMB yo quitaría este bloque. Esta en el summary()
-  #  write.table(results, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
-  #}
+  summary <- rbind(nshsdm_global$Summary, tail(nshsdm_regional$Summary, 6), summary)
 
-  nshsdm_data$Summary <- summary 
+  nshsdm_data$Summary <- summary
+
+  #if(save.output){  #@@@JMB yo quitaría este bloque. Esta en el summary()
+  #  write.table(summary, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
+  #}
 
   attr(nshsdm_data, "class") <- "nshsdm.predict"
 

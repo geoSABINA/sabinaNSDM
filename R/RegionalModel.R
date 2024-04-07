@@ -182,21 +182,15 @@ NSH.SDM.Regional.Models <- function(nshsdm_selvars,
 
   # Model projections for future climate scenarios
   ################################################
-  #Scenarios <- nshsdm_selvars$Scenarios
-  Scenarios <- dir_ls(paste0(nshsdm_selvars$VariablesPath,"/Regional"), pattern="tif")
-  Scenarios <- Scenarios[!grepl("Current.tif", Scenarios)]
+  Scenarios <- nshsdm_selvars$Scenarios
   
-  match_vars <- sapply(Scenarios, function(file) {
-    rasters <- terra::rast(file)
-    all(nshsdm_selvars$Selected.Variables.Global %in% names(rasters))
-  })
-  
-  if(length(Scenarios) > 0 & all(match_vars)) {
+  if(length(Scenarios) == 0) {
+    message("There are no new scenarios different from Current.tif!\n")
+  } else {
     for(i in 1:length(Scenarios)) {
-      projmodel <- Scenarios[i]
-      new.env <- terra::rast(projmodel)[[nshsdm_selvars$Selected.Variables.Regional]]
+      new.env <- Scenarios[[i]][[nshsdm_selvars$Selected.Variables.Regional]]
       #new.env <- terra::mask(new.env, nshsdm_selvars$IndVar.Global.Selected[[1]])
-      Scenario.name <- path_file(projmodel) |> path_ext_remove()
+      Scenario.name <- names(Scenarios[i])
 
       myBiomomodProjScenario <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
 						new.env = new.env,
@@ -241,13 +235,6 @@ NSH.SDM.Regional.Models <- function(nshsdm_selvars,
 	file.remove(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_TSSbin.tif"))
       }
     } # end for
-  } else {
-    if(length(Scenarios) == 0) {
-      message("There are no new scenarios different from Current.tif!\n")
-    }
-    if(!all(match_vars)) {
-      message("Not all scenarios have the same variables.")
-    }
   } # end if(length(Scenarios) > 0 & all(match_vars))
 
   if(rm.biomod.folder || !save.output){
@@ -267,29 +254,32 @@ NSH.SDM.Regional.Models <- function(nshsdm_selvars,
   gc()
 
   # Summary
-  summary <- data.frame(Values = c(SpeciesName,
+  summary <- data.frame(Values = c("",
+				#SpeciesName,
 				paste(toupper(algorithms),collapse = ", "), 
 				nrow(nshsdm_data$myEMeval.replicates), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
-  rownames(summary) <- c("Species name",
+  rownames(summary) <- c("  - Title 4:",
+				#"Species name",
 				"Statistical algorithms at regional level", 
 				"Number of replicates with AUC > 0.8 at regional level", 
 				"AUC of ensemble model at regional level", 
 				"TSS of ensemble model at regional level",
 				"KAPPA of ensemble model at regional level")
 
+  summary <- rbind(nshsdm_selvars$Summary, summary) #@@@JMB guarda el summary acumulado
+  
+  nshsdm_data$Summary <- summary 
+	#@@@# careful! This is not charging the summaries of global! #@@@JMB Yo no haria rbind con summaries anteriores
+
   #if(save.output){
-  #  write.table(results, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
+  #  write.table(summary, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
   #}
 
-  #nshsdm_data$Summary<-rbind(nshsdm_selvars$Summary, summary) 
-	#@@@# careful! This is not charging the summaries of global! #@@@JMB Yo no haria rbind con summaries anteriores
-  nshsdm_data$Summary <- summary 
-
-  attr(nshsdm_data, "class") <- "nshsdm.predict"
+  attr(nshsdm_data, "class") <- "nshsdm.predict.r" #@@@JMB cambio atributo como propuesta para uso covariate()
 
   # Logs success or error messages
   #message("\nNSH.SDM.Regional.Models executed successfully!\n")

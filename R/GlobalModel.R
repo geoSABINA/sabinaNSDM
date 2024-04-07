@@ -83,7 +83,7 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
   nreplicates<-sum(df_slot$validation >= 0.8)
   percentage <- 100 * nreplicates/nrow(df_slot)
-  message(sprintf("\n%.2f%% of replicates with AUC values >= 0.8.\n", percentage)) #@@@JMB con message se qeuda perdido por la consola. Bajarlo?
+  message(sprintf("\n%.2f%% of replicates with AUC values >= 0.8.\n", percentage)) #@@@JMB con message se qeuda perdido por la consola. Pendiente Bajarlo?
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates) #@@@JMB nrepg0.8 en lugar de nreplicates?
   for(algorithm.i in models) {
     nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= 0.8)))
@@ -126,10 +126,10 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
   nshsdm_data$current.projections$Pred <- c(setNames(Pred, paste0(SpeciesName, ".Current")))
 
   if(save.output){
-    dir_create(paste0("Results/",Level,"/Projections/")) #@@@JMB Pendiente revisar. Crea una folder en Projections que se llama TRUE
+    dir_create(paste0("Results/",Level,"/Projections/")) #@@@JMB Pendiente revisar. Crea una folder en Projections que se llama TRUE. Ver en todas f()
     file_path <- paste0("Results/",Level,"/Projections/",SpeciesName,".Current.tif")
     terra::writeRaster(Pred, file_path, overwrite=TRUE)
-    #message(paste("Projections at global level under training conditions saved in:",file_path)) #@@@JMB todos estos message están resumidos también al final. Decirdir cual.
+    #message(paste("Projections at global level under training conditions saved in:",file_path)) #@@@JMB todos estos message están resumidos también al final. Decidir unos u otros.
     file.remove(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
   }
 
@@ -189,20 +189,15 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
 
   # Model projections for future climate scenarios
   ################################################
-  #Scenarios <- nshsdm_selvars$Scenarios
-  Scenarios <- dir_ls(paste0(nshsdm_selvars$VariablesPath,"/Regional"), pattern="tif") #@@@JMB cambiar esto en función de donde esté el objeto con los escanarios
-  Scenarios <- Scenarios[!grepl("Current.tif", Scenarios)]
+  Scenarios <- nshsdm_selvars$Scenarios
   
-  match_vars <- sapply(Scenarios, function(file) { #@@@JMB check que las variables seleccionadas están en todos los escenarios
-    rasters <- terra::rast(file)
-    all(nshsdm_selvars$Selected.Variables.Global %in% names(rasters))  })
-  
-  if(length(Scenarios) > 0 & all(match_vars)) {
+  if(length(Scenarios) == 0) {
+    message("There are no new scenarios different from Current.tif!\n")
+  } else {
     for(i in 1:length(Scenarios)) {
-      projmodel <- Scenarios[i]
-      new.env <- terra::rast(projmodel)[[nshsdm_selvars$Selected.Variables.Global]]
+      new.env <- Scenarios[[i]][[nshsdm_selvars$Selected.Variables.Global]]
       #new.env <- terra::mask(new.env, nshsdm_selvars$IndVar.Global.Selected[[1]])
-      Scenario.name <- path_file(projmodel) |> path_ext_remove()
+      Scenario.name <- names(Scenarios[i])
 
       #Project the individual models
       myBiomomodProjScenario <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
@@ -251,14 +246,7 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
         file.remove(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name, "_ensemble_TSSbin.tif"))
       }
     } # end for
-  } else {
-    if(length(Scenarios) == 0) {
-      message("There are no new scenarios different from Current.tif!\n")
-    }
-    if(!all(match_vars)) {
-      message("Not all scenarios have the same variables.")
-    }
-  } # end if(length(Scenarios) > 0 & all(match_vars))
+  } # end if(length(Scenarios) == 0)
 
   if(rm.biomod.folder || !save.output){ #rm= T save=F
     # Remove species folder created by biomod2
@@ -269,7 +257,7 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
     source_folder <- sp.name
     destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
     if (file.exists(destination_folder)) {
-      unlink(source_folder, recursive = TRUE)}  #@@@JMB igual hay que quitar el recursive=T para que no se borren folders anteriores
+      unlink(source_folder, recursive = TRUE)}  #@@@JMB igual hay que quitar el recursive=T para que no se borren folders anteriores. Probar
       file.rename(from = source_folder, to = destination_folder)
       unlink(sp.name)
   }
@@ -277,28 +265,31 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
   gc()
 
   # Summary
-  summary <- data.frame(Values = c(SpeciesName,
+  summary <- data.frame(Values = c("",
+				#SpeciesName,
 				paste(toupper(algorithms),collapse = ", "), 
 				nrow(nshsdm_data$myEMeval.replicates), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
-  rownames(summary) <- c("Species name",
+  rownames(summary) <- c("  - Title 3:",
+				#"Species name",
 				"Statistical algorithms at global level", 
 				"Number of replicates with AUC > 0.8 at global level", 
 				"AUC of ensemble model at global level", 
 				"TSS of ensemble model at global level",
 				"KAPPA of ensemble model at global level")
 
-  #if(save.output){
-  #  write.table(results, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
-  #}
-
-  #nshsdm_data$Summary<-rbind(nshsdm_selvars$Summary, summary)
+  summary <- rbind(nshsdm_selvars$Summary, summary) #@@@JMB guarda el summary acumulado
+  
   nshsdm_data$Summary <- summary 
 
-  attr(nshsdm_data, "class") <- "nshsdm.predict"
+  #if(save.output){
+  #  write.table(summary, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
+  #}
+
+  attr(nshsdm_data, "class") <- "nshsdm.predict.g" #@@@JMB cambio atributo como propuesta para uso en covariate() y multiply()
 
   # Logs success or error messages
   #message("\nNSH.SDM.Global.Model executed successfully!\n")

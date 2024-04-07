@@ -1,12 +1,13 @@
 #' @export
 NSH.SDM.SelectVariables <- function(nshsdm_input,
-				maxncov="nocorr", #@@@#TG si usuario no pone ninguna usa todas las no correlacionadas #@@@JMB he cambiado el nombre pq "all" podría confundirse con todas las variables. Qué pasa si pone más de las correlacionadas??
+				maxncov.Global="nocorr", #@@@#TG si usuario no pone ninguna usa todas las no correlacionadas #@@@JMB como sugerencia he cambiado el nombre pq "all" podría confundirse con todas las variables. Pendiente comprobar qué pasa si pone más de las correlacionadas?
+				maxncov.Regional="nocorr",
 				corcut=0.7,
 				algorithms=c('glm','gam','rf'),
 				ClimaticVariablesBands=NULL,
 				save.output=TRUE) { 
 
-  nshsdm_name <- as.list(match.call())$nshsdm_input
+  #nshsdm_name <- as.list(match.call())$nshsdm_input
   if(!inherits(nshsdm_input, "nshsdm.input")){
       stop("nshsdm_input must be an object of nshsdm.input class. Consider running NSH.SDM.PrepareData() function.")
   }
@@ -18,7 +19,8 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
 
   nshsdm_data<-nshsdm_input[!names(nshsdm_input) %in% "Summary"]
   nshsdm_data$args <- list()
-  nshsdm_data$args$maxncov <- maxncov
+  nshsdm_data$args$maxncov.Global <- maxncov.Global
+  nshsdm_data$args$maxncov.Regional <- maxncov.Regional
   nshsdm_data$args$corcut <- corcut
   nshsdm_data$args$algorithms <- algorithms
   
@@ -39,14 +41,14 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   Covdata.filter.Global<-covsel::covsel.filteralgo(covdata=myExpl.covsel.Global, pa=myResp.Global, corcut=corcut)
 
   # Embedding selected variables
-  if(maxncov=="nocorr") {
-    maxncov <- ncol(Covdata.filter.Global)
+  if(maxncov.Global=="nocorr") {
+    maxncov.Global <- ncol(Covdata.filter.Global)
   }
 
   Covdata.embed.Global<-covsel::covsel.embed(covdata=Covdata.filter.Global,
                                         pa=myResp.Global,
                                         algorithms=algorithms,
-                                        maxncov=maxncov,
+                                        maxncov=maxncov.Global,
                                         nthreads=detectCores()/2) #@@@#TG why only half of cores?
 
   # Save selected variables for each species
@@ -67,10 +69,14 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   IndVar.Global.Selected <- IndVar.Global[[Selected.Variables.Global]]  #@@@TG lo he vuelto a poner en resolucion global para entrenar el modelo global
 
   # Summary
-  summary <- data.frame(Values = c(nlyr(nshsdm_data$IndVar.Global), 
+  summary <- data.frame(Values = c("", 
+				#SpeciesName,
+				nlyr(nshsdm_data$IndVar.Global), 
 				length(Selected.Variables.Global)))
 
-  rownames(summary) <- c("Original number of variables at global scale", 
+  rownames(summary) <- c("  - Title 2:",
+			#"Species name",
+			"Original number of variables at global scale", 
 			"Final number of selected variables at global scale")
 
   # REGIONAL SCALE
@@ -78,7 +84,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   IndVar.Regional <- nshsdm_input$IndVar.Regional
 
   # Subset the global independent variables for regional projections
-  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]  #@@@#TG he puesto que se guarde tanto en resolucion global como regional para entrenar y proyectar
+  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]  #@@@#TG he puesto que se guarde tanto en resolucion global como regional para entrenar y proyectar 
 
   # Exclude climatic bands specified by the user.
   if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
@@ -100,10 +106,14 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   Covdata.filter.Regional <- covsel::covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = corcut)
 
   # Embedding selected variables
+  if(maxncov.Regional=="nocorr") {
+    maxncov.Regional <- ncol(Covdata.filter.Regional)
+  }
+
   Covdata.embed.Regional <- covsel::covsel.embed(covdata = Covdata.filter.Regional,
                                                    pa = myResp.Regional,
                                                    algorithms = algorithms,
-                                                   maxncov = maxncov,
+                                                   maxncov = maxncov.Regional,
                                                    nthreads = detectCores() / 2) #@@@# why?
 
   # Save selected variables for each species
@@ -132,6 +142,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
 			"Final number of of variables at regional scale")
 
   summary <- rbind(summary, summary_regional)
+  summary <- rbind(nshsdm_input$Summary, summary) #@@@JMB no la solaparía con lo de las funciones anteriores 
 
   #if(save.output){
   #  write.table(summary, paste0("Results/",SpeciesName,"_summary.csv"))
@@ -142,7 +153,7 @@ NSH.SDM.SelectVariables <- function(nshsdm_input,
   nshsdm_data$Selected.Variables.Regional <- Selected.Variables.Regional
   nshsdm_data$IndVar.Regional.Selected <- IndVar.Regional.Selected
   nshsdm_data$IndVar.Global.Selected.reg <- IndVar.Global.Selected.reg #@@@# at regional resolution for projecting
-  nshsdm_data$Summary<-rbind(nshsdm_input$Summary, summary)
+  nshsdm_data$Summary<-summary
   # Make the output lighter
   nshsdm_data <- nshsdm_data[!names(nshsdm_data) %in% c("IndVar.Regional", "IndVar.Global")]
 

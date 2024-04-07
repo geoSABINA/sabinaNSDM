@@ -1,25 +1,18 @@
 #' @export
-NSH.SDM.PrepareData <- function(VariablesPath,
-				SpeciesFilePath,
-				SpeciesName,
+NSH.SDM.PrepareData <- function(nshsdm_data,
 				nPoints=10000,
 				Min.Dist.Global="resolution",
 				Min.Dist.Regional="resolution",
-				Background.Global=NULL,
-				Background.Regional=NULL,
 				save.output=TRUE) {
 
-  if (!is.null(Background.Global) && !(is.data.frame(Background.Global) && ncol(Background.Global) == 2 && all(c("x", "y") %in% names(Background.Global)))) {
-    stop("Background.Global must be a data.frame with two columns 'x' and 'y' or NULL.")
+  if(!inherits(nshsdm_data, "nshsdm.data")){
+      stop("nshsdm_data must be an object of nshsdm.data class. Consider running NSH.SDM.InputData() function.")
   }
 
-  if (!is.null(Background.Regional) && !(is.data.frame(Background.Regional) && ncol(Background.Regional) == 2 && all(c("x", "y") %in% names(Background.Regional)))) {
-    stop("Background.Regional must be a data.frame with two columns 'x' and 'y' or NULL.")
-  }
-  
+  SpeciesName <- nshsdm_data$Species.Name
+
   sabina_data<-list()
   sabina_data$Species.Name <- SpeciesName
-  sabina_data$VariablesPath <- VariablesPath
   sabina_data$args <- list()
   sabina_data$args$nPoints <- nPoints
   sabina_data$args$Min.Dist.Global <- Min.Dist.Global
@@ -43,13 +36,13 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   # from Global independent variables (environmental layers)
 
   # Global independent variables (environmental layers)
-  IndVar.Global <- rast(paste0(VariablesPath,"/Global/Current.tif"))
+  IndVar.Global <- nshsdm_data$IndVar.Global
   IndVar.Global <- IndVar.Global[[names(IndVar.Global)]]
   Mask.Global <- prod(IndVar.Global, 1)
   IndVar.Global <- terra::mask(IndVar.Global, Mask.Global) 
 
   # Generate random background points for model calibration
-  if(is.null(Background.Global)) {
+  if(is.null(nshsdm_data$Background.Global.0)) {
     Valid.Cells.Global <- which(!is.na(values(Mask.Global)))
     if(length(Valid.Cells.Global) < nPoints) {
       stop(paste("The requested number of background nPoints exceeds the number of valid/available cells.
@@ -60,8 +53,8 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     Background.XY.Global <- as.data.frame(Coords.Global)
   } else {
     #remove NAs and duplicates
-    XY.Global <- terra::extract(Mask.Global, Background.Global) #@@@JMB xy=TRE creo que modifica las coordenadas originales
-    XY.Global <- cbind(XY.Global, Background.Global)
+    XY.Global <- terra::extract(Mask.Global, nshsdm_data$Background.Global.0) #@@@JMB xy=TRE creo que modifica las coordenadas originales
+    XY.Global <- cbind(XY.Global, nshsdm_data$Background.Global.0)
     XY.Global <- na.omit(XY.Global)[, -c(1:2)]
     XY.Global <- unique(XY.Global)
     # Spatial thinning of background data to remove duplicates and apply minimum distance criteria 
@@ -78,7 +71,11 @@ NSH.SDM.PrepareData <- function(VariablesPath,
       })
     }))
     Background.XY.Global<-XY.final.Global
-    message(paste("Global background data: from", nrow(Background.Global), "to", nrow(Background.XY.Global), "points after cleaning and thinning."))
+    if(!is.null(nshsdm_data$Background.Global.0)) {
+      message(paste("Global background data: from", nrow(nshsdm_data$Background.Global.0), "to", nrow(Background.XY.Global), "points after cleaning and thinning."))
+    } else {
+      message(paste("Global background data: from", nPoints, "to", nrow(Background.XY.Global), "points after cleaning and thinning."))
+    }
   }
 
   if(save.output){
@@ -87,7 +84,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
 
 
   # Load species data at global scale
-  SpeciesData.XY.Global <- read.csv(paste0(SpeciesFilePath,"/Global/", SpeciesName, ".csv"))
+  SpeciesData.XY.Global <- nshsdm_data$SpeciesData.XY.Global.0
   names(SpeciesData.XY.Global) <- c("x","y")
 
   # Occurrences from sites with no NAs
@@ -123,13 +120,13 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   #}
 
   # Summary global
-  summary_df <- data.frame(Values = c(SpeciesName, 
+  summary <- data.frame(Values = c("",SpeciesName,  #@@@JMB Terminar de definir los summary de todas las funciones. independientes? acumulado?
 				nrow(SpeciesData.XY.Global), 
 				nrow(XY.final.Global), 
-				ifelse(is.null(Background.Global), nPoints, nrow(Background.Global)),
+				ifelse(is.null(nshsdm_data$Background.Global), nPoints, nrow(nshsdm_data$Background.Global)),
 				nrow(Background.XY.Global)))
 
-  rownames(summary_df) <- c("Species name", 
+  rownames(summary) <- c("  - Title 1:","Species name", #@@@JMB acabar de definir partes de summary
 			"Original number of species presences at global level", 
 			"Final number of species presences at global level", 
 			"Original number of background points at global level", 
@@ -139,13 +136,13 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   # REGIONAL SCALE
   # Generate random background points for model calibration
   # Regional independent variables (environmental layers)
-  IndVar.Regional <- terra::rast(paste0(VariablesPath,"/Regional/Current.tif"))
+  IndVar.Regional <- nshsdm_data$IndVar.Regional
   IndVar.Regional <- IndVar.Regional[[names(IndVar.Regional)]]
   Mask.Regional <- prod(IndVar.Regional)
   IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
 
   # Generate random background points for model calibration
-  if(is.null(Background.Regional)) {
+  if(is.null(nshsdm_data$Background.Regional.0)) {
     Valid.Cells.Regional <- which(!is.na(values(Mask.Regional)))
     if(length(Valid.Cells.Regional) < nPoints) {
       stop(paste("The requested number of background nPoints exceeds the number of valid/available cells.
@@ -156,8 +153,8 @@ NSH.SDM.PrepareData <- function(VariablesPath,
     Background.XY.Regional <- as.data.frame(Coords.Regional)
   } else {
     #remove NAs and duplicates
-    XY.Regional <- terra::extract(Mask.Regional, Background.Regional)
-    XY.Regional <- cbind(XY.Regional, Background.Regional)
+    XY.Regional <- terra::extract(Mask.Regional, nshsdm_data$Background.Regional.0)
+    XY.Regional <- cbind(XY.Regional, nshsdm_data$Background.Regional.0)
     XY.Regional <- na.omit(XY.Regional)[, -c(1:2)]
     XY.Regional <- unique(XY.Regional)
     # Spatial thinning of background data to remove duplicates and apply minimum distance criteria
@@ -174,16 +171,21 @@ NSH.SDM.PrepareData <- function(VariablesPath,
       })
     }))
     Background.XY.Regional<-XY.final.Regional
-    message(paste("Regional background data: from", nrow(Background.Regional), "to", nrow(Background.XY.Regional), "points after cleaning and thinning."))
+    if(!is.null(nshsdm_data$Background.Regional.0)) {
+      message(paste("Regional background data: from", nrow(nshsdm_data$Background.Regional.0), "to", nrow(Background.XY.Regional), "points after cleaning and thinning."))
+    } else {
+      message(paste("Regional background data: from", nPoints, "to", nrow(Background.XY.Regional), "points after cleaning and thinning."))
+    }
   }
+
 
   if(save.output){
   write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
   }
 
   # Load species presence data at regional scale
-  SpeciesData.XY.Regional <- read.csv(paste0(SpeciesFilePath,"/Regional/", SpeciesName, ".csv"))
-  names(SpeciesData.XY.Regional) <- c("x","y")
+  SpeciesData.XY.Regional <- nshsdm_data$SpeciesData.XY.Regional.0
+  #names(SpeciesData.XY.Regional) <- c("x","y")
 
   # Occurrences from sites with no NA
   XY.Regional <- terra::extract(Mask.Regional, SpeciesData.XY.Regional)
@@ -221,7 +223,7 @@ NSH.SDM.PrepareData <- function(VariablesPath,
   # Summary regional
   summary_regional <- data.frame(Values = c(nrow(SpeciesData.XY.Regional), 
 				nrow(XY.final.Regional), 
-				ifelse(is.null(Background.Regional), nPoints, nrow(Background.Regional)),
+				ifelse(is.null(nshsdm_data$Background.Regional), nPoints, nrow(nshsdm_data$Background.Regional)),
 				nrow(Background.XY.Regional)))
 
   rownames(summary_regional) <- c("Original number of species presences at regional level", 
@@ -229,33 +231,33 @@ NSH.SDM.PrepareData <- function(VariablesPath,
 			"Original number of background points at regional level", 
 			"Final number of background points regional level")
 
-  summary_df <- rbind(summary_df, summary_regional)
+  summary <- rbind(summary, summary_regional)
 
-  Scenarios <- dir_ls(paste0(VariablesPath,"/Regional"), pattern="tif") #@@@# change this so it comes from an object
-  Scenarios <- Scenarios[!grepl("Current.tif", Scenarios)]	#@@@JMB este bloque lo veo más en las funciones global y regional.
-  if(length(Scenarios) == 0) {
-    message("There are no new scenarios different from Current.tif")
-  } #else  {
+  #nScenarios <- names(nshsdm_data$Scenarios) 
+
+  #if(length(nScenarios) == 0) { #@@@JMB parte de esto está en la función nueva NSH.SDM.InputData
+  #  message("There are no new scenarios different from Current.tif")
+  #} #else  {
     #message("Future scenarios: ")
     #print(path_ext_remove(path_file(Scenarios)))
   #}
   
-  summary_regional <- data.frame(Values = c(length(Scenarios))) 
+  summary_regional <- data.frame(Values = c(length(nshsdm_data$Scenarios))) 
   rownames(summary_regional) <- c("Number of new scenarios")
-  summary_df <- rbind(summary_df, summary_regional)
+  summary <- rbind(summary, summary_regional)
 
   #if(save.output){   #@@@JMB quitaría este bloque si vamos a guardar un summary final.
-  #  write.table(summary_df, paste0("Results/",SpeciesName,"_summary.csv"))
+  #  write.table(summary, paste0("Results/",SpeciesName,"_summary.csv"))
   #}
   
   sabina_data$SpeciesData.XY.Global <- XY.final.Global
-  sabina_data$Background.XY.Global <- Background.XY.Global
-  sabina_data$IndVar.Global <- IndVar.Global
   sabina_data$SpeciesData.XY.Regional <- XY.final.Regional
+  sabina_data$Background.XY.Global <- Background.XY.Global
   sabina_data$Background.XY.Regional <- Background.XY.Regional
+  sabina_data$IndVar.Global <- IndVar.Global
   sabina_data$IndVar.Regional <- IndVar.Regional
-  sabina_data$Scenarios <- Scenarios
-  sabina_data$Summary<-summary_df
+  sabina_data$Scenarios <- nshsdm_data$Scenarios
+  sabina_data$Summary<-summary
 
   attr(sabina_data, "class") <- "nshsdm.input"
 
