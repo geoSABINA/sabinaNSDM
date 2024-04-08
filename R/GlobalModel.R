@@ -250,7 +250,7 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
 
   if(rm.biomod.folder || !save.output){ #rm= T save=F
     # Remove species folder created by biomod2
-    unlink(sp.name)
+    unlink(paste(sp.name,sep=""), recursive = TRUE) #@RGM no se estaba borrando
   } else {
     # Move biomod2 results to Results/Global/Models folder
     dir_create(paste0("Results/",Level,"/Models/",sp.name))
@@ -261,8 +261,6 @@ NSH.SDM.Global.Model <- function(nshsdm_selvars,
       file.rename(from = source_folder, to = destination_folder)
       unlink(sp.name)
   }
-
-  gc()
 
   # Summary
   summary <- data.frame(Values = c("",
