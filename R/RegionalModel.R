@@ -239,7 +239,8 @@ NSH.SDM.Regional.Models <- function(nshsdm_selvars,
 
   if(rm.biomod.folder || !save.output){
     # Remove species folder create by biomod2
-    unlink(sp.name) #@@@@ sp.name not SpeciesName, to use the name of biomod that might be different thana the one you used
+    unlink(paste(sp.name,sep=""), recursive = TRUE) #@RGM no se estaba borrando
+    
   } else {
     # Move biomod2 results to Results/Regional/Models folder
     dir_create(paste0("Results/",Level,"/Models/",sp.name))
@@ -251,7 +252,6 @@ NSH.SDM.Regional.Models <- function(nshsdm_selvars,
       unlink(sp.name)
   }
 
-  gc()
 
   # Summary
   summary <- data.frame(Values = c("",
@@ -300,3 +300,4 @@ NSH.SDM.Regional.Models <- function(nshsdm_selvars,
   return(nshsdm_data)
 
 }
+

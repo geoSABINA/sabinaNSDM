@@ -241,7 +241,7 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
 
   if(rm.biomod.folder || !save.output){
     # Remove species folder create by biomod2
-    unlink(sp.name)
+    unlink(paste(sp.name,sep=""), recursive = TRUE) #@RGM no se estaba borrando
   } else {
     # Move biomod2 results to Results/Covariate/Models folder
     dir_create(paste0("Results/Covariate/Models/",sp.name))
@@ -252,8 +252,6 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
       file.rename(from = source_folder, to = destination_folder)
       unlink(sp.name)
   }
-
-  gc()
 
   # Summary
   summary <- data.frame(Values = c("",
