@@ -1,5 +1,5 @@
 #' @export
-NSH.SDM.Covariate.Models <- function(nshsdm_global,
+NSDM.CovariateModels <- function(nsdm_global,
 				algorithms=c("GLM","GAM","RF"),
 				CV.nb.rep=10,
 				CV.perc=0.8,
@@ -7,23 +7,22 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
 				rm.biomod.folder=TRUE,
 				save.output = TRUE) {
 
-  #nshsdm_global <- as.list(match.call())$nshsdm_global
-  if(!inherits(nshsdm_global, "nshsdm.predict.g")){
-      stop("nshsdm_global must be an object of nshsdm.predict.g class.") #@@@JMB si solo va con nshsdm_global, propongo cambiar el atributo de NSH.SDM.Global.Model y NSH.SDM.Regional.Model (nshsdm.predict.g y nshsdm.predict.r??).
+  if(!inherits(nsdm_global, "nsdm.predict.g")){
+      stop("nsdm_global must be an object of nsdm.predict.g class.")
   }
   models <- toupper(algorithms)
   if(any(!models %in% c( "GAM", "GBM", "GLM", "MARS", "MAXNET", "RF"))) {
     stop("Please select at least one valid algorithm (\"GLM\", \"GAM\",\"MARS\",\"GBM\",\"MAXNET\", or \"RF\").")
   }
 
-  SpeciesName <- nshsdm_global$Species.Name
+  SpeciesName <- nsdm_global$Species.Name
 
-  #shsdm_data<-nshsdm_global[!names(nshsdm_global) %in% c("Summary", "args", "nreplicates", "myEMeval.replicates", "myEMeval.Ensemble", "myModelsVarImport")]
-  nshsdm_data<-nshsdm_global[names(nshsdm_global) %in% c("Species.Name", "VariablesPath")]
-  nshsdm_data$args <- list()
-  nshsdm_data$args$algorithms <- algorithms
-  nshsdm_data$args$CV.nb.rep <- CV.nb.rep
-  nshsdm_data$args$CV.perc <- CV.perc
+  #sabina<-nsdm_global[!names(nsdm_global) %in% c("Summary", "args", "nreplicates", "myEMeval.replicates", "myEMeval.Ensemble", "myModelsVarImport")]
+  sabina<-nsdm_global[names(nsdm_global) %in% c("Species.Name", "VariablesPath")]
+  sabina$args <- list()
+  sabina$args$algorithms <- algorithms
+  sabina$args$CV.nb.rep <- CV.nb.rep
+  sabina$args$CV.perc <- CV.perc
 
   current.projections <- list()
   new.projections <- list()
@@ -38,16 +37,15 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
 
 
   # Add the global model as an additional variable for the regional model.
-  #SDM.global <- terra::rast(paste0("Results/Global/Projections/",SpeciesName,".Current.tif")) #@RGM Cuidado si no guardamos los resultados en el disco duro del ordenador esto no funcionaria. Quizá habría que poner un aviso.
-  SDM.global <- nshsdm_global$current.projections$Pred
+  SDM.global <- nsdm_global$current.projections$Pred
   names(SDM.global) <- c("SDM.global")
-  IndVar.Regional.temp <- nshsdm_global$IndVar.Regional.Selected
+  IndVar.Regional.temp <- nsdm_global$IndVar.Regional.Selected
   IndVar.Regional.Covariate <- c(IndVar.Regional.temp, SDM.global)
 
-  myResp.xy <- rbind(nshsdm_global$SpeciesData.XY.Regional, nshsdm_global$Background.XY.Regional)
+  myResp.xy <- rbind(nsdm_global$SpeciesData.XY.Regional, nsdm_global$Background.XY.Regional)
   names(myResp.xy)<-c("x","y")
   row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-  myResp <- data.frame(c(rep(1,nrow(nshsdm_global$SpeciesData.XY.Regional)),rep(NA,nrow(nshsdm_global$Background.XY.Regional))))
+  myResp <- data.frame(c(rep(1,nrow(nsdm_global$SpeciesData.XY.Regional)),rep(NA,nrow(nsdm_global$Background.XY.Regional))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
   myExpl <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
@@ -58,7 +56,7 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
 					expl.var = myExpl,
 					resp.name = SpeciesName,
 					PA.nb.rep = 1,
-					PA.nb.absences = nrow(nshsdm_global$Background.XY.Regional),
+					PA.nb.absences = nrow(nsdm_global$Background.XY.Regional),
 					PA.strategy = "random")
 
   # Calibrate and evaluate individual models with specified statistical algorithms.
@@ -79,15 +77,14 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
   df <- myBiomodModelOut@models.evaluation
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
-  nreplicates<-sum(df_slot$validation >= 0.8)
+  nreplicates<-sum(df_slot$validation >= CV.perc)
   percentage <- 100 * nreplicates/nrow(df_slot)
-  message(sprintf("\n%.2f%% of replicates with AUC values >= 0.8.\n", percentage))
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates)
   for (algorithm.i in models) {
-    nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= 0.8)))
+    nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= CV.perc)))
   }
   
-  nshsdm_data$args$nreplicates <- nreplicates
+  sabina$args$nbestreplicates <- nreplicates  #@@@JMB sugiero poner nbestreplicates en lugar de nreplicates.
 
   # Generate and evaluate a single ensemble (i.e.,consensus) model that averages the individual models weighted
   # by the value of the AUC statistic.
@@ -121,14 +118,14 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
   Pred <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
   Pred<-terra::rast(wrap(Pred))
 
-  nshsdm_data$current.projections$Pred <- setNames(Pred, paste0(SpeciesName, ".Current"))
+  sabina$current.projections$Pred <- setNames(Pred, paste0(SpeciesName, ".Current"))
 
   if(save.output){
-    dir_create(c("Results/Covariate/Values/", "Results/Covariate/Projections/"),recurse = TRUE)
+    fs::dir_create("Results/Covariate/Projections/")
     file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".Current.tif")
     terra::writeRaster(Pred, file_path, overwrite=TRUE)
     #message(paste("Hierarchical covariate projections under training conditions saved in:",file_path))
-    file.remove(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
+    fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
   }
 
   # Binary models
@@ -137,19 +134,19 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
   Pred.bin.ROC<-terra::rast(wrap(Pred.bin.ROC))
   Pred.bin.TSS<-terra::rast(wrap(Pred.bin.TSS))
 
-  nshsdm_data$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
-  nshsdm_data$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS, paste0(SpeciesName,".Current.bin.TSS"))
+  sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
+  sabina$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS, paste0(SpeciesName,".Current.bin.TSS"))
 
   if(save.output){
     file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".Current.bin.ROC.tif")
     terra::writeRaster(Pred.bin.ROC, file_path, overwrite=TRUE)
     #message(paste("Hierarchical covariate ROC binary projections under training conditions saved in:",file_path))
-    file.remove(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_ROCbin.tif"))
+    fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_ROCbin.tif"))
 
     file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".Current.bin.TSS.tif")
     terra::writeRaster(Pred.bin.TSS, file_path, overwrite=TRUE)
     #message(paste("Hierarchical covariate TSS binary projections under training conditions saved in:",file_path))
-    file.remove(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_TSSbin.tif"))
+    fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_TSSbin.tif"))
   }
 
   # Save some results
@@ -157,11 +154,12 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
   myEMeval.replicates <- biomod2::get_evaluations(myBiomodModelOut)
 
   if(save.output){
+    fs::dir_create("Results/Covariate/Values/") 
     write.csv(myEMeval.replicates,file=paste0("Results/Covariate/Values/",SpeciesName,"_replica.csv"))
     write.csv(nreplicates,file=paste0("Results/Covariate/Values/",SpeciesName,"_nreplicates.csv"))
   }
 
-  nshsdm_data$myEMeval.replicates <- myEMeval.replicates
+  sabina$myEMeval.replicates <- myEMeval.replicates
 
   # Values of the statistics of the consensus model
   myEMeval.Ensemble <- biomod2::get_evaluations(myBiomodEM.ROC)
@@ -170,7 +168,7 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
     write.csv(myEMeval.Ensemble,file=paste0("Results/Covariate/Values/",SpeciesName,"_ensemble.csv"))
   }
 
-  nshsdm_data$myEMeval.Ensemble <- myEMeval.Ensemble
+  sabina$myEMeval.Ensemble <- myEMeval.Ensemble
 
   # Variable importance
   myModelsVarImport <- biomod2::get_variables_importance(myBiomodModelOut)
@@ -178,20 +176,20 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
     write.table(myModelsVarImport, file = paste0("Results/Covariate/Values/",SpeciesName,"_indvar.csv"), row.names = T, col.names = T)
   }
 
-  nshsdm_data$myModelsVarImport <- myModelsVarImport
+  sabina$myModelsVarImport <- myModelsVarImport
 
   # Model projections for future climate scenarios
   ################################################
-  Scenarios <- nshsdm_global$Scenarios
+  Scenarios <- nsdm_global$Scenarios
 
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
   } else {
     for(i in 1:length(Scenarios)) {
-      NewClim.temp <- Scenarios[[i]][[nshsdm_global$Selected.Variables.Regional]]
+      NewClim.temp <- Scenarios[[i]][[nsdm_global$Selected.Variables.Regional]]
       Scenario.name <- names(Scenarios[i])
 
-      SDM.global.future <- nshsdm_global$new.projections$Pred.Scenario[[i]]
+      SDM.global.future <- nsdm_global$new.projections$Pred.Scenario[[i]]
       names(SDM.global.future) <- c("SDM.global")
       NewClim <- c(NewClim.temp, SDM.global.future)
 
@@ -208,12 +206,13 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
 
       Pred.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
       Pred.Scenario<-terra::rast(wrap(Pred.Scenario))
-      nshsdm_data$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario, paste0(SpeciesName,".",Scenario.name))
+      sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario, paste0(SpeciesName,".",Scenario.name))
  
       if(save.output){
+        fs::dir_create(paste0("Results/Covariate/Projections/"))
         file_path <- paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".tif")
         terra::writeRaster(Pred.Scenario, file_path, overwrite = TRUE)
-        file.remove(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
+        fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
         #message(paste("Hierarchical covariate projections under", Scenario.name,"conditions saved in:",file_path))
       }
 
@@ -223,65 +222,60 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
       Pred.bin.ROC.Scenario<-terra::rast(wrap(Pred.bin.ROC.Scenario))
       Pred.bin.TSS.Scenario<-terra::rast(wrap(Pred.bin.TSS.Scenario))
 
-      nshsdm_data$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
-      nshsdm_data$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
+      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
+      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
       if(save.output){
         file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif")
         terra::writeRaster(Pred.bin.ROC.Scenario, file_path, overwrite = TRUE)
         #message(paste("Hierarchical ROC binary covariate projections under", Scenario.name,"conditions saved in:",file_path))
-        file.remove(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
+        fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
+
         file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.TSS.tif")
         terra::writeRaster(Pred.bin.TSS.Scenario, file_path, overwrite = TRUE)
         #message(paste("Hierarchical covariate TSS binary projections under", Scenario.name,"conditions saved in:",file_path))
-        file.remove(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_TSSbin.tif"))
+        fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_TSSbin.tif"))
       }
     } #end for
   } # end if
 
-  if(rm.biomod.folder || !save.output){
-    # Remove species folder create by biomod2
-    unlink(paste(sp.name,sep=""), recursive = TRUE) #@RGM no se estaba borrando
-  } else {
-    # Move biomod2 results to Results/Covariate/Models folder
-    dir_create(paste0("Results/Covariate/Models/",sp.name))
-    source_folder <- sp.name
-    destination_folder <- paste0("Results/Covariate/Models/",sp.name)
-    if(file.exists(destination_folder)) {
-      unlink(destination_folder, recursive = TRUE)}
-      file.rename(from = source_folder, to = destination_folder)
-      unlink(sp.name)
+  source_folder <- sp.name
+  destination_folder <- paste0("Results/Covariate/Models/",sp.name)
+
+  if(rm.biomod.folder){
+    # Remove species folder created by biomod2
+    fs::dir_delete(source_folder)
+  } else { 
+    if(save.output){
+      # Move and remove biomod2 results from /sp.name/ to Results/Global/Models/ folder
+      fs::dir_create(paste0("Results/Covariate/Models/",sp.name))
+      fs::dir_copy(source_folder, destination_folder, overwrite = TRUE)
+      fs::dir_delete(source_folder)
+    }
   }
 
   # Summary
-  summary <- data.frame(Values = c("",
-				#SpeciesName,
+  summary <- data.frame(Values = c(SpeciesName,
 				paste(toupper(algorithms),collapse = ", "), 
-				nrow(nshsdm_data$myEMeval.replicates), 
+				nrow(sabina$myEMeval.replicates), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
-  rownames(summary) <- c("  - Title 5:",
-				#"Species name",
+  rownames(summary) <- c("Species name",
 				"Statistical algorithms for covariate hierarchical model", 
-				"Number of replicates with AUC > 0.8 for covariate hierarchical model", 
+				paste0("Number of replicates with AUC > ",CV.perc, " for covariate hierarchical model"), 
 				"AUC of hierarchical covariate ensemble model", 
 				"TSS of hierarchical covariate ensemble model",
 				"KAPPA of hierarchical covariate ensemble model")
-
-  summary <- rbind(nshsdm_global$Summary, summary)
   
-  nshsdm_data$Summary <- summary 
+  sabina$Summary <- summary 
 
-  #if(save.output){  #@@@JMB yo quitaría este bloque. Esta en el summary()
-  #  write.table(summary, paste0("Results/",SpeciesName,"_summary.csv"), sep=",",  row.names=F, col.names=T)
-  #}
-
-  attr(nshsdm_data, "class") <- "nshsdm.predict"
+  attr(sabina, "class") <- "nsdm.predict"
 
   # Logs success or error messages
-  #message("\nNSH.SDM.Covariate.Models executed successfully!\n")
+  #message("\nNSDM.CovariateModels executed successfully!\n")
+  message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
 
   if(save.output){
     message("Results saved in the following locations:")
@@ -291,12 +285,12 @@ NSH.SDM.Covariate.Models <- function(nshsdm_global,
     "- Consensus model statistics: /Results/Covariate/Values/\n",
     "- Variable importance: /Results/Covariate/Values/"
     ))
-  if(!rm.biomod.folder) { 
-    message(" - BIOMOD results: /Results/Regional/Models/\n")
-  }
+    if(!rm.biomod.folder) { 
+    message(" - BIOMOD results: /Results/Covariate/Models/\n")
+    }
   }
 
-  return(nshsdm_data)
+  return(sabina)
 
 }
 

@@ -1,5 +1,5 @@
 #' @export
-NSH.SDM.InputData <- function(SpeciesName,
+NSDM.InputData <- function(SpeciesName,
 				spp.data.global,		#@@@JMB debe ser data.frame con x,y
 				spp.data.regional,	#@@@JMB debe ser data.frame con x,y
 				expl.var.global,		#@@@JMB debe ser SpatRasrer
@@ -69,8 +69,23 @@ NSH.SDM.InputData <- function(SpeciesName,
     }
   }
 
+  # Summary
+  summary <- data.frame(Values = c(SpeciesName,
+				nrow(spp.data.global), 
+				ifelse(is.null(Background.Global), "NULL", nrow(Background.Global)),
+				nrow(spp.data.regional),
+				ifelse(is.null(Background.Regional), "NULL", nrow(Background.Regional)),
+				length(new.env)))
+  
+  rownames(summary) <- c("Species name",
+                         "Original number of species presences at global level", 
+                         "Original number of background points at global level",
+                         "Original number of species presences at regional level", 
+                         "Original number of background points at regional level",
+                         "Number of new scenarios")
+
   #
-  nshsdm_data <- list(
+  sabina <- list(
     Species.Name = SpeciesName,
     SpeciesData.XY.Global.0 = spp.data.global,
     SpeciesData.XY.Regional.0 = spp.data.regional,
@@ -78,12 +93,13 @@ NSH.SDM.InputData <- function(SpeciesName,
     IndVar.Regional = expl.var.regional,
     Scenarios = new.env,
     Background.Global.0 = Background.Global,
-    Background.Regional.0 = Background.Regional
+    Background.Regional.0 = Background.Regional,
+    Summary = summary
   )
   
-  attr(nshsdm_data, "class") <- "nshsdm.data"
+  attr(sabina, "class") <- "nsdm.input"
 
-  return(nshsdm_data)
+  return(sabina)
 }
 
 
