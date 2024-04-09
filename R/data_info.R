@@ -1,15 +1,30 @@
 #'@export
-summary.nshsdm.input <- function(nshsdm_input){
-    summary_df <- as.data.frame(nshsdm_input$Summary)
+summary.nsdm.input <- function(nsdm_input){
+    summary_df <- as.data.frame(nsdm_input$Summary)
    
     return(summary_df)
 
 }
 
+#'@export
+summary.nsdm.predict.g <- function(nsdm_predict){
+    summary_df <- as.data.frame(nsdm_predict$Summary)
+    
+    return(summary_df)
+
+}
 
 #'@export
-summary.nshsdm.predict <- function(nshsdm_global){
-    summary_df <- as.data.frame(nshsdm_global$Summary)
+summary.nsdm.predict.r <- function(nsdm_predict){
+    summary_df <- as.data.frame(nsdm_predict$Summary)
+    
+    return(summary_df)
+
+}
+
+#'@export
+summary.nsdm.predict <- function(nsdm_predict){
+    summary_df <- as.data.frame(nsdm_predict$Summary)
     
     return(summary_df)
 
