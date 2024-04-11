@@ -81,6 +81,9 @@ NSDM.GlobalModel <- function(nsdm_selvars,
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
   nreplicates<-sum(df_slot$validation >= CV.perc)
+  if(nreplicates == 0) {
+    stop(paste0("\nNo replica has reached an AUC value >= ", CV.perc, ".\n"))
+  }
   percentage <- 100 * nreplicates/nrow(df_slot)
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates) 
   for(algorithm.i in models) {
