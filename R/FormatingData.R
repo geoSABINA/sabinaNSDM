@@ -120,9 +120,9 @@ HSDM.FormatingData <- function(hsdm_input,
     }))
     Background.XY.Global<-XY.final.Global
     if(!is.null(hsdm_input$Background.Global.0)) {
-      message(paste("Global background data: from", nrow(hsdm_input$Background.Global.0), "to", nrow(Background.XY.Global), "points after cleaning and thinning."))
+      message(paste0("Global background data (",SpeciesName,"): from ", nrow(hsdm_input$Background.Global.0), " to ", nrow(Background.XY.Global), " points after cleaning and thinning."))
     } else {
-      message(paste("Global background data: from", nPoints, "to", nrow(Background.XY.Global), "points after cleaning and thinning."))
+      message(paste0("Global background data (",SpeciesName,"): from ", nPoints, " to ", nrow(Background.XY.Global), " points after cleaning and thinning."))
     }
   }
 
@@ -154,7 +154,7 @@ HSDM.FormatingData <- function(hsdm_input,
       XY.final.Global <- ecospat::ecospat.occ.desaggregation(XY.Global, min.dist = Min.Dist.Global, by = NULL)
     })
   }))
-  message(paste("Global species data: from", nrow(SpeciesData.XY.Global), "to", nrow(XY.final.Global), "species presences after cleaning and thinning."))
+  message(paste0("Global species data (",SpeciesName,"): from ", nrow(SpeciesData.XY.Global), " to ", nrow(XY.final.Global), " species presences after cleaning and thinning."))
 
   # Save thinning presence data for each species
   if(save.output){
@@ -213,9 +213,9 @@ HSDM.FormatingData <- function(hsdm_input,
     }))
     Background.XY.Regional<-XY.final.Regional
     if(!is.null(hsdm_input$Background.Regional.0)) {
-      message(paste("Regional background data: from", nrow(hsdm_input$Background.Regional.0), "to", nrow(Background.XY.Regional), "points after cleaning and thinning."))
+      message(paste0("Regional background data (",SpeciesName,"): from ", nrow(hsdm_input$Background.Regional.0), " to ", nrow(Background.XY.Regional), " points after cleaning and thinning."))
     } else {
-      message(paste("Regional background data: from", nPoints, "to", nrow(Background.XY.Regional), "points after cleaning and thinning."))
+      message(paste0("Regional background data (",SpeciesName,"): from ", nPoints, " to ", nrow(Background.XY.Regional), " points after cleaning and thinning."))
     }
   }
 
@@ -247,7 +247,7 @@ HSDM.FormatingData <- function(hsdm_input,
       XY.final.Regional <- ecospat::ecospat.occ.desaggregation(XY.Regional, min.dist = Min.Dist.Regional, by = NULL)
     })
   }))
-  message(paste("Regional species data: from", nrow(SpeciesData.XY.Regional), "to", nrow(XY.final.Regional), "species presences after cleaning and thinning.\n"))
+  message(paste0("Regional species data (",SpeciesName,"): from ", nrow(SpeciesData.XY.Regional), " to ", nrow(XY.final.Regional), " species presences after cleaning and thinning.\n"))
   
   # Save filtered presence data for each species
   if(save.output){
