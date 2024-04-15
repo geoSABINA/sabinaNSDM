@@ -1,42 +1,42 @@
 #' @export
-NSDM.MultiplyModels <- function(nsdm_global,
-                                    nsdm_regional,
+HSDM.MultiplyModels <- function(hsdm_global,
+                                    hsdm_regional,
                                     method="Arithmetic",
                                     rescale=FALSE,
                                     save.output=TRUE) {
 
-  if(!inherits(nsdm_regional, "nsdm.predict.r") || !inherits(nsdm_global, "nsdm.predict.g")) {
-    stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.r, respectively.")
+  if(!inherits(hsdm_regional, "hsdm.predict.r") || !inherits(hsdm_global, "hsdm.predict.g")) {
+    stop("hsdm_regional and hsdm_global must be objects of class hsdm.predict.r and hsdm.predict.r, respectively.")
   }
 
   if(!method %in% c("Arithmetic", "Geometric")) {
     stop("Please select 'Arithmetic' or 'Geometric' method.")
   }
 
-  if(!identical(nsdm_regional$Species.Name, nsdm_global$Species.Name)) {
+  if(!identical(hsdm_regional$Species.Name, hsdm_global$Species.Name)) {
     stop("Different species in global and regional levels")
   } else {
-    SpeciesName <- nsdm_regional$Species.Name
+    SpeciesName <- hsdm_regional$Species.Name
   }
 
-  sabina<-nsdm_global[names(nsdm_global) %in% c("Species.Name")]
+  sabina<-hsdm_global[names(hsdm_global) %in% c("Species.Name")]
   sabina<-list()
   sabina$args <- list()
   sabina$args$method <- method
   sabina$args$rescale <- rescale
 
-  Scenarios <- names(nsdm_regional$Scenarios)
+  Scenarios <- names(hsdm_regional$Scenarios)
   Scenarios <- c("Current",Scenarios)
 
   for(i in seq_along(Scenarios)) {
     projmodel <- Scenarios[i]
     # Load raster data at global and regional scales
     if(projmodel =="Current") {
-      Pred.global <- nsdm_global$current.projections$Pred
-      Pred.regional <- nsdm_regional$current.projections$Pred
+      Pred.global <- terra::unwrap(hsdm_global$current.projections$Pred) # Unwrap object
+      Pred.regional <- terra::unwrap(hsdm_regional$current.projections$Pred)  # Unwrap object
     } else {
-        Pred.global <- nsdm_global$new.projections$Pred.Scenario[[i-1]]
-        Pred.regional <- nsdm_regional$new.projections$Pred.Scenario[[i-1]]
+        Pred.global <- terra::unwrap(hsdm_global$new.projections$Pred.Scenario[[i-1]])  # Unwrap object
+        Pred.regional <- terra::unwrap(hsdm_regional$new.projections$Pred.Scenario[[i-1]])  # Unwrap object
       }
 
     # Rescale global prediction to a common range
@@ -84,8 +84,8 @@ NSDM.MultiplyModels <- function(nsdm_global,
 
 
   # Evaluation multiply model 	#@@@JMB Esto queda pendiente de discusión (qué 0s usamos?)
-  myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Background.XY.Regional)
-  myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_regional$Background.XY.Regional))))
+  myResp.xy <- rbind(hsdm_regional$SpeciesData.XY.Regional, hsdm_regional$Background.XY.Regional)
+  myResp <- data.frame(c(rep(1,nrow(hsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(hsdm_regional$Background.XY.Regional))))
   pred_df <- sabina$current.projections$Pred
   pred_df <- terra::extract(pred_df, myResp.xy)[-1]
   myResp <- as.vector(myResp)[[1]]
@@ -105,11 +105,11 @@ NSDM.MultiplyModels <- function(nsdm_global,
 
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-				paste(nsdm_regional$args$algorithms,collapse = ", "),
-				nrow(nsdm_regional$myEMeval.replicates), 
-				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
-				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
-				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],
+				paste(hsdm_regional$args$algorithms,collapse = ", "),
+				nrow(hsdm_regional$myEMeval.replicates), 
+				hsdm_regional$myEMeval.Ensemble$calibration[which(hsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
+				hsdm_regional$myEMeval.Ensemble$calibration[which(hsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
+				hsdm_regional$myEMeval.Ensemble$calibration[which(hsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],
 				method,
 				round(valROC[,"best.stat"],3),
 				round(valTSS[,"best.stat"],3),
@@ -117,7 +117,7 @@ NSDM.MultiplyModels <- function(nsdm_global,
 
   rownames(summary) <- c("Species name",
 				"Statistical algorithms at regional level", 
-				paste0("Number of replicates wit AUC > ",nsdm_regional$args$CV.perc," at regional level"), 
+				paste0("Number of replicates wit AUC > ",hsdm_regional$args$CV.perc," at regional level"), 
 				"AUC of ensemble model at regional level", 
 				"TSS of ensemble model at regional level",
 				"KAPPA of ensemble model at regional level",
@@ -126,12 +126,18 @@ NSDM.MultiplyModels <- function(nsdm_global,
 				"TSS of hierarchical multiply ensemble model",
 				"KAPPA of hierarchical multiply ensemble model")
 
+  # Wrap objects
+  sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
+  if(!is.null(hsdm_selvars$Scenarios)) {
+    sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
+  }
+
   sabina$Summary <- summary
 
-  attr(sabina, "class") <- "nsdm.predict"
+  attr(sabina, "class") <- "hsdm.predict"
 
   # Logs success or error messages
-  #message("\nNSDM.MultiplyModels executed successfully!\n")
+  #message("\nHSDM.MultiplyModels executed successfully!\n")
 
   if(save.output){
   message("Results saved in the following locations:")

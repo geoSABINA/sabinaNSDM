@@ -1,10 +1,5 @@
 #' @export
-#'
-####################
-# 3. GLOBAL MODELS
-####################
-
-NSDM.GlobalModel <- function(nsdm_selvars,
+HSDM.GlobalModel <- function(hsdm_selvars,
 				algorithms=c("GLM", "GAM", "RF"),
 				CV.nb.rep=10,
 				CV.perc=0.8,
@@ -12,8 +7,8 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 				save.output=TRUE,
 				rm.biomod.folder=TRUE) {
 
-  if(!inherits(nsdm_selvars, "nsdm.input")){
-      stop("nsdm_selvars must be an object of nsdm.input class. Consider running NSDM.SelectVariables() function.")
+  if(!inherits(hsdm_selvars, "hsdm.vinput")){
+      stop("hsdm_selvars must be an object of hsdm.vinput class. Consider running HSDM.SelectVariables() function.")
   }
 
   models <- toupper(algorithms)
@@ -21,10 +16,10 @@ NSDM.GlobalModel <- function(nsdm_selvars,
     stop("Please select at least one valid algorithm (\"GLM\", \"GAM\", \"MARS\", \"GBM\", \"MAXNET\" or \"RF\").")
   }
 
-  SpeciesName <- nsdm_selvars$Species.Name
+  SpeciesName <- hsdm_selvars$Species.Name
   Level="Global"
 
-  sabina<-nsdm_selvars[!names(nsdm_selvars) %in% c("Summary", "args")]
+  sabina<-hsdm_selvars[!names(hsdm_selvars) %in% c("Summary", "args")]
   sabina$args <- list()
   sabina$args$algorithms <- algorithms
   sabina$args$CV.nb.rep <- CV.nb.rep
@@ -36,14 +31,22 @@ NSDM.GlobalModel <- function(nsdm_selvars,
   new.projections$Pred.bin.TSS.Scenario <- list()
   new.projections$Pred.bin.ROC.Scenario <- list()
 
+  # Unwrap objects
+  IndVar.Global.Selected <- terra::unwrap(hsdm_selvars$IndVar.Global.Selected)
+  IndVar.Global.Selected.reg <- terra::unwrap(hsdm_selvars$IndVar.Global.Selected.reg)
+  if(!is.null(hsdm_selvars$Scenarios)) {
+  Scenarios <- lapply(hsdm_selvars$Scenarios, terra::unwrap)
+  }
+
+
   # GLOBAL SCALE
   # Format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
-  myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Global,nsdm_selvars$Background.XY.Global)
+  myResp.xy <- rbind(hsdm_selvars$SpeciesData.XY.Global,hsdm_selvars$Background.XY.Global)
   row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-  myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Global)),rep(NA,nrow(nsdm_selvars$Background.XY.Global))))
+  myResp <- data.frame(c(rep(1,nrow(hsdm_selvars$SpeciesData.XY.Global)),rep(NA,nrow(hsdm_selvars$Background.XY.Global))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
-  myExpl <- terra::extract(nsdm_selvars$IndVar.Global.Selected , myResp.xy, as.df=TRUE)[, -1]  #@@@#TG antes usaba misma resolucion para entrenar y proyectar el global
+  myExpl <- terra::extract(IndVar.Global.Selected, myResp.xy, as.df=TRUE)[, -1]  #@@@#TG antes usaba misma resolucion para entrenar y proyectar el global
 
   # Remaining script sections involve executing biomod2 modeling procedures, including data formatting, model training,
   # projection, evaluation, and visualization. Please refer to biomod2 documentation for detailed explanation of these steps.
@@ -54,7 +57,7 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 	                                     expl.var = myExpl,
 	                                     resp.name = SpeciesName,
 	                                     PA.nb.rep = 1,
-	                                     PA.nb.absences = nrow(nsdm_selvars$Background.XY.Global),
+	                                     PA.nb.absences = nrow(hsdm_selvars$Background.XY.Global),
 	                                     PA.strategy = "random")
 
   # Calibrate and evaluate individual models with specified statistical algorithms
@@ -106,7 +109,7 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 
   # Project the individual models to the study area at regional scale under training conditions
   myBiomodProj <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
-					new.env = nsdm_selvars$IndVar.Global.Selected.reg,  #@@@TG Lo he cambiado porque estabamos usando la misma resolucion para entrenar y para proyectar
+					new.env = IndVar.Global.Selected.reg,  #@@@TG Lo he cambiado porque estabamos usando la misma resolucion para entrenar y para proyectar
 					proj.name = "Current",
 					models.chosen = 'all',
 					build.clamping.mask = FALSE)
@@ -190,14 +193,14 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 
   # Model projections for future climate scenarios
   ################################################
-  Scenarios <- nsdm_selvars$Scenarios
+  #Scenarios <- hsdm_selvars$Scenarios #@@@JMB new wrap
   
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
   } else {
     for(i in 1:length(Scenarios)) {
-      new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Global]]
-      #new.env <- terra::mask(new.env, nsdm_selvars$IndVar.Global.Selected[[1]])
+      new.env <- Scenarios[[i]][[hsdm_selvars$Selected.Variables.Global]]
+      #new.env <- terra::mask(new.env, IndVar.Global.Selected[[1]])
       Scenario.name <- names(Scenarios[i])
 
       #Project the individual models
@@ -215,7 +218,7 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 
       Pred.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
       Pred.Scenario <- terra::rast(wrap(Pred.Scenario))
-	    
+
       sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario, paste0(SpeciesName,".",Scenario.name))
 
       if(save.output){
@@ -292,10 +295,16 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 				"AUC of ensemble model at global level", 
 				"TSS of ensemble model at global level",
 				"KAPPA of ensemble model at global level")
+
+  # Wrap objects
+  sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
+  if(!is.null(hsdm_selvars$Scenarios)) {
+    sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
+  }
   
   sabina$Summary <- summary 
 
-  attr(sabina, "class") <- "nsdm.predict.g"
+  attr(sabina, "class") <- "hsdm.predict.g"
 
   # Logs success or error messages
   #message("\nNSH.SDM.Global.Model executed successfully!\n")
