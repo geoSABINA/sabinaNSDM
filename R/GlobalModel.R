@@ -1,5 +1,5 @@
 #' @export
-HSDM.GlobalModel <- function(hsdm_selvars,
+NSDM.Global <- function(nsdm_selvars,
 				algorithms=c("GLM", "GAM", "RF"),
 				CV.nb.rep=10,
 				CV.perc=0.8,
@@ -7,8 +7,8 @@ HSDM.GlobalModel <- function(hsdm_selvars,
 				save.output=TRUE,
 				rm.biomod.folder=TRUE) {
 
-  if(!inherits(hsdm_selvars, "hsdm.vinput")){
-      stop("hsdm_selvars must be an object of hsdm.vinput class. Consider running HSDM.SelectVariables() function.")
+  if(!inherits(nsdm_selvars, "nsdm.vinput")){
+      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariables() function.")
   }
 
   models <- toupper(algorithms)
@@ -16,10 +16,10 @@ HSDM.GlobalModel <- function(hsdm_selvars,
     stop("Please select at least one valid algorithm (\"GLM\", \"GAM\", \"MARS\", \"GBM\", \"MAXNET\" or \"RF\").")
   }
 
-  SpeciesName <- hsdm_selvars$Species.Name
+  SpeciesName <- nsdm_selvars$Species.Name
   Level="Global"
 
-  sabina<-hsdm_selvars[!names(hsdm_selvars) %in% c("Summary", "args")]
+  sabina<-nsdm_selvars[!names(nsdm_selvars) %in% c("Summary", "args")]
   sabina$args <- list()
   sabina$args$algorithms <- algorithms
   sabina$args$CV.nb.rep <- CV.nb.rep
@@ -32,18 +32,18 @@ HSDM.GlobalModel <- function(hsdm_selvars,
   new.projections$Pred.bin.ROC.Scenario <- list()
 
   # Unwrap objects
-  IndVar.Global.Selected <- terra::unwrap(hsdm_selvars$IndVar.Global.Selected)
-  IndVar.Global.Selected.reg <- terra::unwrap(hsdm_selvars$IndVar.Global.Selected.reg)
-  if(!is.null(hsdm_selvars$Scenarios)) {
-  Scenarios <- lapply(hsdm_selvars$Scenarios, terra::unwrap)
+  IndVar.Global.Selected <- terra::unwrap(nsdm_selvars$IndVar.Global.Selected)
+  IndVar.Global.Selected.reg <- terra::unwrap(nsdm_selvars$IndVar.Global.Selected.reg)
+  if(!is.null(nsdm_selvars$Scenarios)) {
+  Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
   }
 
 
   # GLOBAL SCALE
   # Format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
-  myResp.xy <- rbind(hsdm_selvars$SpeciesData.XY.Global,hsdm_selvars$Background.XY.Global)
+  myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Global,nsdm_selvars$Background.XY.Global)
   row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-  myResp <- data.frame(c(rep(1,nrow(hsdm_selvars$SpeciesData.XY.Global)),rep(NA,nrow(hsdm_selvars$Background.XY.Global))))
+  myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Global)),rep(NA,nrow(nsdm_selvars$Background.XY.Global))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
   myExpl <- terra::extract(IndVar.Global.Selected, myResp.xy, as.df=TRUE)[, -1]  #@@@#TG antes usaba misma resolucion para entrenar y proyectar el global
@@ -57,12 +57,12 @@ HSDM.GlobalModel <- function(hsdm_selvars,
 	                                     expl.var = myExpl,
 	                                     resp.name = SpeciesName,
 	                                     PA.nb.rep = 1,
-	                                     PA.nb.absences = nrow(hsdm_selvars$Background.XY.Global),
+	                                     PA.nb.absences = nrow(nsdm_selvars$Background.XY.Global),
 	                                     PA.strategy = "random")
 
   # Calibrate and evaluate individual models with specified statistical algorithms
   # Train and evaluate individual models using BIOMOD_Modeling
-  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,   #@@@## (This function saves outputs, check them and specify them in the description). Outputs: /NSHSDM/Larix.decidua/models/AllModels/Larix.decidua_PA1_RUN1_GBM
+  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,   #@@@## (This function saves outputs, check them and specify them in the description). Outputs: /NSNSDM/Larix.decidua/models/AllModels/Larix.decidua_PA1_RUN1_GBM
 	                                      modeling.id = "AllModels",
 	                                      models = models,
 	                                      bm.options = CustomModelOptions,
@@ -167,7 +167,7 @@ HSDM.GlobalModel <- function(hsdm_selvars,
     fs::dir_create(paste0("Results/",Level,"/Values/"))
     file_path <- paste0("Results/",Level,"/Values/",SpeciesName,"_replica.csv")
     write.csv(myEMeval.replicates,file=file_path)
-    #write.csv(nreplicates,file=paste0("Results/",Level,"/Values/",SpeciesName,"_nreplicates.csv")) #@@@JMB quitaría esto. EL user puede buscar esta info en _replica.csv
+    write.csv(nreplicates,file=paste0("Results/",Level,"/Values/",SpeciesName,"_nreplicates.csv"))
   }
 
   # Values of the evaluation statistics of the consensus model
@@ -193,13 +193,11 @@ HSDM.GlobalModel <- function(hsdm_selvars,
 
   # Model projections for future climate scenarios
   ################################################
-  #Scenarios <- hsdm_selvars$Scenarios #@@@JMB new wrap
-  
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
   } else {
     for(i in 1:length(Scenarios)) {
-      new.env <- Scenarios[[i]][[hsdm_selvars$Selected.Variables.Global]]
+      new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Global]]
       #new.env <- terra::mask(new.env, IndVar.Global.Selected[[1]])
       Scenario.name <- names(Scenarios[i])
 
@@ -252,20 +250,6 @@ HSDM.GlobalModel <- function(hsdm_selvars,
     } # end for
   } # end if(length(Scenarios) == 0)
 
-  #if(rm.biomod.folder || !save.output){
-  #  # Remove species folder create by biomod2
-  #  unlink(paste(sp.name,sep=""), recursive = TRUE) #@RGM no se estaba borrando
-  #} else {
-  #  # Move biomod2 results to Results/Global/Models folder
-  #  dir.create(paste0("Results/",Level,"/Models/",sp.name))
-  #  source_folder <- sp.name
-  #  destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
-  #  if(file.exists(destination_folder)) {
-  #    unlink(destination_folder, recursive = TRUE)}
-  #    file.rename(from = source_folder, to = destination_folder)
-  #    unlink(sp.name)
-  #}
-
   source_folder <- sp.name
   destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
   
@@ -298,18 +282,17 @@ HSDM.GlobalModel <- function(hsdm_selvars,
 
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
-  if(!is.null(hsdm_selvars$Scenarios)) {
+  if(!is.null(nsdm_selvars$Scenarios)) {
     sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
   }
   
   sabina$Summary <- summary 
 
-  attr(sabina, "class") <- "hsdm.predict.g"
+  attr(sabina, "class") <- "nsdm.predict.g"
 
-  # Logs success or error messages
-  #message("\nNSH.SDM.Global.Model executed successfully!\n")
+  # % best replicates messages
   message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
-
+  # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
     message(paste(

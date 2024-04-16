@@ -1,5 +1,5 @@
 #' @export
-HSDM.SelectVariables <- function(hsdm_finput,
+NSDM.SelectCovariables <- function(nsdm_finput,
 				maxncov.Global="nocorr", #@@@#TG si usuario no pone ninguna usa todas las no correlacionadas #@@@JMB como sugerencia he cambiado el nombre pq "all" podría confundirse con todas las variables. Pendiente comprobar qué pasa si pone más de las correlacionadas?
 				maxncov.Regional="nocorr",
 				corcut=0.7,
@@ -7,8 +7,8 @@ HSDM.SelectVariables <- function(hsdm_finput,
 				ClimaticVariablesBands=NULL,
 				save.output=TRUE) { 
 
-  if(!inherits(hsdm_finput, "hsdm.finput")){
-      stop("hsdm_finput must be an object of hsdm.finput class. Consider running HSDM.FormatingData() function.")
+  if(!inherits(nsdm_finput, "nsdm.finput")){
+      stop("nsdm_finput must be an object of nsdm.finput class. Consider running NSDM.FormatingData() function.")
   }
 
   algorithms <- tolower(algorithms)
@@ -16,27 +16,27 @@ HSDM.SelectVariables <- function(hsdm_finput,
     stop("Please select a valid algorithm (\"glm\", \"gam\", or \"rf\").")
   }
 
-  sabina<-hsdm_finput[!names(hsdm_finput) %in% "Summary"]
+  sabina<-nsdm_finput[!names(nsdm_finput) %in% "Summary"]
   sabina$args <- list()
   sabina$args$maxncov.Global <- maxncov.Global
   sabina$args$maxncov.Regional <- maxncov.Regional
   sabina$args$corcut <- corcut
   sabina$args$algorithms <- algorithms
   
-  SpeciesName <- hsdm_finput$Species.Name
+  SpeciesName <- nsdm_finput$Species.Name
 
   # Unwrap objects
   # Global independent variables (environmental layers)
-  IndVar.Global <- terra::unwrap(hsdm_finput$IndVar.Global)
+  IndVar.Global <- terra::unwrap(nsdm_finput$IndVar.Global)
   # Regional independent variables (environmental layers)
-  IndVar.Regional <- terra::unwrap(hsdm_finput$IndVar.Regional)
+  IndVar.Regional <- terra::unwrap(nsdm_finput$IndVar.Regional)
 
   # GLOBAL SCALE
   # Select the best subset of independent variables for each species using covsel package
-  myResp.xy.Global <- rbind(hsdm_finput$SpeciesData.XY.Global, hsdm_finput$Background.XY.Global)
+  myResp.xy.Global <- rbind(nsdm_finput$SpeciesData.XY.Global, nsdm_finput$Background.XY.Global)
   names(myResp.xy.Global)<-c("x","y")
   row.names(myResp.xy.Global)<-c(1:nrow(myResp.xy.Global))
-  myResp.Global <- as.vector(c(rep(1,nrow(hsdm_finput$SpeciesData.XY.Global)),rep(0,nrow(hsdm_finput$Background.XY.Global))))
+  myResp.Global <- as.vector(c(rep(1,nrow(nsdm_finput$SpeciesData.XY.Global)),rep(0,nrow(nsdm_finput$Background.XY.Global))))
   myExpl.covsel.Global <- terra::extract(IndVar.Global, myResp.xy.Global, as.df=TRUE)[, -1]
 
   # Variable selection process
@@ -81,7 +81,7 @@ HSDM.SelectVariables <- function(hsdm_finput,
 
   # REGIONAL SCALE
   # Subset the global independent variables for regional projections
-  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]  #@@@#TG he puesto que se guarde tanto en resolucion global como regional para entrenar y proyectar  #@@@JMB esto hace que todas las variables presentes en global tengan que estar en regional
+  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]  #@@@#TG he puesto que se guarde tanto en resolucion global como regional para entrenar y proyectar
 
   # Exclude climatic bands specified by the user.
   Number.bands <- nlyr(IndVar.Regional)
@@ -95,9 +95,9 @@ HSDM.SelectVariables <- function(hsdm_finput,
   }
 
   # Select the best subset of independent variables for each species using covsel package
-  myResp.xy.Regional <- rbind(hsdm_finput$SpeciesData.XY.Regional, hsdm_finput$Background.XY.Regional)
+  myResp.xy.Regional <- rbind(nsdm_finput$SpeciesData.XY.Regional, nsdm_finput$Background.XY.Regional)
   row.names(myResp.xy.Regional) <- c(1:nrow(myResp.xy.Regional))
-  myResp.Regional <- as.vector(c(rep(1, nrow(hsdm_finput$SpeciesData.XY.Regional)), rep(0, nrow(hsdm_finput$Background.XY.Regional))))
+  myResp.Regional <- as.vector(c(rep(1, nrow(nsdm_finput$SpeciesData.XY.Regional)), rep(0, nrow(nsdm_finput$Background.XY.Regional))))
   myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, rm.na=TRUE, df=TRUE)[, -1]
 
   Covdata.filter.Regional <- covsel::covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = corcut)
@@ -154,11 +154,9 @@ HSDM.SelectVariables <- function(hsdm_finput,
   # Make the output lighter
   sabina <- sabina[!names(sabina) %in% c("IndVar.Regional", "IndVar.Global")]
 
-  attr(sabina, "class") <- "hsdm.vinput"
+  attr(sabina, "class") <- "nsdm.vinput"
 
-  # Logs success or error messages
-  #message("\nVarSelection executed successfully!\n")
-
+  # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
     message(paste0(

@@ -1,8 +1,8 @@
-#' @name HSDM.InputData
+#' @name NSDM.InputData
 #'
-#' @title Prepare input data for the Hierarchical Species Distribution Modeling (HSDM) analysis.
+#' @title Prepare input data for Nested spatial hierarchical Species Distribution Modeling (NSDM) analysis.
 #'
-#' @description This function gathers together all input data (\emph{species presences xy at global and regional level, explanatory variables at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \HSDM.
+#' @description This function gathers together all input data (\emph{species presences xy at global and regional level, explanatory variables at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \NSDM.
 #'
 #' @param SpeciesName A \code{character} specifying the species name for which data is being prepared.
 #' @param spp.data.global A \code{data.frame} with two columns, 'x' and 'y', representing the species presence data at global level.
@@ -18,7 +18,7 @@
 #' @param Background.Regional (\emph{optional, default} \code{NULL}) \cr
 #' An \code{data.frame} with two columns, 'x' and 'y', representing background points at regional level.
 #'
-#' @return An object of class "hsdm.input" containing organized input data for HSDM.
+#' @return An object of class "nsdm.input" containing organized input data for NSDM.
 #'
 #' @details
 #' - The `SpeciesName` parameter specifies the name of the species for which data is being prepared.
@@ -44,7 +44,7 @@
 #' data(new.env, package = "sabina")
 #' new.env<-terra::unwrap(new.env)
 #'
-#' myInputData<-HSDM.InputData(
+#' myInputData<-NSDM.InputData(
 #'		SpeciesName = "Fagus.sylvatica",
 #'		spp.data.global = Fagus.sylvatica.xy.global,
 #'		spp.data.regional = Fagus.sylvatica.xy.regional,
@@ -58,7 +58,7 @@
 #'
 #'
 #' @export
-HSDM.InputData <- function(SpeciesName,
+NSDM.InputData <- function(SpeciesName,
 				spp.data.global,
 				spp.data.regional,
 				expl.var.global,
@@ -92,7 +92,7 @@ HSDM.InputData <- function(SpeciesName,
     }
   }
 
-  if(!is.null(Background.Global) && !is.null(Background.Regional)) { #@@@JMB esto igual se puede separar en dos para que puedan poner uno u otro.
+  if(!is.null(Background.Global) && !is.null(Background.Regional)) {
     if(!(is.data.frame(Background.Regional) && 
           ncol(Background.Global) == 2 && 
           all(c('x', 'y') %in% colnames(Background.Global))) ||
@@ -111,7 +111,7 @@ HSDM.InputData <- function(SpeciesName,
    message("Not all scenarios have the same variables.")
   }
 
-  match_vars2 <- sapply(names(expl.var.global), function(var_name) { #@@@JMB este bloque solo si variables global deben estar también en regional
+  match_vars2 <- sapply(names(expl.var.global), function(var_name) {
     var_name %in% names(expl.var.regional)
   })
   if(!all(match_vars2)) {
@@ -169,7 +169,7 @@ HSDM.InputData <- function(SpeciesName,
     Summary = summary
   )
   
-  attr(sabina, "class") <- "hsdm.input"
+  attr(sabina, "class") <- "nsdm.input"
 
   return(sabina)
 }

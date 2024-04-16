@@ -3,7 +3,7 @@
 # 4. REGIONAL MODELS
 ####################
 
-HSDM.RegionalModels <- function(hsdm_selvars,
+NSDM.Regional <- function(nsdm_selvars,
                                     algorithms=c( "GLM", "GAM", "RF"),
                                     CV.nb.rep=10,
                                     CV.perc=0.8,
@@ -11,8 +11,8 @@ HSDM.RegionalModels <- function(hsdm_selvars,
                                     save.output=TRUE,
                                     rm.biomod.folder=TRUE){
 
-  if(!inherits(hsdm_selvars, "hsdm.vinput")){
-      stop("hsdm_selvars must be an object of hsdm.vinput class. Consider running HSDM.SelectVariables() function.")
+  if(!inherits(nsdm_selvars, "nsdm.vinput")){
+      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariables() function.")
   }
 
   models <- toupper(algorithms)
@@ -20,10 +20,10 @@ HSDM.RegionalModels <- function(hsdm_selvars,
     stop("Please select at least one valid algorithm (\"GLM\", \"GAM\",\"MARS\",\"GBM\",\"MAXNET\", or \"RF\").")
   }
 
-  SpeciesName <- hsdm_selvars$Species.Name
+  SpeciesName <- nsdm_selvars$Species.Name
   Level="Regional"
 
-  sabina<-hsdm_selvars[!names(hsdm_selvars) %in% c("Summary", "args")]
+  sabina<-nsdm_selvars[!names(nsdm_selvars) %in% c("Summary", "args")]
   sabina$args <- list()
   sabina$args$algorithms <- algorithms
   sabina$args$CV.nb.rep <- CV.nb.rep
@@ -36,19 +36,19 @@ HSDM.RegionalModels <- function(hsdm_selvars,
   new.projections$Pred.bin.ROC.Scenario <- list()
 
   # Unwrap objects
-  IndVar.Regional.Selected <- terra::unwrap(hsdm_selvars$IndVar.Regional.Selected)
-  if(!is.null(hsdm_selvars$Scenarios)) {
-  Scenarios <- lapply(hsdm_selvars$Scenarios, terra::unwrap)
+  IndVar.Regional.Selected <- terra::unwrap(nsdm_selvars$IndVar.Regional.Selected)
+  if(!is.null(nsdm_selvars$Scenarios)) {
+  Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
   }
 
   # Regional model calibrated with all the independent variables
   # Format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
-  myResp.xy <- rbind(hsdm_selvars$SpeciesData.XY.Regional ,hsdm_selvars$Background.XY.Regional)
+  myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Regional ,nsdm_selvars$Background.XY.Regional)
   row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-  myResp <- data.frame(c(rep(1,nrow(hsdm_selvars$SpeciesData.XY.Regional)),rep(NA,nrow(hsdm_selvars$Background.XY.Regional ))))
+  myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Regional)),rep(NA,nrow(nsdm_selvars$Background.XY.Regional ))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
-  myExpl <- terra::extract(IndVar.Regional.Selected , myResp.xy, as.df=TRUE)[, -1] #@@@JMB new wrap
+  myExpl <- terra::extract(IndVar.Regional.Selected , myResp.xy, as.df=TRUE)[, -1]
 
   # Data required for the biomod2 package
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
@@ -56,7 +56,7 @@ HSDM.RegionalModels <- function(hsdm_selvars,
                                            expl.var = myExpl,
                                            resp.name = SpeciesName,
                                            PA.nb.rep = 1,
-                                           PA.nb.absences = nrow(hsdm_selvars$Background.XY.Regional),
+                                           PA.nb.absences = nrow(nsdm_selvars$Background.XY.Regional),
                                            PA.strategy = "random")
 
   # Calibrate and evaluate individual models with specified statistical algorithms
@@ -106,7 +106,7 @@ HSDM.RegionalModels <- function(hsdm_selvars,
 
   # Project the individual models to the study area at regional scale under training conditions)
   myBiomodProj <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
-					new.env = IndVar.Regional.Selected, #@@@JMB new wrap
+					new.env = IndVar.Regional.Selected,
 					proj.name = "Current",
 					models.chosen = 'all',
 					build.clamping.mask = FALSE)
@@ -188,13 +188,11 @@ HSDM.RegionalModels <- function(hsdm_selvars,
 
   # Model projections for future climate scenarios
   ################################################
-  #Scenarios <- hsdm_selvars$Scenarios  #@@@JMB new wrap
-  
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
   } else {
     for(i in 1:length(Scenarios)) {
-      new.env <- Scenarios[[i]][[hsdm_selvars$Selected.Variables.Regional]]
+      new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Regional]]
       #new.env <- terra::mask(new.env, IndVar.Global.Selected[[1]])
       Scenario.name <- names(Scenarios[i])
 
@@ -278,18 +276,17 @@ HSDM.RegionalModels <- function(hsdm_selvars,
 
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
-  if(!is.null(hsdm_selvars$Scenarios)) {
+  if(!is.null(nsdm_selvars$Scenarios)) {
     sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
   }
   
   sabina$Summary <- summary 
 
-  attr(sabina, "class") <- "hsdm.predict.r"
+  attr(sabina, "class") <- "nsdm.predict.r"
 
-  # Logs success or error messages
-  #message("\nHSDM.Regional.Models executed successfully!\n")
+  # % best replicates messages
   message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
-
+  # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
     message(paste(

@@ -1,12 +1,12 @@
-#' @name HSDM.FormatingData
+#' @name NSDM.FormatingData
 #'
-#' @title Prepare input data for the Hierarchical Species Distribution Modeling (HSDM) analysis.
+#' @title Prepare input data for the Hierarchical Species Distribution Modeling (NSDM) analysis.
 #'
-#' @description Format input data and background data for usage in \HSDM.
+#' @description Format input data and background data for usage in \NSDM.
 #'
-#' @param hsdm_input An object of class "hsdm.input" generated using the \code{\link{HSDM.InputData}} function. #@@@JMB ver como ponemos el hsbm.input class
+#' @param nsdm_input An object of class "nsdm.input" generated using the \code{\link{NSDM.InputData}} function. #@@@JMB ver como ponemos el hsbm.input class
 #' @param nPoints (\emph{optional, default} \code{10000}) \cr
-#' An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points is not provided at \code{\link{HSDM.InputData}}.
+#' An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points is not provided at \code{\link{NSDM.InputData}}.
 #' @param Min.Dist.Global (\emph{optional, default} \code{'resolution'}) \cr
 #' A \code{numeric} corresponding to the minimum distance between background points at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input raster
 #' @param Min.Dist.Regional (\emph{optional, default} \code{'resolution'}) \cr
@@ -14,7 +14,7 @@
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.  
 #'
-#' @return An object of class "hsdm.finput" containing formatted input data for the HSDM:
+#' @return An object of class "nsdm.finput" containing formatted input data for the NSDM:
 #' - `Species.Name` The name of the species provided as input.
 #' - `args` A \code{list} containing the arguments used for data formatting, including: `nPoints`, `Min.Dist.Global` and `Min.Dist.Regional`.
 #' - `SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
@@ -27,33 +27,33 @@
 #' - `Summary` Summary of formated input data in \code{data.frame} format.
 #'
 #' @details
-#' This function formates the input data for HSDM, including generating background points, cleaning and thinning presence and background data, and saving the results to local if specified. If `save.output=TRUE`, outputs (i.e., species occurrences and background points after appling spatial thinning, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' This function formates the input data for NSDM, including generating background points, cleaning and thinning presence and background data, and saving the results to local if specified. If `save.output=TRUE`, outputs (i.e., species occurrences and background points after appling spatial thinning, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
 #' - the \emph{Results/Global/SpeciesXY/} folder, containing the ocurrences species xy of global level after appling spatial thinning, named with the \code{resp.name} argument.
 #' - the \emph{Results/Global/Background/} folder, containing the background points xy of global level after appling spatial thinning.
 #' - the \emph{Results/Regional/SpeciesXY/} folder, containing the ocurrences species xy of global level after appling spatial thinning, named with the \code{resp.name} argument.
 #' - the \emph{Results/Regional/Background/} folder, containing the background points xy of global level after appling spatial thinning.
 #'
 #' @examples
-#' # Load the required packages  #@@@JMB en el ejemplo hay que poner también el HSDM.InputData() para tener myInputData? Ver cómo hacen otros
+#' # Load the required packages  #@@@JMB en el ejemplo hay que poner también el NSDM.InputData() para tener myInputData? Ver cómo hacen otros
 #' library(terra)
 #' library(ecospat)
 #' 
 #' # Format the input data
-#' myFormatedData <- HSDM.FormatingData(myInputData,
+#' myFormatedData <- NSDM.FormatingData(myInputData,
 #					nPoints=1000)
 #'
 #' @export
-HSDM.FormatingData <- function(hsdm_input,
+NSDM.FormatingData <- function(nsdm_input,
 				nPoints=10000,
 				Min.Dist.Global="resolution",
 				Min.Dist.Regional="resolution",
 				save.output=TRUE) {
 
-  if(!inherits(hsdm_input, "hsdm.input")){
-      stop("hsdm_input must be an object of hsdm.input class. Consider running HSDM.InputData() function.")
+  if(!inherits(nsdm_input, "nsdm.input")){
+      stop("nsdm_input must be an object of nsdm.input class. Consider running NSDM.InputData() function.")
   }
 
-  SpeciesName <- hsdm_input$Species.Name
+  SpeciesName <- nsdm_input$Species.Name
 
   sabina<-list()
   sabina$Species.Name <- SpeciesName
@@ -77,8 +77,8 @@ HSDM.FormatingData <- function(hsdm_input,
 
 
   # Unwrap objects if necessary
-  IndVar.Global <- terra::unwrap(hsdm_input$IndVar.Global)
-  IndVar.Regional <- terra::unwrap(hsdm_input$IndVar.Regional)
+  IndVar.Global <- terra::unwrap(nsdm_input$IndVar.Global)
+  IndVar.Regional <- terra::unwrap(nsdm_input$IndVar.Regional)
 
   # GLOBAL SCALE
   # Generate random background points for model calibration
@@ -90,7 +90,7 @@ HSDM.FormatingData <- function(hsdm_input,
   IndVar.Global <- terra::mask(IndVar.Global, Mask.Global) 
 
   # Generate random background points for model calibration
-  if(is.null(hsdm_input$Background.Global.0)) {
+  if(is.null(nsdm_input$Background.Global.0)) {
     Valid.Cells.Global <- which(!is.na(values(Mask.Global)))
     if(length(Valid.Cells.Global) < nPoints) {
       stop(paste("The requested number of background nPoints exceeds the number of valid/available cells.
@@ -101,8 +101,8 @@ HSDM.FormatingData <- function(hsdm_input,
     Background.XY.Global <- as.data.frame(Coords.Global)
   } else {
     #remove NAs and duplicates
-    XY.Global <- terra::extract(Mask.Global, hsdm_input$Background.Global.0) #@@@JMB xy=TRE creo que modifica las coordenadas originales
-    XY.Global <- cbind(XY.Global, hsdm_input$Background.Global.0)
+    XY.Global <- terra::extract(Mask.Global, nsdm_input$Background.Global.0) #@@@JMB xy=TRE creo que modifica las coordenadas originales
+    XY.Global <- cbind(XY.Global, nsdm_input$Background.Global.0)
     XY.Global <- na.omit(XY.Global)[, -c(1:2)]
     XY.Global <- unique(XY.Global)
     # Spatial thinning of background data to remove duplicates and apply minimum distance criteria 
@@ -119,8 +119,8 @@ HSDM.FormatingData <- function(hsdm_input,
       })
     }))
     Background.XY.Global<-XY.final.Global
-    if(!is.null(hsdm_input$Background.Global.0)) {
-      message(paste0("Global background data (",SpeciesName,"): from ", nrow(hsdm_input$Background.Global.0), " to ", nrow(Background.XY.Global), " points after cleaning and thinning."))
+    if(!is.null(nsdm_input$Background.Global.0)) {
+      message(paste0("Global background data (",SpeciesName,"): from ", nrow(nsdm_input$Background.Global.0), " to ", nrow(Background.XY.Global), " points after cleaning and thinning."))
     } else {
       message(paste0("Global background data (",SpeciesName,"): from ", nPoints, " to ", nrow(Background.XY.Global), " points after cleaning and thinning."))
     }
@@ -132,7 +132,7 @@ HSDM.FormatingData <- function(hsdm_input,
 
 
   # Load species data at global scale
-  SpeciesData.XY.Global <- hsdm_input$SpeciesData.XY.Global.0
+  SpeciesData.XY.Global <- nsdm_input$SpeciesData.XY.Global.0
   names(SpeciesData.XY.Global) <- c("x","y")
 
   # Occurrences from sites with no NAs
@@ -165,7 +165,7 @@ HSDM.FormatingData <- function(hsdm_input,
   summary <- data.frame(Values = c(SpeciesName,
 				nrow(SpeciesData.XY.Global), 
 				nrow(XY.final.Global), 
-				ifelse(is.null(hsdm_input$Background.Global), nPoints, nrow(hsdm_input$Background.Global)),
+				ifelse(is.null(nsdm_input$Background.Global), nPoints, nrow(nsdm_input$Background.Global)),
 				nrow(Background.XY.Global)))
 
   rownames(summary) <- c("Species name",
@@ -183,7 +183,7 @@ HSDM.FormatingData <- function(hsdm_input,
   IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
 
   # Generate random background points for model calibration
-  if(is.null(hsdm_input$Background.Regional.0)) {
+  if(is.null(nsdm_input$Background.Regional.0)) {
     Valid.Cells.Regional <- which(!is.na(values(Mask.Regional)))
     if(length(Valid.Cells.Regional) < nPoints) {
       stop(paste("The requested number of background nPoints exceeds the number of valid/available cells.
@@ -194,8 +194,8 @@ HSDM.FormatingData <- function(hsdm_input,
     Background.XY.Regional <- as.data.frame(Coords.Regional)
   } else {
     #remove NAs and duplicates
-    XY.Regional <- terra::extract(Mask.Regional, hsdm_input$Background.Regional.0)
-    XY.Regional <- cbind(XY.Regional, hsdm_input$Background.Regional.0)
+    XY.Regional <- terra::extract(Mask.Regional, nsdm_input$Background.Regional.0)
+    XY.Regional <- cbind(XY.Regional, nsdm_input$Background.Regional.0)
     XY.Regional <- na.omit(XY.Regional)[, -c(1:2)]
     XY.Regional <- unique(XY.Regional)
     # Spatial thinning of background data to remove duplicates and apply minimum distance criteria
@@ -212,8 +212,8 @@ HSDM.FormatingData <- function(hsdm_input,
       })
     }))
     Background.XY.Regional<-XY.final.Regional
-    if(!is.null(hsdm_input$Background.Regional.0)) {
-      message(paste0("Regional background data (",SpeciesName,"): from ", nrow(hsdm_input$Background.Regional.0), " to ", nrow(Background.XY.Regional), " points after cleaning and thinning."))
+    if(!is.null(nsdm_input$Background.Regional.0)) {
+      message(paste0("Regional background data (",SpeciesName,"): from ", nrow(nsdm_input$Background.Regional.0), " to ", nrow(Background.XY.Regional), " points after cleaning and thinning."))
     } else {
       message(paste0("Regional background data (",SpeciesName,"): from ", nPoints, " to ", nrow(Background.XY.Regional), " points after cleaning and thinning."))
     }
@@ -224,7 +224,7 @@ HSDM.FormatingData <- function(hsdm_input,
   }
 
   # Load species presence data at regional scale
-  SpeciesData.XY.Regional <- hsdm_input$SpeciesData.XY.Regional.0
+  SpeciesData.XY.Regional <- nsdm_input$SpeciesData.XY.Regional.0
   #names(SpeciesData.XY.Regional) <- c("x","y")
 
   # Occurrences from sites with no NA
@@ -257,7 +257,7 @@ HSDM.FormatingData <- function(hsdm_input,
   # Summary regional
   summary_regional <- data.frame(Values = c(nrow(SpeciesData.XY.Regional), 
 				nrow(XY.final.Regional), 
-				ifelse(is.null(hsdm_input$Background.Regional), nPoints, nrows(hsdm_input$Background.Regional)),
+				ifelse(is.null(nsdm_input$Background.Regional), nPoints, nrows(nsdm_input$Background.Regional)),
 				nrow(Background.XY.Regional)))
 
   rownames(summary_regional) <- c("Original number of species presences at regional level", 
@@ -267,16 +267,16 @@ HSDM.FormatingData <- function(hsdm_input,
 
   summary <- rbind(summary, summary_regional)
 
-  #nScenarios <- names(hsdm_input$Scenarios) 
+  #nScenarios <- names(nsdm_input$Scenarios) 
 
-  #if(length(nScenarios) == 0) { #@@@JMB parte de esto está en la función nueva HSDM.InputData
+  #if(length(nScenarios) == 0) { #@@@JMB parte de esto está en la función nueva NSDM.InputData
   #  message("There are no new scenarios different from Current.tif")
   #} #else  {
     #message("Future scenarios: ")
     #print(path_ext_remove(path_file(Scenarios)))
   #}
   
-  summary_regional <- data.frame(Values = c(length(hsdm_input$Scenarios))) 
+  summary_regional <- data.frame(Values = c(length(nsdm_input$Scenarios))) 
   rownames(summary_regional) <- c("Number of new scenarios")
   summary <- rbind(summary, summary_regional)
 
@@ -290,14 +290,12 @@ HSDM.FormatingData <- function(hsdm_input,
   sabina$Background.XY.Regional <- Background.XY.Regional
   sabina$IndVar.Global <- IndVar.Global
   sabina$IndVar.Regional <- IndVar.Regional
-  sabina$Scenarios <- hsdm_input$Scenarios
+  sabina$Scenarios <- nsdm_input$Scenarios
   sabina$Summary<-summary
 
-  attr(sabina, "class") <- "hsdm.finput"
+  attr(sabina, "class") <- "nsdm.finput"
 
-  # Logs success or error messages
-  #message("\nNSH.SDM.PrepareData() executed successfully!\n") #@@@JMB necesario?
-
+  # save.out messages
   if(save.output) {
     message("Results saved in the following locations:")
     message(paste0(

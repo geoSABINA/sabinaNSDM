@@ -1,5 +1,5 @@
 #' @export
-HSDM.CovariateModels <- function(hsdm_global,
+NSDM.Covariate <- function(nsdm_global,
 				algorithms=c("GLM","GAM","RF"),
 				CV.nb.rep=10,
 				CV.perc=0.8,
@@ -7,18 +7,18 @@ HSDM.CovariateModels <- function(hsdm_global,
 				rm.biomod.folder=TRUE,
 				save.output = TRUE) {
 
-  if(!inherits(hsdm_global, "hsdm.predict.g")){
-      stop("hsdm_global must be an object of hsdm.predict.g class.")
+  if(!inherits(nsdm_global, "nsdm.predict.g")){
+      stop("nsdm_global must be an object of nsdm.predict.g class.")
   }
   models <- toupper(algorithms)
   if(any(!models %in% c( "GAM", "GBM", "GLM", "MARS", "MAXNET", "RF"))) {
     stop("Please select at least one valid algorithm (\"GLM\", \"GAM\",\"MARS\",\"GBM\",\"MAXNET\", or \"RF\").")
   }
 
-  SpeciesName <- hsdm_global$Species.Name
+  SpeciesName <- nsdm_global$Species.Name
 
-  #sabina<-hsdm_global[!names(hsdm_global) %in% c("Summary", "args", "nreplicates", "myEMeval.replicates", "myEMeval.Ensemble", "myModelsVarImport")]
-  sabina<-hsdm_global[names(hsdm_global) %in% c("Species.Name", "VariablesPath")]
+  #sabina<-nsdm_global[!names(nsdm_global) %in% c("Summary", "args", "nreplicates", "myEMeval.replicates", "myEMeval.Ensemble", "myModelsVarImport")]
+  sabina<-nsdm_global[names(nsdm_global) %in% c("Species.Name", "VariablesPath")]
   sabina$args <- list()
   sabina$args$algorithms <- algorithms
   sabina$args$CV.nb.rep <- CV.nb.rep
@@ -35,15 +35,15 @@ HSDM.CovariateModels <- function(hsdm_global,
 
 
   # Add the global model as an additional variable for the regional model.
-  SDM.global <- terra::unwrap(hsdm_global$current.projections$Pred) # Unwrap objects
+  SDM.global <- terra::unwrap(nsdm_global$current.projections$Pred) # Unwrap objects
   names(SDM.global) <- c("SDM.global")
-  IndVar.Regional.temp <- terra::unwrap(hsdm_global$IndVar.Regional.Selected)  # Unwrap objects
+  IndVar.Regional.temp <- terra::unwrap(nsdm_global$IndVar.Regional.Selected)  # Unwrap objects
   IndVar.Regional.Covariate <- c(IndVar.Regional.temp, SDM.global)
 
-  myResp.xy <- rbind(hsdm_global$SpeciesData.XY.Regional, hsdm_global$Background.XY.Regional)
+  myResp.xy <- rbind(nsdm_global$SpeciesData.XY.Regional, nsdm_global$Background.XY.Regional)
   names(myResp.xy)<-c("x","y")
   row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-  myResp <- data.frame(c(rep(1,nrow(hsdm_global$SpeciesData.XY.Regional)),rep(NA,nrow(hsdm_global$Background.XY.Regional))))
+  myResp <- data.frame(c(rep(1,nrow(nsdm_global$SpeciesData.XY.Regional)),rep(NA,nrow(nsdm_global$Background.XY.Regional))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
   myExpl <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
@@ -54,7 +54,7 @@ HSDM.CovariateModels <- function(hsdm_global,
 					expl.var = myExpl,
 					resp.name = SpeciesName,
 					PA.nb.rep = 1,
-					PA.nb.absences = nrow(hsdm_global$Background.XY.Regional),
+					PA.nb.absences = nrow(nsdm_global$Background.XY.Regional),
 					PA.strategy = "random")
 
   # Calibrate and evaluate individual models with specified statistical algorithms.
@@ -181,18 +181,18 @@ HSDM.CovariateModels <- function(hsdm_global,
 
   # Model projections for future climate scenarios
   ################################################
-  if(!is.null(hsdm_global$Scenarios)) {
-  Scenarios <- lapply(hsdm_global$Scenarios, terra::unwrap) # Unwrap objects
+  if(!is.null(nsdm_global$Scenarios)) {
+  Scenarios <- lapply(nsdm_global$Scenarios, terra::unwrap) # Unwrap objects
   }
 
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
   } else {
     for(i in 1:length(Scenarios)) {
-      NewClim.temp <- Scenarios[[i]][[hsdm_global$Selected.Variables.Regional]]
+      NewClim.temp <- Scenarios[[i]][[nsdm_global$Selected.Variables.Regional]]
       Scenario.name <- names(Scenarios[i])
 
-      SDM.global.future <- terra::unwrap(hsdm_global$new.projections$Pred.Scenario[[i]]) # Unwrap objects
+      SDM.global.future <- terra::unwrap(nsdm_global$new.projections$Pred.Scenario[[i]]) # Unwrap objects
       names(SDM.global.future) <- c("SDM.global")
       NewClim <- c(NewClim.temp, SDM.global.future)
 
@@ -274,18 +274,17 @@ HSDM.CovariateModels <- function(hsdm_global,
 
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
-  if(!is.null(hsdm_selvars$Scenarios)) {
+  if(!is.null(nsdm_selvars$Scenarios)) {
     sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
   }
   
   sabina$Summary <- summary 
 
-  attr(sabina, "class") <- "hsdm.predict"
+  attr(sabina, "class") <- "nsdm.predict"
 
-  # Logs success or error messages
-  #message("\nHSDM.CovariateModels executed successfully!\n")
+  # % best replicates messages
   message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
-
+  # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
     message(paste(
