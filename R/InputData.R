@@ -104,13 +104,14 @@ NSDM.InputData <- function(SpeciesName,
   }
 
   # Match variables?
+  # Regionsal vs new scenarios
   match_vars <- sapply(new.env, function(file) {
     all(names(expl.var.regional) %in% names(file))
   })
   if(!all(match_vars)) {
    message("Not all scenarios have the same variables.")
   }
-
+  #Global vars in regional?
   match_vars2 <- sapply(names(expl.var.global), function(var_name) {
     var_name %in% names(expl.var.regional)
   })
@@ -120,16 +121,24 @@ NSDM.InputData <- function(SpeciesName,
 
   # Name and Rename new.env
   if(!is.null(new.env)) {
-    if(!is.null(names(new.env))) {
-      names(new.env) <- path_ext_remove(names(new.env))
-    } else if(is.null(names(new.env)) && !is.null(new.env.names)) {
+    if(is.null(names(new.env)) && is.null(new.env.names)) {
+      source_names <- lapply(new.env, function(x) {
+        s <- sources(x)
+        s |> path_file() |> path_ext_remove()
+      })
+      names(new.env) <- source_names
+      valid_names <- sapply(names(new.env), function(x) sum(nchar(x)))
+      if(!all(valid_names > 0)) {
+        stop("Please provide names of new scenarios in names.new.env")
+      }
+    } else if(!is.null(new.env.names)) {
       if(length(new.env) != length(new.env.names)) {
         stop("The number of provided new.env.names does not match the number of elements in new.env.")
       } else {
         names(new.env) <- new.env.names
       }
     } else if(is.null(names(new.env)) && is.null(new.env.names)) {
-    stop("names of new.env is null. Please provide names of new scenarios in names.new.env.")
+    stop("Names of new.env is NULL. Please provide names of new scenarios in names.new.env.")
     }
   }
 
