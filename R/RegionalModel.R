@@ -1,10 +1,9 @@
 #' @export
-#'
 ####################
 # 4. REGIONAL MODELS
 ####################
 
-NSDM.RegionalModels <- function(nsdm_selvars,
+NSDM.Regional <- function(nsdm_selvars,
                                     algorithms=c( "GLM", "GAM", "RF"),
                                     CV.nb.rep=10,
                                     CV.perc=0.8,
@@ -12,8 +11,8 @@ NSDM.RegionalModels <- function(nsdm_selvars,
                                     save.output=TRUE,
                                     rm.biomod.folder=TRUE){
 
-  if(!inherits(nsdm_selvars, "nsdm.input")){
-      stop("nsdm_selvars must be an object of nsdm.input class.")
+  if(!inherits(nsdm_selvars, "nsdm.vinput")){
+      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariables() function.")
   }
 
   models <- toupper(algorithms)
@@ -36,6 +35,12 @@ NSDM.RegionalModels <- function(nsdm_selvars,
   new.projections$Pred.bin.TSS.Scenario <- list()
   new.projections$Pred.bin.ROC.Scenario <- list()
 
+  # Unwrap objects
+  IndVar.Regional.Selected <- terra::unwrap(nsdm_selvars$IndVar.Regional.Selected)
+  if(!is.null(nsdm_selvars$Scenarios)) {
+  Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
+  }
+
   # Regional model calibrated with all the independent variables
   # Format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
   myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Regional ,nsdm_selvars$Background.XY.Regional)
@@ -43,7 +48,7 @@ NSDM.RegionalModels <- function(nsdm_selvars,
   myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Regional)),rep(NA,nrow(nsdm_selvars$Background.XY.Regional ))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
-  myExpl <- terra::extract(nsdm_selvars$IndVar.Regional.Selected , myResp.xy, as.df=TRUE)[, -1]
+  myExpl <- terra::extract(IndVar.Regional.Selected , myResp.xy, as.df=TRUE)[, -1]
 
   # Data required for the biomod2 package
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
@@ -76,9 +81,12 @@ NSDM.RegionalModels <- function(nsdm_selvars,
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
   nreplicates<-sum(df_slot$validation >= CV.perc)
+  if(nreplicates == 0) {
+    stop(paste0("\nNo replica has reached an AUC value >= ", CV.perc, ".\n"))
+  }
   percentage <- 100 * nreplicates/nrow(df_slot)
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates)
-  for (algorithm.i in models) {
+  for(algorithm.i in models) {
     nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= CV.perc)))
   }
   
@@ -98,7 +106,7 @@ NSDM.RegionalModels <- function(nsdm_selvars,
 
   # Project the individual models to the study area at regional scale under training conditions)
   myBiomodProj <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
-					new.env = nsdm_selvars$IndVar.Regional.Selected ,
+					new.env = IndVar.Regional.Selected,
 					proj.name = "Current",
 					models.chosen = 'all',
 					build.clamping.mask = FALSE)
@@ -180,14 +188,12 @@ NSDM.RegionalModels <- function(nsdm_selvars,
 
   # Model projections for future climate scenarios
   ################################################
-  Scenarios <- nsdm_selvars$Scenarios
-  
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
   } else {
     for(i in 1:length(Scenarios)) {
       new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Regional]]
-      #new.env <- terra::mask(new.env, nsdm_selvars$IndVar.Global.Selected[[1]])
+      #new.env <- terra::mask(new.env, IndVar.Global.Selected[[1]])
       Scenario.name <- names(Scenarios[i])
 
       myBiomomodProjScenario <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
@@ -267,15 +273,20 @@ NSDM.RegionalModels <- function(nsdm_selvars,
 				"AUC of ensemble model at regional level", 
 				"TSS of ensemble model at regional level",
 				"KAPPA of ensemble model at regional level")
+
+  # Wrap objects
+  sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
+  if(!is.null(nsdm_selvars$Scenarios)) {
+    sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
+  }
   
   sabina$Summary <- summary 
 
   attr(sabina, "class") <- "nsdm.predict.r"
 
-  # Logs success or error messages
-  #message("\nNSDM.Regional.Models executed successfully!\n")
+  # % best replicates messages
   message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
-
+  # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
     message(paste(

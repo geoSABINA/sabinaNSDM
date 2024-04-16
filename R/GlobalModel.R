@@ -1,10 +1,5 @@
 #' @export
-#'
-####################
-# 3. GLOBAL MODELS
-####################
-
-NSDM.GlobalModel <- function(nsdm_selvars,
+NSDM.Global <- function(nsdm_selvars,
 				algorithms=c("GLM", "GAM", "RF"),
 				CV.nb.rep=10,
 				CV.perc=0.8,
@@ -12,8 +7,8 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 				save.output=TRUE,
 				rm.biomod.folder=TRUE) {
 
-  if(!inherits(nsdm_selvars, "nsdm.input")){
-      stop("nsdm_selvars must be an object of nsdm.input class. Consider running NSDM.SelectVariables() function.")
+  if(!inherits(nsdm_selvars, "nsdm.vinput")){
+      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariables() function.")
   }
 
   models <- toupper(algorithms)
@@ -36,6 +31,14 @@ NSDM.GlobalModel <- function(nsdm_selvars,
   new.projections$Pred.bin.TSS.Scenario <- list()
   new.projections$Pred.bin.ROC.Scenario <- list()
 
+  # Unwrap objects
+  IndVar.Global.Selected <- terra::unwrap(nsdm_selvars$IndVar.Global.Selected)
+  IndVar.Global.Selected.reg <- terra::unwrap(nsdm_selvars$IndVar.Global.Selected.reg)
+  if(!is.null(nsdm_selvars$Scenarios)) {
+  Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
+  }
+
+
   # GLOBAL SCALE
   # Format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
   myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Global,nsdm_selvars$Background.XY.Global)
@@ -43,7 +46,7 @@ NSDM.GlobalModel <- function(nsdm_selvars,
   myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Global)),rep(NA,nrow(nsdm_selvars$Background.XY.Global))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
-  myExpl <- terra::extract(nsdm_selvars$IndVar.Global.Selected , myResp.xy, as.df=TRUE)[, -1]  #@@@#TG antes usaba misma resolucion para entrenar y proyectar el global
+  myExpl <- terra::extract(IndVar.Global.Selected, myResp.xy, as.df=TRUE)[, -1]  #@@@#TG antes usaba misma resolucion para entrenar y proyectar el global
 
   # Remaining script sections involve executing biomod2 modeling procedures, including data formatting, model training,
   # projection, evaluation, and visualization. Please refer to biomod2 documentation for detailed explanation of these steps.
@@ -59,7 +62,7 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 
   # Calibrate and evaluate individual models with specified statistical algorithms
   # Train and evaluate individual models using BIOMOD_Modeling
-  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,   #@@@## (This function saves outputs, check them and specify them in the description). Outputs: /NSHSDM/Larix.decidua/models/AllModels/Larix.decidua_PA1_RUN1_GBM
+  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,   #@@@## (This function saves outputs, check them and specify them in the description). Outputs: /NSNSDM/Larix.decidua/models/AllModels/Larix.decidua_PA1_RUN1_GBM
 	                                      modeling.id = "AllModels",
 	                                      models = models,
 	                                      bm.options = CustomModelOptions,
@@ -81,6 +84,9 @@ NSDM.GlobalModel <- function(nsdm_selvars,
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
   nreplicates<-sum(df_slot$validation >= CV.perc)
+  if(nreplicates == 0) {
+    stop(paste0("\nNo replica has reached an AUC value >= ", CV.perc, ".\n"))
+  }
   percentage <- 100 * nreplicates/nrow(df_slot)
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates) 
   for(algorithm.i in models) {
@@ -103,7 +109,7 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 
   # Project the individual models to the study area at regional scale under training conditions
   myBiomodProj <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
-					new.env = nsdm_selvars$IndVar.Global.Selected.reg,  #@@@TG Lo he cambiado porque estabamos usando la misma resolucion para entrenar y para proyectar
+					new.env = IndVar.Global.Selected.reg,  #@@@TG Lo he cambiado porque estabamos usando la misma resolucion para entrenar y para proyectar
 					proj.name = "Current",
 					models.chosen = 'all',
 					build.clamping.mask = FALSE)
@@ -161,7 +167,7 @@ NSDM.GlobalModel <- function(nsdm_selvars,
     fs::dir_create(paste0("Results/",Level,"/Values/"))
     file_path <- paste0("Results/",Level,"/Values/",SpeciesName,"_replica.csv")
     write.csv(myEMeval.replicates,file=file_path)
-    #write.csv(nreplicates,file=paste0("Results/",Level,"/Values/",SpeciesName,"_nreplicates.csv")) #@@@JMB quitaría esto. EL user puede buscar esta info en _replica.csv
+    write.csv(nreplicates,file=paste0("Results/",Level,"/Values/",SpeciesName,"_nreplicates.csv"))
   }
 
   # Values of the evaluation statistics of the consensus model
@@ -187,14 +193,12 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 
   # Model projections for future climate scenarios
   ################################################
-  Scenarios <- nsdm_selvars$Scenarios
-  
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
   } else {
     for(i in 1:length(Scenarios)) {
       new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Global]]
-      #new.env <- terra::mask(new.env, nsdm_selvars$IndVar.Global.Selected[[1]])
+      #new.env <- terra::mask(new.env, IndVar.Global.Selected[[1]])
       Scenario.name <- names(Scenarios[i])
 
       #Project the individual models
@@ -212,7 +216,7 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 
       Pred.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
       Pred.Scenario <- terra::rast(wrap(Pred.Scenario))
-	    
+
       sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario, paste0(SpeciesName,".",Scenario.name))
 
       if(save.output){
@@ -246,20 +250,6 @@ NSDM.GlobalModel <- function(nsdm_selvars,
     } # end for
   } # end if(length(Scenarios) == 0)
 
-  #if(rm.biomod.folder || !save.output){
-  #  # Remove species folder create by biomod2
-  #  unlink(paste(sp.name,sep=""), recursive = TRUE) #@RGM no se estaba borrando
-  #} else {
-  #  # Move biomod2 results to Results/Global/Models folder
-  #  dir.create(paste0("Results/",Level,"/Models/",sp.name))
-  #  source_folder <- sp.name
-  #  destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
-  #  if(file.exists(destination_folder)) {
-  #    unlink(destination_folder, recursive = TRUE)}
-  #    file.rename(from = source_folder, to = destination_folder)
-  #    unlink(sp.name)
-  #}
-
   source_folder <- sp.name
   destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
   
@@ -289,15 +279,20 @@ NSDM.GlobalModel <- function(nsdm_selvars,
 				"AUC of ensemble model at global level", 
 				"TSS of ensemble model at global level",
 				"KAPPA of ensemble model at global level")
+
+  # Wrap objects
+  sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
+  if(!is.null(nsdm_selvars$Scenarios)) {
+    sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
+  }
   
   sabina$Summary <- summary 
 
   attr(sabina, "class") <- "nsdm.predict.g"
 
-  # Logs success or error messages
-  #message("\nNSH.SDM.Global.Model executed successfully!\n")
+  # % best replicates messages
   message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
-
+  # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
     message(paste(

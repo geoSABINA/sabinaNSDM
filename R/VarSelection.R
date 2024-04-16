@@ -1,5 +1,5 @@
 #' @export
-NSDM.SelectVariables <- function(nsdm_finput,
+NSDM.SelectCovariables <- function(nsdm_finput,
 				maxncov.Global="nocorr", #@@@#TG si usuario no pone ninguna usa todas las no correlacionadas #@@@JMB como sugerencia he cambiado el nombre pq "all" podría confundirse con todas las variables. Pendiente comprobar qué pasa si pone más de las correlacionadas?
 				maxncov.Regional="nocorr",
 				corcut=0.7,
@@ -7,9 +7,8 @@ NSDM.SelectVariables <- function(nsdm_finput,
 				ClimaticVariablesBands=NULL,
 				save.output=TRUE) { 
 
-  #nsdm_name <- as.list(match.call())$nsdm_finput
-  if(!inherits(nsdm_finput, "nsdm.input")){
-      stop("nsdm_finput must be an object of nsdm.input class. Consider running NSDM.FormatingData() function.")
+  if(!inherits(nsdm_finput, "nsdm.finput")){
+      stop("nsdm_finput must be an object of nsdm.finput class. Consider running NSDM.FormatingData() function.")
   }
 
   algorithms <- tolower(algorithms)
@@ -26,10 +25,13 @@ NSDM.SelectVariables <- function(nsdm_finput,
   
   SpeciesName <- nsdm_finput$Species.Name
 
-  # GLOBAL SCALE
+  # Unwrap objects
   # Global independent variables (environmental layers)
-  IndVar.Global <- nsdm_finput$IndVar.Global
+  IndVar.Global <- terra::unwrap(nsdm_finput$IndVar.Global)
+  # Regional independent variables (environmental layers)
+  IndVar.Regional <- terra::unwrap(nsdm_finput$IndVar.Regional)
 
+  # GLOBAL SCALE
   # Select the best subset of independent variables for each species using covsel package
   myResp.xy.Global <- rbind(nsdm_finput$SpeciesData.XY.Global, nsdm_finput$Background.XY.Global)
   names(myResp.xy.Global)<-c("x","y")
@@ -70,7 +72,7 @@ NSDM.SelectVariables <- function(nsdm_finput,
 
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-				nlyr(sabina$IndVar.Global), 
+				nlyr(IndVar.Global), 
 				length(Selected.Variables.Global)))
 
   rownames(summary) <- c("Species name",
@@ -78,15 +80,12 @@ NSDM.SelectVariables <- function(nsdm_finput,
 			"Final number of selected variables at global scale")
 
   # REGIONAL SCALE
-  # Regional independent variables (environmental layers)
-  IndVar.Regional <- nsdm_finput$IndVar.Regional
-
   # Subset the global independent variables for regional projections
-  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]  #@@@#TG he puesto que se guarde tanto en resolucion global como regional para entrenar y proyectar 
+  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]  #@@@#TG he puesto que se guarde tanto en resolucion global como regional para entrenar y proyectar
 
   # Exclude climatic bands specified by the user.
+  Number.bands <- nlyr(IndVar.Regional)
   if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
-    Number.bands <- nlyr(IndVar.Regional)
     # Non eliminated variables
     Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)
     IndVar.Regional <- IndVar.Regional[[Bands.climatic]]
@@ -133,13 +132,18 @@ NSDM.SelectVariables <- function(nsdm_finput,
   IndVar.Regional.Selected <- IndVar.Regional[[Selected.Variables.Regional]]
   
   # Summary
-  summary_regional <- data.frame(Values = c(nlyr(sabina$IndVar.Regional),
+  summary_regional <- data.frame(Values = c(Number.bands,
 				length(Selected.Variables.Regional)))
 
   rownames(summary_regional) <- c("Original number of variables at regiona scale", 
 			"Final number of of variables at regional scale")
 
   summary <- rbind(summary, summary_regional)
+
+  # Wrap objects
+  IndVar.Global.Selected <- terra::wrap(IndVar.Global.Selected)
+  IndVar.Regional.Selected <- terra::wrap(IndVar.Regional.Selected)
+  IndVar.Global.Selected.reg <- terra::wrap(IndVar.Global.Selected.reg)
 
   sabina$Selected.Variables.Global <- Selected.Variables.Global
   sabina$IndVar.Global.Selected <- IndVar.Global.Selected #@@@# at global resolution for training
@@ -150,11 +154,9 @@ NSDM.SelectVariables <- function(nsdm_finput,
   # Make the output lighter
   sabina <- sabina[!names(sabina) %in% c("IndVar.Regional", "IndVar.Global")]
 
-  attr(sabina, "class") <- "nsdm.input"
+  attr(sabina, "class") <- "nsdm.vinput"
 
-  # Logs success or error messages
-  #message("\nVarSelection executed successfully!\n")
-
+  # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
     message(paste0(

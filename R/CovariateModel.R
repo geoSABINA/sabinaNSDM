@@ -1,5 +1,5 @@
 #' @export
-NSDM.CovariateModels <- function(nsdm_global,
+NSDM.Covariate <- function(nsdm_global,
 				algorithms=c("GLM","GAM","RF"),
 				CV.nb.rep=10,
 				CV.perc=0.8,
@@ -33,13 +33,11 @@ NSDM.CovariateModels <- function(nsdm_global,
   # Covariate model calibrated with all the independent variables.
   # Regional model excluding climatic variables.
 
-  # Create directories to save results of the modeling process
-
 
   # Add the global model as an additional variable for the regional model.
-  SDM.global <- nsdm_global$current.projections$Pred
+  SDM.global <- terra::unwrap(nsdm_global$current.projections$Pred) # Unwrap objects
   names(SDM.global) <- c("SDM.global")
-  IndVar.Regional.temp <- nsdm_global$IndVar.Regional.Selected
+  IndVar.Regional.temp <- terra::unwrap(nsdm_global$IndVar.Regional.Selected)  # Unwrap objects
   IndVar.Regional.Covariate <- c(IndVar.Regional.temp, SDM.global)
 
   myResp.xy <- rbind(nsdm_global$SpeciesData.XY.Regional, nsdm_global$Background.XY.Regional)
@@ -78,9 +76,12 @@ NSDM.CovariateModels <- function(nsdm_global,
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
   nreplicates<-sum(df_slot$validation >= CV.perc)
+  if(nreplicates == 0) {
+    stop(paste0("\nNo replica has reached an AUC value >= ", CV.perc, ".\n"))
+  }
   percentage <- 100 * nreplicates/nrow(df_slot)
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates)
-  for (algorithm.i in models) {
+  for(algorithm.i in models) {
     nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= CV.perc)))
   }
   
@@ -180,7 +181,9 @@ NSDM.CovariateModels <- function(nsdm_global,
 
   # Model projections for future climate scenarios
   ################################################
-  Scenarios <- nsdm_global$Scenarios
+  if(!is.null(nsdm_global$Scenarios)) {
+  Scenarios <- lapply(nsdm_global$Scenarios, terra::unwrap) # Unwrap objects
+  }
 
   if(length(Scenarios) == 0) {
     message("There are no new scenarios different from Current.tif!\n")
@@ -189,7 +192,7 @@ NSDM.CovariateModels <- function(nsdm_global,
       NewClim.temp <- Scenarios[[i]][[nsdm_global$Selected.Variables.Regional]]
       Scenario.name <- names(Scenarios[i])
 
-      SDM.global.future <- nsdm_global$new.projections$Pred.Scenario[[i]]
+      SDM.global.future <- terra::unwrap(nsdm_global$new.projections$Pred.Scenario[[i]]) # Unwrap objects
       names(SDM.global.future) <- c("SDM.global")
       NewClim <- c(NewClim.temp, SDM.global.future)
 
@@ -268,15 +271,20 @@ NSDM.CovariateModels <- function(nsdm_global,
 				"AUC of hierarchical covariate ensemble model", 
 				"TSS of hierarchical covariate ensemble model",
 				"KAPPA of hierarchical covariate ensemble model")
+
+  # Wrap objects
+  sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
+  if(!is.null(nsdm_selvars$Scenarios)) {
+    sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
+  }
   
   sabina$Summary <- summary 
 
   attr(sabina, "class") <- "nsdm.predict"
 
-  # Logs success or error messages
-  #message("\nNSDM.CovariateModels executed successfully!\n")
+  # % best replicates messages
   message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
-
+  # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
     message(paste(
