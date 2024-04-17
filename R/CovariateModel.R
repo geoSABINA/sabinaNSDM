@@ -1,11 +1,12 @@
 #' @export
 NSDM.Covariate <- function(nsdm_global,
-				algorithms=c("GLM","GAM","RF"),
-				CV.nb.rep=10,
-				CV.perc=0.8,
-				CustomModelOptions=NULL,
-				rm.biomod.folder=TRUE,
-				save.output = TRUE) {
+			   algorithms=c("GLM","GAM","RF"),
+			   CV.nb.rep=10,
+			   CV.perc=0.8,
+			   CustomModelOptions=NULL,
+			   metric.select.thresh = 0.8,
+			   rm.biomod.folder=TRUE,
+			   save.output = TRUE) {
 
   if(!inherits(nsdm_global, "nsdm.predict.g")){
       stop("nsdm_global must be an object of nsdm.predict.g class.")
@@ -23,6 +24,7 @@ NSDM.Covariate <- function(nsdm_global,
   sabina$args$algorithms <- algorithms
   sabina$args$CV.nb.rep <- CV.nb.rep
   sabina$args$CV.perc <- CV.perc
+  sabina$args$metric.select.thresh <- metric.select.thresh
 
   current.projections <- list()
   new.projections <- list()
@@ -64,25 +66,29 @@ NSDM.Covariate <- function(nsdm_global,
 	                                      models = models,
 	                                      OPT.user = CustomModelOptions, # Use the specified or default modeling options
 	                                      CV.strategy = "random",
-	                                      CV.nb.rep = CV.nb.rep, CV.perc = CV.perc,
-	                                      weights = NULL, var.import = 3,
+	                                      CV.nb.rep = CV.nb.rep, 
+					      CV.perc = CV.perc,
+	                                      weights = NULL, 
+					      var.import = 3,
 	                                      metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"),
-	                                      scale.models = FALSE, do.progress = TRUE,
-	                                      prevalence = 0.5, seed.val = 42,
+	                                      scale.models = FALSE, 
+					      do.progress = TRUE,
+	                                      prevalence = 0.5, 
+					      seed.val = 42,
 	                                      CV.do.full.models = FALSE)
 
   # Replicates with ROC > 0.8
   df <- myBiomodModelOut@models.evaluation
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
-  nreplicates<-sum(df_slot$validation >= CV.perc)
+  nreplicates<-sum(df_slot$validation >= metric.select.thresh)
   if(nreplicates == 0) {
-    stop(paste0("\nNo replica for ", SpeciesName, " has reached an AUC value >= ", CV.perc, ".\n"))
+    stop(paste0("\nNo replica for ", SpeciesName, " has reached an AUC value >= ", metric.select.thresh, ".\n"))
   }
   percentage <- 100 * nreplicates/nrow(df_slot)
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates)
   for(algorithm.i in models) {
-    nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= CV.perc)))
+    nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= metric.select.thresh)))
   }
   
   sabina$args$nbestreplicates <- nreplicates  #@@@JMB sugiero poner nbestreplicates en lugar de nreplicates.
@@ -94,7 +100,7 @@ NSDM.Covariate <- function(nsdm_global,
                                                  em.by = 'all',
                                                  em.algo = c("EMmean"),
                                                  metric.select = c('ROC'),
-                                                 metric.select.thresh = 0.8,
+                                                 metric.select.thresh = metric.select.thresh,
                                                  var.import = 0, #@RGM esto lo he cambiado
                                                  metric.eval = c('ROC', "TSS", "KAPPA"),
                                                  seed.val = 42)
@@ -260,14 +266,14 @@ NSDM.Covariate <- function(nsdm_global,
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
 				paste(toupper(algorithms),collapse = ", "), 
-				sum(sabina$myEMeval.replicates$metric.eval == "ROC" & sabina$myEMeval.replicates$validation >= CV.perc), 
+				sum(sabina$myEMeval.replicates$metric.eval == "ROC" & sabina$myEMeval.replicates$validation >= metric.select.thresh), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
   rownames(summary) <- c("Species name",
 				"Statistical algorithms for covariate hierarchical model", 
-				paste0("Number of replicates with AUC > ",CV.perc, " for covariate hierarchical model"), 
+				paste0("Number of replicates with AUC > ",metric.select.thresh, " for covariate hierarchical model"), 
 				"AUC of hierarchical covariate ensemble model", 
 				"TSS of hierarchical covariate ensemble model",
 				"KAPPA of hierarchical covariate ensemble model")
@@ -283,10 +289,10 @@ NSDM.Covariate <- function(nsdm_global,
   attr(sabina, "class") <- "nsdm.predict"
 
   # % best replicates messages
-  message(sprintf("\n%.2f%% of %s replicates with AUC values >= %.2f.\n", percentage, SpeciesName, CV.perc))
+  message(sprintf("\n%.2f%% of %s replicates with AUC values >= %.2f.\n", percentage, SpeciesName, metric.select.thresh))
   # save.out messages
   if(save.output){
-    message("Results saved in the following locations:")
+    message("Results saved in the following local folder/s:")
     message(paste(
     " - Current and new projections: /Results/Covariate/Projections/\n",
     "- Replicates statistics: /Results/Covariate/Values/\n",

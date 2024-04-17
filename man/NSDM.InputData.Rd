@@ -43,7 +43,7 @@ An \code{data.frame} with two columns, 'x' and 'y', representing background poin
 An object of class "nsdm.input" containing organized input data for NSDM.
 }
 \description{
-This function gathers together all input data (\emph{species presences xy at global and regional level, explanatory variables at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \NSDM.
+This function gathers together all input data (\emph{species presences xy at global and regional level, explanatory variables at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
 }
 \details{
 \itemize{

@@ -2,7 +2,7 @@
 #'
 #' @title Prepare input data for Nested spatial hierarchical Species Distribution Modeling (NSDM) analysis.
 #'
-#' @description This function gathers together all input data (\emph{species presences xy at global and regional level, explanatory variables at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \NSDM.
+#' @description This function gathers together all input data (\emph{species presences xy at global and regional level, explanatory variables at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
 #'
 #' @param SpeciesName A \code{character} specifying the species name for which data is being prepared.
 #' @param spp.data.global A \code{data.frame} with two columns, 'x' and 'y', representing the species presence data at global level.

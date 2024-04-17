@@ -2,15 +2,15 @@
 #'
 #' @title Prepare input data for the Hierarchical Species Distribution Modeling (NSDM) analysis.
 #'
-#' @description Format input data and background data for usage in \NSDM.
+#' @description Format input data and background data (if necesary) for usage in \bold{NSDM}.
 #'
 #' @param nsdm_input An object of class "nsdm.input" generated using the \code{\link{NSDM.InputData}} function. #@@@JMB ver como ponemos el hsbm.input class
 #' @param nPoints (\emph{optional, default} \code{10000}) \cr
 #' An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points is not provided at \code{\link{NSDM.InputData}}.
 #' @param Min.Dist.Global (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between background points at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input raster
+#' A \code{numeric} corresponding to the minimum distance between species presences points at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input raster
 #' @param Min.Dist.Regional (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between background points at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input raster
+#' A \code{numeric} corresponding to the minimum distance between species presences points at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input raster
 #' @param Background.method  (\emph{optional, default} \code{'random'}) \cr
 #' If no background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}.
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
@@ -42,7 +42,7 @@
 #' 
 #' # Format the input data
 #' myFormatedData <- NSDM.FormatingData(myInputData,
-#					nPoints=1000)
+#'					nPoints=1000)
 #'
 #' @export
 NSDM.FormatingData <- function(nsdm_input,
@@ -94,7 +94,7 @@ NSDM.FormatingData <- function(nsdm_input,
   IndVar.Global <- terra::mask(IndVar.Global, Mask.Global) 
 
   # Generate random background points for model calibration
-  if(is.null(nsdm_input$Background.Global.0) && Background.method == "random") { #@@@JMB new 
+  if(is.null(nsdm_input$Background.Global.0) && Background.method == "random") { 
     Valid.Cells.Global <- which(!is.na(values(Mask.Global)))
     if(length(Valid.Cells.Global) < nPoints) {
       stop(paste("The requested number of background nPoints exceeds the number of valid/available cells.
@@ -102,39 +102,19 @@ NSDM.FormatingData <- function(nsdm_input,
     }
     Sampled.indices.Global <- sample(Valid.Cells.Global, nPoints)
     Coords.Global <- terra::xyFromCell(Mask.Global, Sampled.indices.Global)
-    XY.Global <- as.data.frame(Coords.Global)
+    Background.XY.Global <- as.data.frame(Coords.Global)
   } else if(is.null(nsdm_input$Background.Global.0) && Background.method == "stratified") {
-    XY.Global <- background_stratified(IndVar.Global, nPoints=nPoints)
+    Background.XY.Global <- background_stratified(IndVar.Global, nPoints=nPoints)
   } else {
     #remove NAs and duplicates of Background.Global.0
     XY.Global <- terra::extract(Mask.Global, nsdm_input$Background.Global.0) #@@@JMB xy=TRE creo que modifica las coordenadas originales
     XY.Global <- cbind(XY.Global, nsdm_input$Background.Global.0)
     XY.Global <- na.omit(XY.Global)[, -c(1:2)]
-    XY.Global <- unique(XY.Global)
-  }
-
-  # Spatial thinning of background data to remove duplicates and apply minimum distance criteria 
-  if(Min.Dist.Global == "resolution" ) {
-    Min.Dist.Global<-res(Mask.Global)[1]
-  }
-  invisible(capture.output({
-    tryCatch({
-      XY.final.Global <- ecospat::ecospat.occ.desaggregation(XY.Global, min.dist = Min.Dist.Global, by = NULL)
-    }, error = function(e) {
-      # If an error occurs, run the alternative block
-      XY.Global <- round(XY.Global, digits = 4)
-      XY.final.Global <- ecospat::ecospat.occ.desaggregation(XY.Global, min.dist = Min.Dist.Global, by = NULL)
-    })
-  }))
-  Background.XY.Global<-XY.final.Global
-  if(!is.null(nsdm_input$Background.Global.0)) {
-    message(paste0("Global background data: from ", nrow(nsdm_input$Background.Global.0), " to ", nrow(Background.XY.Global), " points after cleaning and thinning."))
-  } else {
-    message(paste0("Global background data: from ", nPoints, " to ", nrow(Background.XY.Global), " points after cleaning and thinning."))
+    Background.XY.Global <- unique(XY.Global)
   }
 
   if(save.output){
-  write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
+    write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
   }
 
 
@@ -172,14 +152,12 @@ NSDM.FormatingData <- function(nsdm_input,
   summary <- data.frame(Values = c(SpeciesName,
 				nrow(SpeciesData.XY.Global), 
 				nrow(XY.final.Global), 
-				ifelse(is.null(nsdm_input$Background.Global), nPoints, nrow(nsdm_input$Background.Global)),
-				nrow(Background.XY.Global)))
+				ifelse(is.null(nsdm_input$Background.Global.0), nPoints, nrow(nsdm_input$Background.Global.0))))
 
   rownames(summary) <- c("Species name",
 			"Original number of species presences at global level", 
 			"Final number of species presences at global level", 
-			"Original number of background points at global level", 
-			"Final number of background points global level")
+			"Number of background points at global level")
 
 
   # REGIONAL SCALE
@@ -198,39 +176,19 @@ NSDM.FormatingData <- function(nsdm_input,
     }
     Sampled.indices.Regional <- sample(Valid.Cells.Regional, nPoints)
     Coords.Regional <- terra::xyFromCell(Mask.Regional, Sampled.indices.Regional)
-    XY.Regional <- as.data.frame(Coords.Regional)
+    Background.XY.Regional <- as.data.frame(Coords.Regional)
   } else if(is.null(nsdm_input$Background.regional.0) && Background.method == "stratified") {
-    XY.Regional <- background_stratified(IndVar.Regional, nPoints=nPoints)
+    Background.XY.Regional <- background_stratified(IndVar.Regional, nPoints=nPoints)
   } else {
     #remove NAs and duplicates
     XY.Regional <- terra::extract(Mask.Regional, nsdm_input$Background.Regional.0)
     XY.Regional <- cbind(XY.Regional, nsdm_input$Background.Regional.0)
     XY.Regional <- na.omit(XY.Regional)[, -c(1:2)]
-    XY.Regional <- unique(XY.Regional)
+    Background.XY.Regional <- unique(XY.Regional)
   }
 
-    # Spatial thinning of background data to remove duplicates and apply minimum distance criteria
-    if(Min.Dist.Regional == "resolution" ) {
-      Min.Dist.Regional<-res(Mask.Regional)[1]
-    }
-    invisible(capture.output({
-      tryCatch({
-        XY.final.Regional <- ecospat::ecospat.occ.desaggregation(XY.Regional, min.dist = Min.Dist.Regional, by = NULL)
-      }, error = function(e) {
-        # If an error occurs, run the alternative block
-        XY.Regional <- round(XY.Regional, digits = 4)
-        XY.final.Regional <- ecospat::ecospat.occ.desaggregation(XY.Regional, min.dist = Min.Dist.Regional, by = NULL)
-      })
-    }))
-    Background.XY.Regional<-XY.final.Regional
-    if(!is.null(nsdm_input$Background.Regional.0)) {
-      message(paste0("Regional background data: from ", nrow(nsdm_input$Background.Regional.0), " to ", nrow(Background.XY.Regional), " points after cleaning and thinning."))
-    } else {
-      message(paste0("Regional background data: from ", nPoints, " to ", nrow(Background.XY.Regional), " points after cleaning and thinning."))
-    }
-
   if(save.output){
-  write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
+    write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
   }
 
   # Load species presence data at regional scale
@@ -267,25 +225,14 @@ NSDM.FormatingData <- function(nsdm_input,
   # Summary regional
   summary_regional <- data.frame(Values = c(nrow(SpeciesData.XY.Regional), 
 				nrow(XY.final.Regional), 
-				ifelse(is.null(nsdm_input$Background.Regional), nPoints, nrows(nsdm_input$Background.Regional)),
-				nrow(Background.XY.Regional)))
+				ifelse(is.null(nsdm_input$Background.Regional.0), nPoints, nrows(nsdm_input$Background.Regional.0))))
 
   rownames(summary_regional) <- c("Original number of species presences at regional level", 
 			"Final number of species presences at regional level", 
-			"Original number of background points at regional level", 
-			"Final number of background points regional level")
+			"Number of background points at regional level")
 
   summary <- rbind(summary, summary_regional)
 
-  #nScenarios <- names(nsdm_input$Scenarios) 
-
-  #if(length(nScenarios) == 0) { #@@@JMB parte de esto está en la función nueva NSDM.InputData
-  #  message("There are no new scenarios different from Current.tif")
-  #} #else  {
-    #message("Future scenarios: ")
-    #print(path_ext_remove(path_file(Scenarios)))
-  #}
-  
   summary_regional <- data.frame(Values = c(length(nsdm_input$Scenarios))) 
   rownames(summary_regional) <- c("Number of new scenarios")
   summary <- rbind(summary, summary_regional)
@@ -307,7 +254,7 @@ NSDM.FormatingData <- function(nsdm_input,
 
   # save.out messages
   if(save.output) {
-    message("Results saved in the following locations:")
+    message("Results saved in the following local folder/s:")
     message(paste0(
 	" - Global background points: /Results/Global/Background/Background.csv\n",
 	" - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
@@ -332,7 +279,6 @@ background_stratified <- function(expl.var, nPoints) {
   }
 
   pca <- princomp(df)
-  #dput(pca, file = "pca.csv") #@@@JMB guardamos esto?
   PC1 <- predict(expl.var, pca, index = 1)
   PC2 <- predict(expl.var, pca, index = 2)
 
@@ -346,9 +292,6 @@ background_stratified <- function(expl.var, nPoints) {
 
   # Combine the 4 new categories in both PCs to create a final Stratum raster with 16 categories
   Stratum <- PC1_cat * PC2_cat
-  #plot(Stratum)
-
-  #writeRaster(Stratum, file = paste(VariablesPath, "/PC_stratums.tif", sep = "")) #@@@JMB guardamos este tif?
   
   # Create background sample
   Background <- sgsR::sample_balanced(Stratum, nPoints)

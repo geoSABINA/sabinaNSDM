@@ -1,9 +1,9 @@
 #' @export
 NSDM.Multiply <- function(nsdm_global,
-                                    nsdm_regional,
-                                    method="Arithmetic",
-                                    rescale=FALSE,
-                                    save.output=TRUE) {
+                          nsdm_regional,
+                          method="Arithmetic",
+                          rescale=FALSE,
+                          save.output=TRUE) {
 
   if(!inherits(nsdm_regional, "nsdm.predict.r") || !inherits(nsdm_global, "nsdm.predict.g")) {
     stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.r, respectively.")
@@ -126,19 +126,19 @@ NSDM.Multiply <- function(nsdm_global,
   #				"TSS of hierarchical multiply ensemble model",
   #				"KAPPA of hierarchical multiply ensemble model")
 
+  #sabina$Summary <- summary
+
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
   if(!is.null(nsdm_selvars$Scenarios)) {
     sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
   }
 
-  #sabina$Summary <- summary
-
   attr(sabina, "class") <- "nsdm.predict"
 
   # save.out messages
   if(save.output){
-  message("Results saved in the following locations:")
+  message("Results saved in the following local folder/s:")
   message(paste(
     " - Hierarchical Multiply Models: /Results/Multiply/Projections/\n"
   ))
