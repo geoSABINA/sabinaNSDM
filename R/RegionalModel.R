@@ -63,7 +63,7 @@ NSDM.Regional <- function(nsdm_selvars,
   myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,
 	                                      modeling.id = "AllModels",
 	                                      models = models,
-	                                      bm.options = CustomModelOptions, # Use the specified or default modeling options
+	                                      OPT.user = CustomModelOptions, # Use the specified or default modeling options
 	                                      CV.strategy = "random",
 	                                      CV.nb.rep = CV.nb.rep,
 					      CV.perc = CV.perc,
@@ -82,7 +82,7 @@ NSDM.Regional <- function(nsdm_selvars,
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
   nreplicates<-sum(df_slot$validation >= CV.perc)
   if(nreplicates == 0) {
-    stop(paste0("\nNo replica has reached an AUC value >= ", CV.perc, ".\n"))
+    stop(paste0("\nNo replica for ", SpeciesName, " has reached an AUC value >= ", CV.perc, ".\n"))
   }
   percentage <- 100 * nreplicates/nrow(df_slot)
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates)
@@ -189,7 +189,7 @@ NSDM.Regional <- function(nsdm_selvars,
   # Model projections for future climate scenarios
   ################################################
   if(length(Scenarios) == 0) {
-    message("There are no new scenarios different from Current.tif!\n")
+    warning("No new scenarios for further projections!\n") #Aquí pondría un warning en lugar de message
   } else {
     for(i in 1:length(Scenarios)) {
       new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Regional]]
@@ -262,7 +262,7 @@ NSDM.Regional <- function(nsdm_selvars,
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
 				paste(toupper(algorithms),collapse = ", "), 
-				nrow(sabina$myEMeval.replicates), 
+				sum(sabina$myEMeval.replicates$metric.eval == "ROC" & sabina$myEMeval.replicates$validation >= CV.perc), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
@@ -285,7 +285,7 @@ NSDM.Regional <- function(nsdm_selvars,
   attr(sabina, "class") <- "nsdm.predict.r"
 
   # % best replicates messages
-  message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
+  message(sprintf("\n%.2f%% of %s replicates with AUC values >= %.2f.\n", percentage, SpeciesName, CV.perc))
   # save.out messages
   if(save.output){
     message("Results saved in the following locations:")

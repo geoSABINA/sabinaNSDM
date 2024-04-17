@@ -17,4 +17,5 @@ Imports:
     covsel,
     ecospat,
     fs,
-    terra
+    terra,
+    sgsR

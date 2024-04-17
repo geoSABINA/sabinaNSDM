@@ -106,7 +106,7 @@ NSDM.Multiply <- function(nsdm_global,
   # Summary
   #summary <- data.frame(Values = c(SpeciesName,
   #				paste(nsdm_regional$args$algorithms,collapse = ", "),
-  #				nrow(nsdm_regional$myEMeval.replicates), 
+  #				sum(nsdm_regional$myEMeval.replicates$metric.eval == "ROC" & nsdm_regional$myEMeval.replicates$validation >= CV.perc), 
   #				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
   #				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
   #				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],

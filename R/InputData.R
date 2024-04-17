@@ -75,7 +75,7 @@ NSDM.InputData <- function(SpeciesName,
       !(is.data.frame(spp.data.regional) && 
         ncol(spp.data.regional) == 2 && 
         all(c('x', 'y') %in% colnames(spp.data.regional)))) {
-    stop("spp.data.global and spp.data.regional must be data.frames with 'x' and 'y' columns")
+    stop(paste0("spp.data.global and spp.data.regional for ", SpeciesName, " must be data.frames with 'x' and 'y' columns."))
   }
 
   if(!inherits(expl.var.global, "SpatRaster") || !inherits(expl.var.regional, "SpatRaster")) {
@@ -109,7 +109,7 @@ NSDM.InputData <- function(SpeciesName,
     all(names(expl.var.regional) %in% names(file))
   })
   if(!all(match_vars)) {
-   message("Not all scenarios have the same variables.")
+   message("Not all scenarios have the same variables!")
   }
   #Global vars in regional?
   match_vars2 <- sapply(names(expl.var.global), function(var_name) {
@@ -124,7 +124,7 @@ NSDM.InputData <- function(SpeciesName,
     if(is.null(names(new.env)) && is.null(new.env.names)) {
       source_names <- lapply(new.env, function(x) {
         s <- sources(x)
-        s |> path_file() |> path_ext_remove()
+        s |> fs::path_file() |> fs::path_ext_remove()
       })
       names(new.env) <- source_names
       valid_names <- sapply(names(new.env), function(x) sum(nchar(x)))
