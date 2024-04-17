@@ -1,11 +1,12 @@
 #' @export
 NSDM.Global <- function(nsdm_selvars,
-				algorithms=c("GLM", "GAM", "RF"),
-				CV.nb.rep=10,
-				CV.perc=0.8,
-				CustomModelOptions=NULL,
-				save.output=TRUE,
-				rm.biomod.folder=TRUE) {
+			algorithms=c("GLM", "GAM", "RF"),
+			CV.nb.rep=10,
+			CV.perc=0.8,
+			CustomModelOptions=NULL,
+			metric.select.thresh = 0.8,
+			save.output=TRUE,
+			rm.biomod.folder=TRUE) {
 
   if(!inherits(nsdm_selvars, "nsdm.vinput")){
       stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariables() function.")
@@ -24,6 +25,7 @@ NSDM.Global <- function(nsdm_selvars,
   sabina$args$algorithms <- algorithms
   sabina$args$CV.nb.rep <- CV.nb.rep
   sabina$args$CV.perc <- CV.perc
+  sabina$args$metric.select.thresh <- metric.select.thresh
 
   current.projections <- list()
   new.projections <- list()
@@ -65,7 +67,7 @@ NSDM.Global <- function(nsdm_selvars,
   myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,   #@@@## (This function saves outputs, check them and specify them in the description). Outputs: /NSNSDM/Larix.decidua/models/AllModels/Larix.decidua_PA1_RUN1_GBM
 	                                      modeling.id = "AllModels",
 	                                      models = models,
-	                                      bm.options = CustomModelOptions,
+	                                      OPT.user = CustomModelOptions,
 	                                      CV.strategy = "random",
 	                                      CV.nb.rep = CV.nb.rep, 
 					      CV.perc = CV.perc,
@@ -83,14 +85,14 @@ NSDM.Global <- function(nsdm_selvars,
   df <- myBiomodModelOut@models.evaluation
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
-  nreplicates<-sum(df_slot$validation >= CV.perc)
+  nreplicates<-sum(df_slot$validation >= metric.select.thresh)
   if(nreplicates == 0) {
-    stop(paste0("\nNo replica has reached an AUC value >= ", CV.perc, ".\n"))
+    stop(paste0("\nNo replica for ", SpeciesName, " has reached an AUC value >= ", metric.select.thresh, ".\n"))
   }
   percentage <- 100 * nreplicates/nrow(df_slot)
   nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates) 
   for(algorithm.i in models) {
-    nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= CV.perc)))
+    nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= metric.select.thresh)))
   }
 
   sabina$nbestreplicates <- nreplicates  #@@@JMB sugiero poner nbestreplicates en lugar de nreplicates.
@@ -101,7 +103,7 @@ NSDM.Global <- function(nsdm_selvars,
 					em.by = 'all',
 					em.algo = c("EMmean"),
 					metric.select = c('ROC'),
-					metric.select.thresh = 0.8,
+					metric.select.thresh = metric.select.thresh,
 					var.import = 0, 	#@RGM esto lo he cambiado, creo que solo es necesario en el paso anterior
 					metric.eval = c('ROC', "TSS", "KAPPA"),
 					seed.val = 42)
@@ -194,7 +196,7 @@ NSDM.Global <- function(nsdm_selvars,
   # Model projections for future climate scenarios
   ################################################
   if(length(Scenarios) == 0) {
-    message("There are no new scenarios different from Current.tif!\n")
+    warning("No new scenarios for further projections!\n") #Aquí pondría un warning en lugar de message
   } else {
     for(i in 1:length(Scenarios)) {
       new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Global]]
@@ -268,14 +270,14 @@ NSDM.Global <- function(nsdm_selvars,
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
 				paste(toupper(algorithms),collapse = ", "), 
-				nrow(sabina$myEMeval.replicates), 
+				sum(sabina$myEMeval.replicates$metric.eval == "ROC" & sabina$myEMeval.replicates$validation >= metric.select.thresh), 
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
   rownames(summary) <- c("Species name",
 				"Statistical algorithms at global level", 
-				paste0("Number of replicates with AUC > ",CV.perc, " at global level"), 
+				paste0("Number of replicates with AUC > ",metric.select.thresh, " at global level"), 
 				"AUC of ensemble model at global level", 
 				"TSS of ensemble model at global level",
 				"KAPPA of ensemble model at global level")
@@ -291,10 +293,10 @@ NSDM.Global <- function(nsdm_selvars,
   attr(sabina, "class") <- "nsdm.predict.g"
 
   # % best replicates messages
-  message(sprintf("\n%.2f%% of replicates with AUC values >= %.2f.\n", percentage, CV.perc))
+  message(sprintf("\n%.2f%% of %s replicates with AUC values >= %.2f.\n", percentage, SpeciesName, metric.select.thresh))
   # save.out messages
   if(save.output){
-    message("Results saved in the following locations:")
+    message("Results saved in the following local folder/s:")
     message(paste(
     " - Current and new projections: /Results/Global/Projections/\n",
     "- Replicates statistics: /Results/Global/Values/\n",

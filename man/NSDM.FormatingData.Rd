@@ -9,6 +9,7 @@ NSDM.FormatingData(
   nPoints = 10000,
   Min.Dist.Global = "resolution",
   Min.Dist.Regional = "resolution",
+  Background.method = "random",
   save.output = TRUE
 )
 }
@@ -19,10 +20,13 @@ NSDM.FormatingData(
 An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points is not provided at \code{\link{NSDM.InputData}}.}
 
 \item{Min.Dist.Global}{(\emph{optional, default} \code{'resolution'}) \cr
-A \code{numeric} corresponding to the minimum distance between background points at the global level. If \code{Min.Dist.Global="resolution"}, the minimum distance is calculated based on the resolution of the input raster}
+A \code{numeric} corresponding to the minimum distance between species presences points at the global level. If \code{Min.Dist.Global="resolution"}, the minimum distance is calculated based on the resolution of the input raster}
 
 \item{Min.Dist.Regional}{(\emph{optional, default} \code{'resolution'}) \cr
-A \code{numeric} corresponding to the minimum distance between background points at the regional level. If \code{Min.Dist.Regional="resolution"}, the minimum distance is calculated based on the resolution of the input raster}
+A \code{numeric} corresponding to the minimum distance between species presences points at the regional level. If \code{Min.Dist.Regional="resolution"}, the minimum distance is calculated based on the resolution of the input raster}
+
+\item{Background.method}{(\emph{optional, default} \code{'random'}) \cr
+If no background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}.}
 
 \item{save.output}{(\emph{optional, default} \code{TRUE}) \cr
 A \code{logical} value defining whether the outputs should be saved at local.}
@@ -31,7 +35,7 @@ A \code{logical} value defining whether the outputs should be saved at local.}
 An object of class "nsdm.finput" containing formatted input data for the NSDM:
 \itemize{
 \item \code{Species.Name} The name of the species provided as input.
-\item \code{args} A \code{list} containing the arguments used for data formatting, including: \code{nPoints}, \code{Min.Dist.Global} and \code{Min.Dist.Regional}.
+\item \code{args} A \code{list} containing the arguments used for data formatting, including: \code{nPoints}, \code{Min.Dist.Global}, \code{Min.Dist.Regional}, and \code{Background.method}.
 \item \code{SpeciesData.XY.Global} Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
 \item \code{SpeciesData.XY.Regional} Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
 \item \code{Background.XY.Global} Background points data at the global level at \code{data.frame} format after applying spatial thinning.
@@ -43,7 +47,7 @@ An object of class "nsdm.finput" containing formatted input data for the NSDM:
 }
 }
 \description{
-Format input data and background data for usage in \NSDM.
+Format input data and background data (if necesary) for usage in \bold{NSDM}.
 }
 \details{
 This function formates the input data for NSDM, including generating background points, cleaning and thinning presence and background data, and saving the results to local if specified. If \code{save.output=TRUE}, outputs (i.e., species occurrences and background points after appling spatial thinning, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
@@ -61,5 +65,6 @@ library(ecospat)
 
 # Format the input data
 myFormatedData <- NSDM.FormatingData(myInputData,
+				nPoints=1000)
 
 }
