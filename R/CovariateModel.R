@@ -1,6 +1,7 @@
 #' @export
 NSDM.Covariate <- function(nsdm_global,
 			   algorithms=c("GLM","GAM","RF"),
+  			   rm.corr=TRUE,
 			   CV.nb.rep=10,
 			   CV.perc=0.8,
 			   CustomModelOptions=NULL,
@@ -18,9 +19,11 @@ NSDM.Covariate <- function(nsdm_global,
 
   SpeciesName <- nsdm_global$Species.Name
 
-  #sabina<-nsdm_global[!names(nsdm_global) %in% c("Summary", "args", "nreplicates", "myEMeval.replicates", "myEMeval.Ensemble", "myModelsVarImport")]
-  sabina<-nsdm_global[names(nsdm_global) %in% c("Species.Name", "VariablesPath")]
+  #sabina<-nsdm_global[!names(nsdm_global) %in% c("Summary", "args", "nbestreplicates", "myEMeval.replicates", "myEMeval.Ensemble", "myModelsVarImport")]
+  sabina<-nsdm_global[names(nsdm_global) %in% c("Species.Name")]
   sabina$args <- list()
+  sabina$args$rm.corr <- rm.corr
+  #sabina$args$corcut <- if(rm.corr) nsdm_global$corcut #@@@JMB igual innecesario
   sabina$args$algorithms <- algorithms
   sabina$args$CV.nb.rep <- CV.nb.rep
   sabina$args$CV.perc <- CV.perc
@@ -49,6 +52,20 @@ NSDM.Covariate <- function(nsdm_global,
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
   myExpl <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
+
+  if(rm.corr==TRUE) { 
+    # Remove correlated covariates with global model
+    myResp.covsel <- as.vector(c(rep(1,nrow(nsdm_global$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_global$Background.XY.Regional))))
+    myExpl.covsel <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
+    myExpl <- covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp.covsel, force="SDM.global", corcut=nsdm_global$corcut)
+    #corr_mat <- cor(myExpl)
+    #if(save.output){ #@@@JMB no sé si necesario?
+    #  write.csv(corr_mat,file=paste0("Results/Covariate/Values/",SpeciesName,"_vars_corr.csv"))
+    #} 
+    #sabina$vars.corr <- corr_mat #@@@JMB no sé si guardar corr_mat aunque rev.corr = FALSE
+  }
+
+  sabina$Selected.Variables.Covariate <- names(myExpl) #@@@JMB guardamos esto?
 
   # Data required for the biomod2 package.
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
@@ -91,7 +108,7 @@ NSDM.Covariate <- function(nsdm_global,
     nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= metric.select.thresh)))
   }
   
-  sabina$args$nbestreplicates <- nreplicates  #@@@JMB sugiero poner nbestreplicates en lugar de nreplicates.
+  sabina$nbestreplicates <- nreplicates  #@@@JMB sugiero poner nbestreplicates en lugar de nreplicates.
 
   # Generate and evaluate a single ensemble (i.e.,consensus) model that averages the individual models weighted
   # by the value of the AUC statistic.
@@ -272,11 +289,11 @@ NSDM.Covariate <- function(nsdm_global,
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
   rownames(summary) <- c("Species name",
-				"Statistical algorithms for covariate hierarchical model", 
-				paste0("Number of replicates with AUC > ",metric.select.thresh, " for covariate hierarchical model"), 
-				"AUC of hierarchical covariate ensemble model", 
-				"TSS of hierarchical covariate ensemble model",
-				"KAPPA of hierarchical covariate ensemble model")
+			 "Statistical algorithms for covariate hierarchical model", 
+			 paste0("Number of replicates with AUC > ",metric.select.thresh, " for covariate hierarchical model"), 
+			 "AUC of hierarchical covariate ensemble model", 
+			 "TSS of hierarchical covariate ensemble model",
+			 "KAPPA of hierarchical covariate ensemble model")
 
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")

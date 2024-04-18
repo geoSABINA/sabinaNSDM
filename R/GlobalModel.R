@@ -26,6 +26,7 @@ NSDM.Global <- function(nsdm_selvars,
   sabina$args$CV.nb.rep <- CV.nb.rep
   sabina$args$CV.perc <- CV.perc
   sabina$args$metric.select.thresh <- metric.select.thresh
+  sabina$corcut <- nsdm_selvars$args$corcut
 
   current.projections <- list()
   new.projections <- list()
