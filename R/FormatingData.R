@@ -21,6 +21,8 @@
 #' - `args` A \code{list} containing the arguments used for data formatting, including: `nPoints`, `Min.Dist.Global`, `Min.Dist.Regional`, and `Background.method`.
 #' - `SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
 #' - `SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `Background.XY.Global` Background data at the global level at \code{data.frame} format.
+#' - `Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
 #' - `IndVar.Global` Independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `IndVar.Regional` Independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
@@ -62,7 +64,7 @@ NSDM.FormatingData <- function(nsdm_input,
   sabina$args$nPoints <- nPoints
   sabina$args$Min.Dist.Global <- Min.Dist.Global
   sabina$args$Min.Dist.Regional <- Min.Dist.Regional
-  sabina$args$Backround <- ifelse(!is.null(nsdm_input$Background.Global.0), "manually added", Background.method)
+  sabina$args$Backround.method <- ifelse(!is.null(nsdm_input$Background.Global.0), "manually added", Background.method)
 
   # Create directories
   if(save.output){
