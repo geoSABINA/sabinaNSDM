@@ -1,29 +1,29 @@
 #' @name NSDM.InputData
 #'
-#' @title Prepare input data for Nested spatial hierarchical Species Distribution Modeling (NSDM) analysis.
+#' @title Prepare input data for nested spatial hierarchical species distribution modeling (NSDM) analysis.
 #'
-#' @description This function gathers together all input data (\emph{species presences xy at global and regional level, explanatory variables at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
+#' @description This function gathers together all input data (\emph{species presences xy at global and regional level, enviromental covariates at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
 #'
 #' @param SpeciesName A \code{character} specifying the species name for which data is being prepared.
 #' @param spp.data.global A \code{data.frame} with two columns, 'x' and 'y', representing the species presence data at global level.
 #' @param spp.data.regional A \code{data.frame} with two columns, 'x' and 'y', representing the species presence data at regional level.
-#' @param expl.var.global An object of \code{\link[terra:rast]{SpatRaster}} class representing the explanatory variables at global level.
-#' @param expl.var.regional An object of \code{\link[terra:rast]{SpatRaster}} class representing the explanatory variables at regional level.
+#' @param expl.var.global An object of \code{\link[terra:rast]{SpatRaster}} class representing the environmental covariates (usually climatic) at global level.
+#' @param expl.var.regional An object of \code{\link[terra:rast]{SpatRaster}} class representing the environmental covariates at regional level.
 #' @param new.env (\emph{optional, default} \code{NULL}) \cr 
-#' An object of \code{\link[terra:rast]{SpatRaster}} class or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios.
+#' An object of \code{\link[terra:rast]{SpatRaster}} class or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios for projecting the models to different spatial or temporal scales. 
 #' @param new.env.names (\emph{optional, default} \code{NULL}) \cr 
 #' A character \code{vector} specifying names for the new environmental scenarios.
 #' @param Background.Global (\emph{optional, default} \code{NULL}) \cr
-#' An \code{data.frame} with two columns, 'x' and 'y', representing background points at global level.
+#' An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at global level.
 #' @param Background.Regional (\emph{optional, default} \code{NULL}) \cr
-#' An \code{data.frame} with two columns, 'x' and 'y', representing background points at regional level.
+#' An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at regional level.
 #'
 #' @return An object of class "nsdm.input" containing organized input data for NSDM.
 #'
 #' @details
 #' - The `SpeciesName` parameter specifies the name of the species for which data is being prepared.
 #' - The `spp.data.global` and `spp.data.regional` parameters should be \code{data.frame} with columns 'x' and 'y' representing species presence data.
-#' - The `expl.var.global` and `expl.var.regional` parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing explanatory variables.  #@@@JMB Aquí explicar que tienen que ser un .tif con las variables.  
+#' - The `expl.var.global` and `expl.var.regional` parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing enviromental covariates.  Each band correpond to a different covariate. At the global-scale, only one \code{\link[terra:rast]{SpatRaster}} file must be provided corresponding to the covariates (usually climatic) used to train the global-scale model. At the regional-scale, there must be at least one geotiff file must corresponding to the covariates used to train the regional-scale model. The regional-scale \code{\link[terra:rast]{SpatRaster}} file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
 #' - The `new.env` parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios.
 #' - The `Background.Global` and `Background.Regional` parameters are optional and represent background points at the global and regional levels, respectively.
 #'
@@ -31,17 +31,17 @@
 #' library(terra)
 #' 
 #' # Load species occurrences
-#' data(Fagus.sylvatica.xy.global, package = "sabina")
-#' data(Fagus.sylvatica.xy.regional, package = "sabina")
+#' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
+#' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
 #' 
 #' # Load explanatory variables
-#' data(expl.var.global, package = "sabina")
-#' data(expl.var.regional, package = "sabina")
+#' data(expl.var.global, package = "sabinaNSDM")
+#' data(expl.var.regional, package = "sabinaNSDM")
 #' expl.var.global<-terra::unwrap(expl.var.global)
 #' expl.var.regional<-terra::unwrap(expl.var.regional)
 #' 
 #' # Load new escenarios
-#' data(new.env, package = "sabina")
+#' data(new.env, package = "sabinaNSDM")
 #' new.env<-terra::unwrap(new.env)
 #'
 #' myInputData<-NSDM.InputData(
@@ -160,9 +160,7 @@ NSDM.InputData <- function(SpeciesName,
   
   rownames(summary) <- c("Species name",
                          "Original number of species presences at global level", 
-                         "Original number of background points at global level",
                          "Original number of species presences at regional level", 
-                         "Original number of background points at regional level",
                          "Number of new scenarios")
 
   #

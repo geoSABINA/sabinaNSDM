@@ -1,18 +1,18 @@
-#' @name NSDM.FormatingData
+#' @name NSDM.FormattingData
 #'
-#' @title Prepare input data for the Hierarchical Species Distribution Modeling (NSDM) analysis.
+#' @title Formatting input data for nested spatial hierarchical species distribution modeling (NSDM) analysis.
 #'
-#' @description Format input data and background data (if necesary) for usage in \bold{NSDM}.
+#' @description Format input data and background data (if necessary) for usage in \bold{NSDM}.
 #'
 #' @param nsdm_input An object of class "nsdm.input" generated using the \code{\link{NSDM.InputData}} function. #@@@JMB ver como ponemos el hsbm.input class
 #' @param nPoints (\emph{optional, default} \code{10000}) \cr
 #' An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points is not provided at \code{\link{NSDM.InputData}}.
 #' @param Min.Dist.Global (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between species presences points at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input raster
+#' A \code{numeric} corresponding to the minimum distance between species presences points at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input \code{\link[terra:rast]{SpatRaster}} at the global scale.
 #' @param Min.Dist.Regional (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between species presences points at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input raster
+#' A \code{numeric} corresponding to the minimum distance between species presences points at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input \code{\link[terra:rast]{SpatRaster}} at the regional scale.
 #' @param Background.method  (\emph{optional, default} \code{'random'}) \cr
-#' If no background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}.
+#' If no background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}. The "random" option generates (10,000 by default) random background points for both a global and regional scale considering the input raster, respectively for each extension of the input \code{\link[terra:rast]{SpatRaster}}. The "stratified" method is based on a PCA analysis from all environmental covariates, where the two principal component values are divided into quartiles, and multiplied to generate a total stratified variable of 16 categories (stratum). Then, the background points are generated randomly according to the area occupied by each stratum.
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.  
 #'
@@ -21,19 +21,17 @@
 #' - `args` A \code{list} containing the arguments used for data formatting, including: `nPoints`, `Min.Dist.Global`, `Min.Dist.Regional`, and `Background.method`.
 #' - `SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
 #' - `SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
-#' - `Background.XY.Global` Background points data at the global level at \code{data.frame} format after applying spatial thinning.
-#' - `Background.XY.Regional` Background points data at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `IndVar.Global` Independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `IndVar.Regional` Independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `Summary` Summary of formated input data in \code{data.frame} format.
 #'
 #' @details
-#' This function formates the input data for NSDM, including generating background points, cleaning and thinning presence and background data, and saving the results to local if specified. If `save.output=TRUE`, outputs (i.e., species occurrences and background points after appling spatial thinning, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
-#' - the \emph{Results/Global/SpeciesXY/} folder, containing the ocurrences species xy of global level after appling spatial thinning, named with the \code{resp.name} argument.
-#' - the \emph{Results/Global/Background/} folder, containing the background points xy of global level after appling spatial thinning.
-#' - the \emph{Results/Regional/SpeciesXY/} folder, containing the ocurrences species xy of global level after appling spatial thinning, named with the \code{resp.name} argument.
-#' - the \emph{Results/Regional/Background/} folder, containing the background points xy of global level after appling spatial thinning.
+#' This function formats the input data for NSDM, including generating background points, cleaning and thinning presence data, and saving the results to local if specified. If `save.output=TRUE`, outputs (i.e., species occurrences and background points after applying spatial thinning, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' - the \emph{Results/Global/SpeciesXY/} folder, containing the occurrences species (x and y coordinates) at the global scale after applying spatial thinning, named with the \code{resp.name} argument.
+#' - the \emph{Results/Global/Background/} folder, containing the background points (x and y coordinates) at the global scale.
+#' - the \emph{Results/Regional/SpeciesXY/} folder, containing the occurrences species (x and y coordinates) at the regional scale, named with the \code{resp.name} argument.
+#' - the \emph{Results/Regional/Background/} folder, containing the background points (x and y coordinates) at the global scale.
 #'
 #' @examples
 #' # Load the required packages  #@@@JMB en el ejemplo hay que poner también el NSDM.InputData() para tener myInputData? Ver cómo hacen otros
