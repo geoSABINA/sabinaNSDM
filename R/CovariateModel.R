@@ -55,11 +55,12 @@ NSDM.Covariate <- function(nsdm_global,
 
   if(rm.corr==TRUE) { 
     # Remove correlated covariates with global model
-    myResp.covsel <- as.vector(c(rep(1,nrow(nsdm_global$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_global$Background.XY.Regional))))
+    myResp.covsel <- replace(myResp, is.na(myResp), 0)
+    myResp.covsel <- as.vector(myResp.covsel)[[1]]
     myExpl.covsel <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
     myExpl <- covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp.covsel, force="SDM.global", corcut=nsdm_global$corcut)
     #corr_mat <- cor(myExpl)
-    #if(save.output){ #@@@JMB no sé si necesario?
+    #if(save.output){ #@@@JMB guardamos esto?
     #  write.csv(corr_mat,file=paste0("Results/Covariate/Values/",SpeciesName,"_vars_corr.csv"))
     #} 
     #sabina$vars.corr <- corr_mat #@@@JMB no sé si guardar corr_mat aunque rev.corr = FALSE
