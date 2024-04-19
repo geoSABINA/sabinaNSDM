@@ -40,18 +40,15 @@ An optional \code{data.frame} with two columns, 'x' and 'y', representing backgr
 An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at regional level.}
 }
 \value{
-An object of class "nsdm.input" containing organized input data for NSDM.
+An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
 }
 \description{
 This function gathers together all input data (\emph{species presences xy at global and regional level, enviromental covariates at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
 }
 \details{
 \itemize{
-\item The \code{SpeciesName} parameter specifies the name of the species for which data is being prepared.
-\item The \code{spp.data.global} and \code{spp.data.regional} parameters should be \code{data.frame} with columns 'x' and 'y' representing species presence data.
 \item The \code{expl.var.global} and \code{expl.var.regional} parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing enviromental covariates.  Each band correpond to a different covariate. At the global-scale, only one \code{\link[terra:rast]{SpatRaster}} file must be provided corresponding to the covariates (usually climatic) used to train the global-scale model. At the regional-scale, there must be at least one geotiff file must corresponding to the covariates used to train the regional-scale model. The regional-scale \code{\link[terra:rast]{SpatRaster}} file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
 \item The \code{new.env} parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios.
-\item The \code{Background.Global} and \code{Background.Regional} parameters are optional and represent background points at the global and regional levels, respectively.
 }
 }
 \examples{
@@ -82,6 +79,5 @@ myInputData<-NSDM.InputData(
 	Background.Global = NULL,
 	Background.Regional = NULL
 )
-
 
 }

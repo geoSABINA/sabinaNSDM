@@ -1,3 +1,62 @@
+#' @name NSDM.SelectCovariables
+#'
+#' @title Select covariables for nested spatial hierarchical species distribution modeling (NSDM) analysis.
+#'
+#' @description This function selects 'non-colinear' covariables for \bold{NSDM} based on specified criteria and algorithms.
+#'
+#'
+#' @param nsdm_finput An object of class \code{nsdm.finput} generated using the \code{\link{NSDM.FormatingData}} function. #@@@JMB ver como ponemos el hsbm.finput class
+#' @param maxncov.Global (\emph{optional, default} \code{'nocorr'}) \cr
+#' Maximum \code{numeric} value of covariables to select at the global scale. If `"nocorr"`, selects all non-correlated covariables.
+#' @param maxncov.Regional (\emph{optional, default} \code{'nocorr'}) \cr 
+#' Maximum \code{numeric} value of covariables to select at the regional scale. If `"nocorr"`, selects all non-correlated covariables.
+#' @param corcut (\emph{optional, default} \code{0.7}) \cr 
+#' A \code{numeric} value for the correlation coefficient threshold used for identifying collinearity.
+#' @param algorithms (\emph{optional, default} \code{'c("glm", "gam", "rf")'}) \cr 
+#' Algorithms to use for covariables selection. Options are \code{'glm'}, \code{'gam'}, and/or \code{'rf'}.
+#' @param ClimaticVariablesBands (\emph{optional, default} \code{NULL}) \cr 
+#' Indices of climatic variable bands to exclude from the selection.
+#' @param save.output (\emph{optional, default} \code{TRUE}) \cr 
+#' A \code{logical} value defining whether the outputs should be saved at local.
+#'
+#'
+#' @return An object of class \code{nsdm.vinput} containing selected covariables for \bold{NSDM}: #@@@JMB ver como ponemos el hsbm.input class
+#' - `$SpeciesName` Name of the species.
+#' - `$args` A \code{list} containing the arguments used during covariables selection procedure, including: `maxncov.Global`, `maxncov.Regional`, `corcut` and `algorithms`.
+#' - `$SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
+#' - `$Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
+#' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariables at the global scale.
+#' - `$IndVar.Global.Selected` Selected independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$Selected.Variables.Regional` A \code{character} vector specifying the names of the selected covariables at the regional scale.
+#' - `$IndVar.Regional.Selected` Selected independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$IndVar.Global.Selected.reg` Selected variables at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$Summary` Summary information about the covariables selection procedure.
+#'
+#'
+#' @details
+#' This function selects covariables for species distribution modeling by combining (Step A) a collinearity-filtering algorithm and (Step B) three model-specific embedded regularization techniques, including GLM with elastic net regularization, GAM with null-space penalization, and guided regularized RF. More details can be found in (\emph{covsel} R package \doi{} #@@@JMB dentro de doi, doi del artículo covsel)
+#' If `save.output=TRUE`, selected variables at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' - the \emph{Results/Global/Values/} folder, containing the selected 'non-colinear' covariables at the global scale, named with the species name and \code{.variables.csv}.
+#' - the \emph{Results/Regional/Values/} folder, containing the selected 'non-colinear' covariables at the regional scale, named with the species name and \code{.variables.csv}.
+#'
+#'
+#' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}
+#'
+#'
+#' @examples
+#' # Load required packages #@@@JMB en el ejemplo hay que poner también el NSDM.FormatingData() para tener myFormatedData? Ver cómo hacen otros
+#' library(terra)
+#' library(ecospat) #@@@JMB esto fuera cuando dependencias listas
+#' library(covsel)
+#' 
+#' # Select covariables
+#' mySelectedCovs <- NSDM.SelectCovariables(myFormattedData)
+#'
+#' @import covsel
+#'
 #' @export
 NSDM.SelectCovariables <- function(nsdm_finput,
 				maxncov.Global="nocorr", #@@@#TG si usuario no pone ninguna usa todas las no correlacionadas #@@@JMB como sugerencia he cambiado el nombre pq "all" podría confundirse con todas las variables. Pendiente comprobar qué pasa si pone más de las correlacionadas?
