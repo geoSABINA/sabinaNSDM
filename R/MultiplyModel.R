@@ -84,49 +84,89 @@ NSDM.Multiply <- function(nsdm_global,
 
 
   ## Evaluation multiply model 	#@@@JMB Esto queda pendiente de discusión (qué 0s usamos?)
-  #myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Background.XY.Regional)
-  #myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_regional$Background.XY.Regional))))
-  #pred_df <- sabina$current.projections$Pred
-  #pred_df <- terra::extract(pred_df, myResp.xy)[-1]
-  #myResp <- as.vector(myResp)[[1]]
-  #pred_df <- as.vector(pred_df)[[1]]
+  myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Background.XY.Regional)
+  myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_regional$Background.XY.Regional))))
+  pred_df <- sabina$current.projections$Pred
+  pred_df <- terra::extract(pred_df, myResp.xy)[-1]
+  myResp <- as.vector(myResp)[[1]]
+  pred_df <- as.vector(pred_df)[[1]]
  
-  #valROC<-bm_FindOptimStat(metric.eval = "ROC",
-  #			obs = myResp,
-  #			fit = pred_df)
-  #valTSS<-bm_FindOptimStat(metric.eval = "TSS",
-  #			obs = myResp,
-  #			fit = pred_df)
-  #valKAPPA<-bm_FindOptimStat(metric.eval = "KAPPA",
-  #			obs = myResp,
-  #			fit = pred_df)
+  
+  myRespNA <- replace(myResp, myResp == 0, NA)
+  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myRespNA,
+	                                     resp.xy = myResp.xy,
+	                                     expl.var = myExpl,
+	                                     resp.name = SpeciesName,
+	                                     PA.nb.rep = 1,
+	                                     PA.nb.absences = nrow(nsdm_regional$Background.XY.Regional),
+	                                     PA.strategy = "random")
+
+  calib.lines <- bm_CrossValidation(bm.format = myBiomodData,
+                                    strategy = "random",
+                                    nb.rep = nsdm_regional$args$CV.nb.rep,
+                                    perc =  nsdm_regional$args$CV.perc,
+                                    k = NULL,
+                                    balance = NULL,
+                                    env.var = NULL,
+                                    strat = NULL,
+                                    user.table = NULL,
+                                    do.full.models = FALSE)
+
+  metric.eval<- c("ROC","TSS","KAPPA")
+  stat.validation <- data.frame()
+  cross.validation <- data.frame()
+
+  for(i in seq_len(ncol(calib.lines))) {
+    calib.lines.rep <- calib.lines[, i, drop = FALSE]
+    eval.lines.rep <- which(rowSums(!calib.lines.rep) == ncol(calib.lines.rep))
+
+    for(xx in metric.eval) {
+      stat <-bm_FindOptimStat(metric.eval = xx,
+  			obs = myResp[-eval.lines.rep],
+  			fit = pred_df[-eval.lines.rep])
+      cross.validation <- rbind(cross.validation, stat)
+    }
+
+    for(xx in metric.eval) {
+      stat <-bm_FindOptimStat(metric.eval = xx,
+  			obs = myResp[eval.lines.rep],
+  			fit = pred_df[eval.lines.rep],
+			threshold = cross.validation["cutoff", xx])
+      stat.validation <- rbind(stat.validation, stat)
+    }
+  } # end for i calib.lines
+ 
+  colnames(cross.validation)[which(colnames(cross.validation) == "best.stat")] <- "calibration"
+  cross.validation$validation <- stat.validation$best.stat
+
+  metric.means <- aggregate(validation ~ metric.eval, data = cross.validation, FUN = mean)
 
   #@@@JMB Guardar Evaluation multiply model en return?
 
   # Summary
-  #summary <- data.frame(Values = c(SpeciesName,
-  #				paste(nsdm_regional$args$algorithms,collapse = ", "),
-  #				sum(nsdm_regional$myEMeval.replicates$metric.eval == "ROC" & nsdm_regional$myEMeval.replicates$validation >= CV.perc), 
-  #				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
-  #				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
-  #				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],
-  #				method,
-  #				round(valROC[,"best.stat"],3),
-  #				round(valTSS[,"best.stat"],3),
-  #				round(valKAPPA[,"best.stat"],3)))
+  summary <- data.frame(Values = c(SpeciesName,
+  				paste(nsdm_regional$args$algorithms,collapse = ", "),
+  				sum(nsdm_regional$myEMeval.replicates$metric.eval == "ROC" & nsdm_regional$myEMeval.replicates$validation >= CV.perc), 
+  				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
+  				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
+  				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],
+  				method,
+  				round(metric.means$validation[metric.means$metric.eval == "ROC"], 2),
+  				round(metric.means$validation[metric.means$metric.eval == "TSS"], 2),
+  				round(metric.means$validation[metric.means$metric.eval == "KAPPA"], 2)))
 
-  #rownames(summary) <- c("Species name",
-  #				"Statistical algorithms at regional level", 
-  #				paste0("Number of replicates wit AUC > ",nsdm_regional$args$CV.perc," at regional level"), 
-  #				"AUC of ensemble model at regional level", 
-  #				"TSS of ensemble model at regional level",
-  #				"KAPPA of ensemble model at regional level",
-  #				"Multiply method",
-  #				"AUC of hierarchical multiply ensemble model",
-  #				"TSS of hierarchical multiply ensemble model",
-  #				"KAPPA of hierarchical multiply ensemble model")
+  rownames(summary) <- c("Species name",
+  				"Statistical algorithms at regional level", 
+  				paste0("Number of replicates wit AUC > ",nsdm_regional$args$CV.perc," at regional level"), 
+  				"AUC of ensemble model at regional level", 
+  				"TSS of ensemble model at regional level",
+  				"KAPPA of ensemble model at regional level",
+  				"Multiply method",
+  				"AUC of hierarchical multiply ensemble model",
+  				"TSS of hierarchical multiply ensemble model",
+ 				"KAPPA of hierarchical multiply ensemble model")
 
-  #sabina$Summary <- summary
+  sabina$Summary <- summary
 
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
