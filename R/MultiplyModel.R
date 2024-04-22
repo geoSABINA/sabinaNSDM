@@ -1,3 +1,41 @@
+#' @name NSDM.Multiply
+#'
+#' @title Perform ......
+#'
+#' @description This function ....
+#'
+#'
+#' @param nsdm_global An object of class \code{nsdm.predict.g} containing global model generated using the \code{\link{NSDM.Global}} function.
+#' @param nsdm_regional An object of class \code{nsdm.predict.r} containing regional model generated using the \code{\link{NSDM.Regional}} function.
+#' @param method (\emph{optional, default} \code{'Arithmetic'}) \cr 
+#' Options are \code{'Arithmetic'}, or \code{'Geometric'}. The \code{'Arithmetic'} method calculates the arithmetic mean of global and regional predictions, and \code{'Geometric'} calculates a geometric mean.
+#' @param rescale (\emph{optional, default} \code{FALSE}) \cr 
+#' An \code{logical} controls whether global and regional model predictions should be rescaled before combining them.
+#' @param save.output (\emph{optional, default} \code{TRUE}) \cr 
+#' A \code{logical} value defining whether the outputs should be saved at local.
+#'
+#'
+#' @return An object of class \code{nsdm.predict} containing model information, predictions and evaluation statistics: #@@@JMB statistics pendiente de definir
+#' - `$SpeciesName` Name of the species.
+#' - `$args` A \code{list} containing the arguments used during modelling, including: `method`, and `rescale`.
+#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores.
+#'
+#'
+#' @details
+#' This function conducts .....
+#' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' - the \emph{Results/Multiply/Projections/} folder, containing the continious and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
+#'
+#'
+#' @examples 
+#' #@@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
+#' myMultiplyModel <- NSDM.Multiply(myGlobalModel,
+#'
+#'
+#' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
+#'
+#' 
 #' @export
 NSDM.Multiply <- function(nsdm_global,
                           nsdm_regional,

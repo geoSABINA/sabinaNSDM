@@ -4,7 +4,8 @@
 #'
 #' @description Format input data and background data (if necessary) for usage in \bold{NSDM}.
 #'
-#' @param nsdm_input An object of class "nsdm.input" generated using the \code{\link{NSDM.InputData}} function. #@@@JMB ver como ponemos el hsbm.input class
+#'
+#' @param nsdm_input An object of class \code{nsdm.input} generated using the \code{\link{NSDM.InputData}} function. #@@@JMB ver como ponemos el hsbm.input class
 #' @param nPoints (\emph{optional, default} \code{10000}) \cr
 #' An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points is not provided at \code{\link{NSDM.InputData}}.
 #' @param Min.Dist.Global (\emph{optional, default} \code{'resolution'}) \cr
@@ -16,24 +17,31 @@
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.  
 #'
-#' @return An object of class "nsdm.finput" containing formatted input data for the NSDM:
-#' - `Species.Name` The name of the species provided as input.
-#' - `args` A \code{list} containing the arguments used for data formatting, including: `nPoints`, `Min.Dist.Global`, `Min.Dist.Regional`, and `Background.method`.
-#' - `SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
-#' - `SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
-#' - `Background.XY.Global` Background data at the global level at \code{data.frame} format.
-#' - `Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
-#' - `IndVar.Global` Independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `IndVar.Regional` Independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `Summary` Summary of formated input data in \code{data.frame} format.
+#'
+#' @return 
+#' An object of class \code{nsdm.finput} containing formatted input data for the \bold{NSDM}:
+#' - `$Species.Name` The name of the species provided as input.
+#' - `$args` A \code{list} containing the arguments used for data formatting, including: `nPoints`, `Min.Dist.Global`, `Min.Dist.Regional`, and `Background.method`.
+#' - `$SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
+#' - `$Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
+#' - `$IndVar.Global` Independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$IndVar.Regional` Independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$Summary` Summary of formated input data in \code{data.frame} format.
+#'
 #'
 #' @details
-#' This function formats the input data for NSDM, including generating background points, cleaning and thinning presence data, and saving the results to local if specified. If `save.output=TRUE`, outputs (i.e., species occurrences and background points after applying spatial thinning, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
-#' - the \emph{Results/Global/SpeciesXY/} folder, containing the occurrences species (x and y coordinates) at the global scale after applying spatial thinning, named with the \code{resp.name} argument.
+#' This function formats the input data for \bold{NSDM}, including generating background points, cleaning and thinning presence data, and saving the results to local if specified. If `save.output=TRUE`, outputs (i.e., species occurrences and background points after applying spatial thinning, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' - the \emph{Results/Global/SpeciesXY/} folder, containing the occurrences species (x and y coordinates) at the global scale after applying spatial thinning, named with the \code{Species.Name} argument.
 #' - the \emph{Results/Global/Background/} folder, containing the background points (x and y coordinates) at the global scale.
-#' - the \emph{Results/Regional/SpeciesXY/} folder, containing the occurrences species (x and y coordinates) at the regional scale, named with the \code{resp.name} argument.
+#' - the \emph{Results/Regional/SpeciesXY/} folder, containing the occurrences species (x and y coordinates) at the regional scale, named with the \code{Species.Name} argument.
 #' - the \emph{Results/Regional/Background/} folder, containing the background points (x and y coordinates) at the global scale.
+#'
+#'
+#' @seealso \code{\link{NSDM.InputData}}
+#'
 #'
 #' @examples
 #' # Load the required packages  #@@@JMB en el ejemplo hay que poner también el NSDM.InputData() para tener myInputData? Ver cómo hacen otros
@@ -43,9 +51,10 @@
 #' # Format the input data
 #' myFormatedData <- NSDM.FormatingData(myInputData,
 #'					nPoints=1000)
+#' @import ecospat sgsR
 #'
 #' @export
-NSDM.FormatingData <- function(nsdm_input,
+NSDM.FormattingData <- function(nsdm_input,
 				nPoints=10000,
 				Min.Dist.Global="resolution",
 				Min.Dist.Regional="resolution",

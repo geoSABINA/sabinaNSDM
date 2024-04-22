@@ -1,3 +1,55 @@
+#' @name NSDM.Covariate
+#'
+#' @title Perform ......
+#'
+#' @description This function ....
+#'
+#'
+#' @param nsdm_global An object of class \code{nsdm.predict} containing selected covariables for NSDM generated using the \code{\link{NSDM.Global}} function.
+#' @param algorithms (\emph{optional, default} \code{'c("GLM", "GAM", "RF")'}) \cr 
+#' Algorithms to use for modeling. Options are \code{'GLM'}, \code{'GAM'}, \code{'GBM'}, \code{'MAXNET'}, \code{'MARS'}, and/or \code{'RF'}.
+#' @param rm.corr (\emph{optional, default} \code{TRUE}) \cr 
+#' An \code{logical} controls whether correlated covariates with the global model should be removed or not.
+#' @param CV.nb.rep (\emph{optional, default} \code{10}) \cr 
+#' An \code{integer} corresponding to the number of sets (repetitions) of cross-validation points that will be drawn.
+#' @param CV.perc (\emph{optional, default} \code{0.8}) \cr
+#' A \code{numeric} between \code{0} and \code{1} defining the percentage of data that will be kept for calibration.
+#' @param CustomModelOptions (\emph{optional, default} \code{NULL}) \cr 
+#' A \code{\link{BIOMOD.models.options}} object returned by the \code{\link{bm_ModelingOptions}} 
+#' @param metric.select.thresh (\emph{optional, default} \code{0.8}) \cr 
+#' A \code{numeric} between \code{0} and \code{1} corresponding the minimum scores of AUC below which single models will be excluded from the ensemble model building.
+#' @param save.output (\emph{optional, default} \code{TRUE}) \cr 
+#' A \code{logical} value defining whether the outputs should be saved at local.
+#' @param rm.biomod.folder (\emph{optional, default} \code{TRUE}) \cr 
+#' A \code{logical} value indicating whether the intermediate BIOMOD2 folders should be removed after processing.
+#'
+#'
+#' @return An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
+#' - `$SpeciesName` Name of the species.
+#' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
+#' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling. 
+#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
+#' - `$myEMeval.replicates` Evaluation statistics for each replicate model
+#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model. 
+#' - `$myModelsVarImport` Variable importance measures for individual models.
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores.
+#' - `Summary` Summary information about the modeling process.
+#'
+#'
+#' @details
+#' This function conducts \bold{NSDM} modeling at the global scale. It uses the biomod2 package.
+#' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' - the \emph{Results/Covariate/Projections/} folder, containing the continious and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
+#' - the \emph{Results/Covariate/Values/} folder, containing replicates statistics, the consensus model statistics, the covariable importance, and the \code{nbestreplicates}, named with the species name and \file{.__replica.csv}, \file{._ensemble.csv}, \file{._indvar.csv} and \file{._nbestreplicates.csv} respectively.
+#'
+#'
+#' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}
+#'
+#' 
+#' @examples 
+#' # Perform NSDM modeling at global scale  #@@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
+#' myGlobalModel <- NSDM.Global(mySelectedCovs)
+#'
 #' @export
 NSDM.Covariate <- function(nsdm_global,
 			   algorithms=c("GLM","GAM","RF"),
@@ -181,7 +233,7 @@ NSDM.Covariate <- function(nsdm_global,
   if(save.output){
     fs::dir_create("Results/Covariate/Values/") 
     write.csv(myEMeval.replicates,file=paste0("Results/Covariate/Values/",SpeciesName,"_replica.csv"))
-    write.csv(nreplicates,file=paste0("Results/Covariate/Values/",SpeciesName,"_nreplicates.csv"))
+    write.csv(nreplicates,file=paste0("Results/Covariate/Values/",SpeciesName,"_nbestreplicates.csv"))
   }
 
   sabina$myEMeval.replicates <- myEMeval.replicates

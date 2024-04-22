@@ -18,14 +18,11 @@
 #' @param Background.Regional (\emph{optional, default} \code{NULL}) \cr
 #' An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at regional level.
 #'
-#' @return An object of class "nsdm.input" containing organized input data for NSDM.
+#' @return An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
 #'
 #' @details
-#' - The `SpeciesName` parameter specifies the name of the species for which data is being prepared.
-#' - The `spp.data.global` and `spp.data.regional` parameters should be \code{data.frame} with columns 'x' and 'y' representing species presence data.
 #' - The `expl.var.global` and `expl.var.regional` parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing enviromental covariates.  Each band correpond to a different covariate. At the global-scale, only one \code{\link[terra:rast]{SpatRaster}} file must be provided corresponding to the covariates (usually climatic) used to train the global-scale model. At the regional-scale, there must be at least one geotiff file must corresponding to the covariates used to train the regional-scale model. The regional-scale \code{\link[terra:rast]{SpatRaster}} file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
-#' - The `new.env` parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios.
-#' - The `Background.Global` and `Background.Regional` parameters are optional and represent background points at the global and regional levels, respectively.
+#' - The `new.env` parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios. 
 #'
 #' @examples
 #' library(terra)
@@ -56,6 +53,7 @@
 #'		Background.Regional = NULL
 #' )
 #'
+#' @import terra fs
 #'
 #' @export
 NSDM.InputData <- function(SpeciesName,
@@ -159,8 +157,10 @@ NSDM.InputData <- function(SpeciesName,
 				length(new.env)))
   
   rownames(summary) <- c("Species name",
-                         "Original number of species presences at global level", 
-                         "Original number of species presences at regional level", 
+                         "Original number of species presences at global level",
+			 "N background points at global level", 
+                         "Original number of species presences at regional level",
+			 "N background points at regional level", 
                          "Number of new scenarios")
 
   #

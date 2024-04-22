@@ -1,3 +1,63 @@
+#' @name NSDM.Regional
+#'
+#' @title Perform nested spatial hierarchical species distribution modeling (NSDM) analysis at regional scale.
+#'
+#' @description This function conducts \bold{NSDM} analysis at the regional scale. It trains individual models using specified algorithms, evaluates model performance, and projects models to current and new environmental conditions.
+#'
+#'
+#' @param nsdm_selvars An object of class \code{nsdm.vinput} containing selected covariables for NSDM generated using the \code{\link{NSDM.SelectCovariates}} function.
+#' @param algorithms (\emph{optional, default} \code{'c("GLM", "GAM", "RF")'}) \cr 
+#' Algorithms to use for modeling. Options are \code{'GLM'}, \code{'GAM'}, \code{'GBM'}, \code{'MAXNET'}, \code{'MARS'}, and/or \code{'RF'}.
+#' @param CV.nb.rep (\emph{optional, default} \code{10}) \cr 
+#' An \code{integer} corresponding to the number of sets (repetitions) of cross-validation points that will be drawn.
+#' @param CV.perc (\emph{optional, default} \code{0.8}) \cr
+#' A \code{numeric} between \code{0} and \code{1} defining the percentage of data that will be kept for calibration.
+#' @param CustomModelOptions (\emph{optional, default} \code{NULL}) \cr 
+#' A \code{\link{BIOMOD.models.options}} object returned by the \code{\link{bm_ModelingOptions}} 
+#' @param metric.select.thresh (\emph{optional, default} \code{0.8}) \cr 
+#' A \code{numeric} between \code{0} and \code{1} corresponding the minimum scores of AUC below which single models will be excluded from the ensemble model building.
+#' @param save.output (\emph{optional, default} \code{TRUE}) \cr 
+#' A \code{logical} value defining whether the outputs should be saved at local.
+#' @param rm.biomod.folder (\emph{optional, default} \code{TRUE}) \cr 
+#' A \code{logical} value indicating whether the intermediate BIOMOD2 folders should be removed after processing.
+#'
+#'
+#' @return An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
+#' - `$SpeciesName` Name of the species.
+#' - `$SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
+#' - `$Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
+#' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariables at the global scale.
+#' - `$IndVar.Global.Selected` Selected independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$Selected.Variables.Regional` A \code{character} vector specifying the names of the selected covariables at the regional scale.
+#' - `$IndVar.Regional.Selected` Selected independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$IndVar.Global.Selected.reg` Selected variables at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
+#' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling. 
+#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
+#' - `$myEMeval.replicates` Evaluation statistics for each replicate model
+#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model. 
+#' - `$myModelsVarImport` Variable importance measures for individual models.
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores.
+#' - `Summary` Summary information about the modeling process.
+#'
+#'
+#' @details
+#' This function conducts \bold{NSDM} modeling at the regional scale. It uses the biomod2 package.
+#' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' - the \emph{Results/Regional/Projections/} folder, containing the continious and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
+#' - the \emph{Results/Regional/Values/} folder, containing replicates statistics, the consensus model statistics, the covariable importance, and the \code{nbestreplicates}, named with the species name and \file{.__replica.csv}, \file{._ensemble.csv}, \file{._indvar.csv} and \file{._nbestreplicates.csv} respectively.
+#'
+#'
+#' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}
+#'
+#' 
+#' @examples 
+#' # Perform NSDM modeling at regional scale  #@@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
+#' myRegionalModel <- NSDM.Regional(mySelectedCovs)
+#'
 #' @export
 NSDM.Regional <- function(nsdm_selvars,
 			  algorithms=c( "GLM", "GAM", "RF"),
@@ -9,7 +69,7 @@ NSDM.Regional <- function(nsdm_selvars,
 			  rm.biomod.folder=TRUE){
 
   if(!inherits(nsdm_selvars, "nsdm.vinput")){
-      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariables() function.")
+      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariates() function.")
   }
 
   models <- toupper(algorithms)
@@ -161,7 +221,7 @@ NSDM.Regional <- function(nsdm_selvars,
   if(save.output){
     fs::dir_create(paste0("Results/",Level,"/Values/"))
     write.csv(myEMeval.replicates,file=paste0("Results/",Level,"/Values/",SpeciesName,"_replica.csv"))
-    write.csv(nreplicates,file=paste0("Results/",Level,"/Values/",SpeciesName,"_nreplicates.csv"))
+    write.csv(nreplicates,file=paste0("Results/",Level,"/Values/",SpeciesName,"_nbestreplicates.csv"))
   }
 
   # Values of the statistics of the consensus model
