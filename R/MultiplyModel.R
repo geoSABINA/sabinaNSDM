@@ -33,7 +33,7 @@
 #' myMultiplyModel <- NSDM.Multiply(myGlobalModel,
 #'
 #'
-#' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariables}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
+#' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
 #'
 #' 
 #' @export

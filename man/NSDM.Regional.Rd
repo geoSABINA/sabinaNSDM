@@ -16,7 +16,7 @@ NSDM.Regional(
 )
 }
 \arguments{
-\item{nsdm_selvars}{An object of class \code{nsdm.vinput} containing selected covariables for NSDM generated using the \code{\link{NSDM.SelectCovariables}} function.}
+\item{nsdm_selvars}{An object of class \code{nsdm.vinput} containing selected covariables for NSDM generated using the \code{\link{NSDM.SelectCovariates}} function.}
 
 \item{algorithms}{(\emph{optional, default} \code{'c("GLM", "GAM", "RF")'}) \cr
 Algorithms to use for modeling. Options are \code{'GLM'}, \code{'GAM'}, \code{'GBM'}, \code{'MAXNET'}, \code{'MARS'}, and/or \code{'RF'}.}
@@ -80,5 +80,5 @@ myRegionalModel <- NSDM.Regional(mySelectedCovs)
 
 }
 \seealso{
-\code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariables}}
+\code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}
 }

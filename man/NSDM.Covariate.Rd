@@ -73,5 +73,5 @@ myGlobalModel <- NSDM.Global(mySelectedCovs)
 
 }
 \seealso{
-\code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariables}}, \code{\link{NSDM.Global}}
+\code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}
 }

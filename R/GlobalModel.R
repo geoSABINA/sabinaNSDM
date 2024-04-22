@@ -5,7 +5,7 @@
 #' @description This function conducts \bold{NSDM} analysis at the global scale. It trains individual models using specified algorithms, evaluates model performance, and projects models to current and new environmental conditions.
 #'
 #'
-#' @param nsdm_selvars An object of class \code{nsdm.vinput} containing selected covariables for NSDM generated using the \code{\link{NSDM.SelectCovariables}} function.
+#' @param nsdm_selvars An object of class \code{nsdm.vinput} containing selected covariables for NSDM generated using the \code{\link{NSDM.SelectCovariates}} function.
 #' @param algorithms (\emph{optional, default} \code{'c("GLM", "GAM", "RF")'}) \cr 
 #' Algorithms to use for modeling. Options are \code{'GLM'}, \code{'GAM'}, \code{'GBM'}, \code{'MAXNET'}, \code{'MARS'}, and/or \code{'RF'}.
 #' @param CV.nb.rep (\emph{optional, default} \code{10}) \cr 
@@ -51,7 +51,7 @@
 #' - the \emph{Results/Global/Values/} folder, containing replicates statistics, the consensus model statistics, the covariable importance, and the \code{nbestreplicates}, named with the species name and \file{.__replica.csv}, \file{._ensemble.csv}, \file{._indvar.csv} and \file{._nbestreplicates.csv} respectively.
 #'
 #'
-#' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariables}}
+#' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}
 #'
 #' 
 #' @examples 
@@ -71,7 +71,7 @@ NSDM.Global <- function(nsdm_selvars,
 			rm.biomod.folder=TRUE) {
 
   if(!inherits(nsdm_selvars, "nsdm.vinput")){
-      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariables() function.")
+      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariates() function.")
   }
 
   models <- toupper(algorithms)

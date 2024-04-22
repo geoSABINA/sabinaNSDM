@@ -1,4 +1,4 @@
-#' @name NSDM.SelectCovariables
+#' @name NSDM.SelectCovariates
 #'
 #' @title Select covariables for nested spatial hierarchical species distribution modeling (NSDM) analysis.
 #'
@@ -53,12 +53,12 @@
 #' library(covsel)
 #' 
 #' # Select covariables
-#' mySelectedCovs <- NSDM.SelectCovariables(myFormattedData)
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #'
 #' @import covsel
 #'
 #' @export
-NSDM.SelectCovariables <- function(nsdm_finput,
+NSDM.SelectCovariates <- function(nsdm_finput,
 				maxncov.Global="nocorr", #@@@#TG si usuario no pone ninguna usa todas las no correlacionadas #@@@JMB como sugerencia he cambiado el nombre pq "all" podría confundirse con todas las variables. Pendiente comprobar qué pasa si pone más de las correlacionadas?
 				maxncov.Regional="nocorr",
 				corcut=0.7,
