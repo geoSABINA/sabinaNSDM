@@ -1,6 +1,6 @@
 #' @name NSDM.InputData
 #'
-#' @title Prepare input data for nested spatial hierarchical species distribution modeling (NSDM) analysis.
+#' @title Prepare input data for #@@@@ spatially-nested hierarchical species distribution modeling (NSDM) analysis.
 #'
 #' @description This function gathers together all input data (\emph{species presences xy at global and regional level, enviromental covariates at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
 #'
@@ -9,9 +9,9 @@
 #' @param spp.data.regional A \code{data.frame} with two columns, 'x' and 'y', representing the species presence data at regional level.
 #' @param expl.var.global An object of \code{\link[terra:rast]{SpatRaster}} class representing the environmental covariates (usually climatic) at global level.
 #' @param expl.var.regional An object of \code{\link[terra:rast]{SpatRaster}} class representing the environmental covariates at regional level.
-#' @param new.env (\emph{optional, default} \code{NULL}) \cr 
-#' An object of \code{\link[terra:rast]{SpatRaster}} class or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios for projecting the models to different spatial or temporal scales. 
-#' @param new.env.names (\emph{optional, default} \code{NULL}) \cr 
+#' @param new.env (\emph{optional, default} \code{NULL}) \cr
+#' An object of \code{\link[terra:rast]{SpatRaster}} class or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing the environmental covariates in new scenarios for projecting the models to different spatial or temporal scales.
+#' @param new.env.names (\emph{optional, default} \code{NULL}) \cr
 #' A character \code{vector} specifying names for the new environmental scenarios.
 #' @param Background.Global (\emph{optional, default} \code{NULL}) \cr
 #' An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at global level.
@@ -21,22 +21,21 @@
 #' @return An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
 #'
 #' @details
-#' - The `expl.var.global` and `expl.var.regional` parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing enviromental covariates.  Each band correpond to a different covariate. At the global-scale, only one \code{\link[terra:rast]{SpatRaster}} file must be provided corresponding to the covariates (usually climatic) used to train the global-scale model. At the regional-scale, there must be at least one geotiff file must corresponding to the covariates used to train the regional-scale model. The regional-scale \code{\link[terra:rast]{SpatRaster}} file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
-#' - The `new.env` parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios. 
-#'
+#' - The `expl.var.global` and `expl.var.regional` parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing enviromental covariates used to train the global-scale and regional-scale models, respectively. Each band correponds to a different covariate. The regional-scale object must include all the covariates included in the global-scale object (usually climatic), and it can additionally include other covariates only available at this level.
+#' - The `new.env` parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} object representing the environmental covariates in new spatial or temporal scenarios. All new scenarios must have the same covariates (same band names) than `expl.var.regional`.
 #' @examples
 #' library(terra)
-#' 
+#'
 #' # Load species occurrences
 #' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
 #' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
-#' 
+#'
 #' # Load explanatory variables
 #' data(expl.var.global, package = "sabinaNSDM")
 #' data(expl.var.regional, package = "sabinaNSDM")
 #' expl.var.global<-terra::unwrap(expl.var.global)
 #' expl.var.regional<-terra::unwrap(expl.var.regional)
-#' 
+#'
 #' # Load new escenarios
 #' data(new.env, package = "sabinaNSDM")
 #' new.env<-terra::unwrap(new.env)
@@ -67,11 +66,11 @@ NSDM.InputData <- function(SpeciesName,
 				Background.Regional = NULL) {
 
 
-  if(!(is.data.frame(spp.data.global) && 
-        ncol(spp.data.global) == 2 && 
+  if(!(is.data.frame(spp.data.global) &&
+        ncol(spp.data.global) == 2 &&
         all(c('x', 'y') %in% colnames(spp.data.global))) ||
-      !(is.data.frame(spp.data.regional) && 
-        ncol(spp.data.regional) == 2 && 
+      !(is.data.frame(spp.data.regional) &&
+        ncol(spp.data.regional) == 2 &&
         all(c('x', 'y') %in% colnames(spp.data.regional)))) {
     stop(paste0("spp.data.global and spp.data.regional for ", SpeciesName, " must be data.frames with 'x' and 'y' columns."))
   }
@@ -79,36 +78,28 @@ NSDM.InputData <- function(SpeciesName,
   if(!inherits(expl.var.global, "SpatRaster") || !inherits(expl.var.regional, "SpatRaster")) {
     stop("expl.var.global and expl.var.regional must be SpatRaster objects.")
   }
-  
-  if(inherits(new.env, "SpatRaster")) {
-    new.env <- list(new.env)
-  }
 
   if(!is.null(new.env)) {
+    if(inherits(new.env, "SpatRaster")) {
+      new.env <- list(new.env)
+    }
     if(!(is.list(new.env) && all(sapply(new.env, function(x) class(x) == "SpatRaster")))) {
       stop("new.env must be either a SpatRaster object or a list of SpatRaster objects")
     }
   }
 
   if(!is.null(Background.Global) && !is.null(Background.Regional)) {
-    if(!(is.data.frame(Background.Regional) && 
-          ncol(Background.Global) == 2 && 
+    if(!(is.data.frame(Background.Regional) &&
+          ncol(Background.Global) == 2 &&
           all(c('x', 'y') %in% colnames(Background.Global))) ||
-        !(is.data.frame(Background.Regional) && 
-          ncol(Background.Regional) == 2 && 
+        !(is.data.frame(Background.Regional) &&
+          ncol(Background.Regional) == 2 &&
           all(c('x', 'y') %in% colnames(Background.Regional)))) {
       stop("Background.Global and Background.Regional must be data.frames with 'x' and 'y' columns")
     }
   }
 
   # Match variables?
-  # Regionsal vs new scenarios
-  match_vars <- sapply(new.env, function(file) {
-    all(names(expl.var.regional) %in% names(file))
-  })
-  if(!all(match_vars)) {
-   message("Not all scenarios have the same variables!")
-  }
   #Global vars in regional?
   match_vars2 <- sapply(names(expl.var.global), function(var_name) {
     var_name %in% names(expl.var.regional)
@@ -116,9 +107,17 @@ NSDM.InputData <- function(SpeciesName,
   if(!all(match_vars2)) {
     stop("All variables present in expl.var.global must also be present in expl.var.regional.")
   }
-
-  # Name and Rename new.env
+  #new.env and regional
   if(!is.null(new.env)) {
+    match_vars <- sapply(new.env, function(file) {
+      all(names(expl.var.regional) %in% names(file))
+    })
+    if(!all(match_vars)) {
+      #@@@message("Not all scenarios have the same environmental covariates as expl.var.regional!") #@@@#it doesnt stop?? what if this happens. write what happens in this case
+      stop("Not all new scenarios have the same environmental covariates as expl.var.regional")
+      }
+
+    # Name and Rename new.env scenarios
     if(is.null(names(new.env)) && is.null(new.env.names)) {
       source_names <- lapply(new.env, function(x) {
         s <- sources(x)
@@ -127,7 +126,7 @@ NSDM.InputData <- function(SpeciesName,
       names(new.env) <- source_names
       valid_names <- sapply(names(new.env), function(x) sum(nchar(x)))
       if(!all(valid_names > 0)) {
-        stop("Please provide names of new scenarios in names.new.env")
+        stop("Names of new.env is NULL. Please provide names of new scenarios in names.new.env")
       }
     } else if(!is.null(new.env.names)) {
       if(length(new.env) != length(new.env.names)) {
@@ -135,8 +134,6 @@ NSDM.InputData <- function(SpeciesName,
       } else {
         names(new.env) <- new.env.names
       }
-    } else if(is.null(names(new.env)) && is.null(new.env.names)) {
-    stop("Names of new.env is NULL. Please provide names of new scenarios in names.new.env.")
     }
   }
 
@@ -147,20 +144,20 @@ NSDM.InputData <- function(SpeciesName,
   if(!is.null(new.env)) {
     new.env <- lapply(new.env, terra::wrap)
   }
-  
+
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-				nrow(spp.data.global), 
+				nrow(spp.data.global),
 				ifelse(is.null(Background.Global), "NULL", nrow(Background.Global)),
 				nrow(spp.data.regional),
 				ifelse(is.null(Background.Regional), "NULL", nrow(Background.Regional)),
 				length(new.env)))
-  
+
   rownames(summary) <- c("Species name",
                          "Original number of species presences at global level",
-			 "N background points at global level", 
+			 "N background points at global level",
                          "Original number of species presences at regional level",
-			 "N background points at regional level", 
+			 "N background points at regional level",
                          "Number of new scenarios")
 
   #
@@ -175,7 +172,7 @@ NSDM.InputData <- function(SpeciesName,
     Background.Regional.0 = Background.Regional,
     Summary = summary
   )
-  
+
   attr(sabina, "class") <- "nsdm.input"
 
   return(sabina)

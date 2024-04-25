@@ -1,58 +1,57 @@
 #' @name NSDM.SelectCovariates
 #'
-#' @title Select covariables for nested spatial hierarchical species distribution modeling (NSDM) analysis.
+#' @title Select covariates for spatially-nested hierarchical species distribution modeling (NSDM) analysis.
 #'
-#' @description This function selects 'non-colinear' covariables for \bold{NSDM} based on specified criteria and algorithms.
+#' @description This function selects the best 'non-colinear' environmental covariates for \bold{NSDM} based on specified criteria and algorithms.
 #'
 #'
 #' @param nsdm_finput An object of class \code{nsdm.finput} generated using the \code{\link{NSDM.FormatingData}} function. #@@@JMB ver como ponemos el hsbm.finput class
 #' @param maxncov.Global (\emph{optional, default} \code{'nocorr'}) \cr
-#' Maximum \code{numeric} value of covariables to select at the global scale. If `"nocorr"`, selects all non-correlated covariables.
-#' @param maxncov.Regional (\emph{optional, default} \code{'nocorr'}) \cr 
-#' Maximum \code{numeric} value of covariables to select at the regional scale. If `"nocorr"`, selects all non-correlated covariables.
-#' @param corcut (\emph{optional, default} \code{0.7}) \cr 
+#' Maximum \code{numeric} value indicating the maximum number of covariates to select at the global scale. If `"nocorr"`, selects all non-correlated covariates.
+#' @param maxncov.Regional (\emph{optional, default} \code{'nocorr'}) \cr
+#' Maximum \code{numeric} value indicating the maximum number of covariates to select at the regional scale. If `"nocorr"`, selects all non-correlated covariates.
+#' @param corcut (\emph{optional, default} \code{0.7}) \cr
 #' A \code{numeric} value for the correlation coefficient threshold used for identifying collinearity.
-#' @param algorithms (\emph{optional, default} \code{'c("glm", "gam", "rf")'}) \cr 
-#' Algorithms to use for covariables selection. Options are \code{'glm'}, \code{'gam'}, and/or \code{'rf'}.
-#' @param ClimaticVariablesBands (\emph{optional, default} \code{NULL}) \cr 
-#' Indices of climatic variable bands to exclude from the selection.
-#' @param save.output (\emph{optional, default} \code{TRUE}) \cr 
+#' @param algorithms (\emph{optional, default} \code{'c("glm", "gam", "rf")'}) \cr
+#' Algorithms to use for ranking the covariates. Options are \code{'glm'}, \code{'gam'}, and/or \code{'rf'}.
+#' @param ClimaticVariablesBands (\emph{optional, default} \code{NULL}) \cr
+#' Indices of the regional environmental covariate bands to exclude from the selection. If \code{NULL} (the default), all regional-level covariates are considered. The excluded covariates typically include climatic covariates already included in global-level analyses.
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #'
 #'
-#' @return An object of class \code{nsdm.vinput} containing selected covariables for \bold{NSDM}: #@@@JMB ver como ponemos el hsbm.input class
+#' @return An object of class \code{nsdm.vinput} containing selected covariates for \bold{NSDM}: #@@@JMB ver como ponemos el hsbm.input class
 #' - `$SpeciesName` Name of the species.
-#' - `$args` A \code{list} containing the arguments used during covariables selection procedure, including: `maxncov.Global`, `maxncov.Regional`, `corcut` and `algorithms`.
+#' - `$args` A \code{list} containing the arguments used during covariates selection procedure, including: `maxncov.Global`, `maxncov.Regional`, `corcut` and `algorithms`.
 #' - `$SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
 #' - `$SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
 #' - `$Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariables at the global scale.
+#' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariates at the global scale.
 #' - `$IndVar.Global.Selected` Selected independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `$Selected.Variables.Regional` A \code{character} vector specifying the names of the selected covariables at the regional scale.
+#' - `$Selected.Variables.Regional` A \code{character} vector specifying the names of the selected covariates at the regional scale.
 #' - `$IndVar.Regional.Selected` Selected independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$IndVar.Global.Selected.reg` Selected variables at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `$Summary` Summary information about the covariables selection procedure.
+#' - `$Summary` Summary information about the covariates selection procedure.
 #'
 #'
 #' @details
-#' This function selects covariables for species distribution modeling by combining (Step A) a collinearity-filtering algorithm and (Step B) three model-specific embedded regularization techniques, including GLM with elastic net regularization, GAM with null-space penalization, and guided regularized RF. More details can be found in (\emph{covsel} R package \doi{} #@@@JMB dentro de doi, doi del artículo covsel)
+#' This function selects covariates for species distribution modeling with \emph{covsel} R package by combining (Step A) a collinearity-filtering algorithm and (Step B) three model-specific embedded regularization techniques, including GLM with elastic net regularization, GAM with null-space penalization, and guided regularized RF. More details can be found in (\emph{covsel} R package \doi{https://doi.org/10.1016/j.ecoinf.2023.102080} #@@@JMB dentro de doi, doi del artículo covsel)
 #' If `save.output=TRUE`, selected variables at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
-#' - the \emph{Results/Global/Values/} folder, containing the selected 'non-colinear' covariables at the global scale, named with the species name and \code{.variables.csv}.
-#' - the \emph{Results/Regional/Values/} folder, containing the selected 'non-colinear' covariables at the regional scale, named with the species name and \code{.variables.csv}.
+#' - the \emph{Results/Global/Values/} folder, containing the selected 'non-colinear' covariates at the global scale, named with the species name and \code{.variables.csv}.
+#' - the \emph{Results/Regional/Values/} folder, containing the selected 'non-colinear' covariates at the regional scale, named with the species name and \code{.variables.csv}.
 #'
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}
 #'
 #'
 #' @examples
-#' # Load required packages #@@@JMB en el ejemplo hay que poner también el NSDM.FormatingData() para tener myFormatedData? Ver cómo hacen otros
+#' # Load required packages #@@@JMB en el ejemplo hay que poner también el NSDM.FormatingData() para tener myFormatedData? #@@@ creo que si. Ver cómo hacen otros
 #' library(terra)
 #' library(ecospat) #@@@JMB esto fuera cuando dependencias listas
 #' library(covsel)
-#' 
-#' # Select covariables
+#'
+#' # Select covariates
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #'
 #' @import covsel
@@ -64,7 +63,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
 				corcut=0.7,
 				algorithms=c('glm','gam','rf'),
 				ClimaticVariablesBands=NULL,
-				save.output=TRUE) { 
+				save.output=TRUE) {
 
   if(!inherits(nsdm_finput, "nsdm.finput")){
       stop("nsdm_finput must be an object of nsdm.finput class. Consider running NSDM.FormatingData() function.")
@@ -81,7 +80,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   sabina$args$maxncov.Regional <- maxncov.Regional
   sabina$args$corcut <- corcut
   sabina$args$algorithms <- algorithms
-  
+
   SpeciesName <- nsdm_finput$Species.Name
 
   # Unwrap objects
@@ -99,21 +98,24 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   myExpl.covsel.Global <- terra::extract(IndVar.Global, myResp.xy.Global, as.df=TRUE)[, -1]
 
   # Variable selection process
+  # Collinearity filtering
   Covdata.filter.Global<-covsel::covsel.filteralgo(covdata=myExpl.covsel.Global, pa=myResp.Global, corcut=corcut)
 
   # Embedding selected variables
   if(maxncov.Global=="nocorr") {
     maxncov.Global <- ncol(Covdata.filter.Global)
+    Selected.Variables.Global <- names(Covdata.filter.Global)
+  } else{
+    Covdata.embed.Global<-covsel::covsel.embed(covdata=Covdata.filter.Global,
+                                               pa=myResp.Global,
+                                               algorithms=algorithms,
+                                               maxncov=maxncov.Global,
+                                               nthreads=detectCores()/2)
+    Selected.Variables.Global <- labels(Covdata.embed.Global$covdata)[[2]]
   }
 
-  Covdata.embed.Global<-covsel::covsel.embed(covdata=Covdata.filter.Global,
-                                        pa=myResp.Global,
-                                        algorithms=algorithms,
-                                        maxncov=maxncov.Global,
-                                        nthreads=detectCores()/2) #@@@#TG why only half of cores?
 
   # Save selected variables for each species
-  Selected.Variables.Global <- labels(Covdata.embed.Global$covdata)[[2]]
   if(save.output){
     #suffix <- 0
     #file_path <- paste0("Results/Global/Values/", SpeciesName, ".variables.csv")
@@ -127,20 +129,20 @@ NSDM.SelectCovariates <- function(nsdm_finput,
     #message(paste("Selected variables at global level saved in:",file_path))
     }
 
-  IndVar.Global.Selected <- IndVar.Global[[Selected.Variables.Global]]  #@@@TG lo he vuelto a poner en resolucion global para entrenar el modelo global
+  IndVar.Global.Selected <- IndVar.Global[[Selected.Variables.Global]]
 
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-				nlyr(IndVar.Global), 
+				nlyr(IndVar.Global),
 				length(Selected.Variables.Global)))
 
   rownames(summary) <- c("Species name",
-			"Original number of variables at global scale", 
+			"Original number of variables at global scale",
 			"Final number of selected variables at global scale")
 
   # REGIONAL SCALE
   # Subset the global independent variables for regional projections
-  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]  #@@@#TG he puesto que se guarde tanto en resolucion global como regional para entrenar y proyectar
+  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]
 
   # Exclude climatic bands specified by the user.
   Number.bands <- nlyr(IndVar.Regional)
@@ -164,16 +166,16 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   # Embedding selected variables
   if(maxncov.Regional=="nocorr") {
     maxncov.Regional <- ncol(Covdata.filter.Regional)
-  }
-
-  Covdata.embed.Regional <- covsel::covsel.embed(covdata = Covdata.filter.Regional,
+    Selected.Variables.Regional <-names(Covdata.filter.Regional)
+  }else{
+    Covdata.embed.Regional <- covsel::covsel.embed(covdata = Covdata.filter.Regional,
                                                    pa = myResp.Regional,
                                                    algorithms = algorithms,
                                                    maxncov = maxncov.Regional,
-                                                   nthreads = detectCores() / 2) #@@@# why?
-
+                                                   nthreads = detectCores() / 2)
+    Selected.Variables.Regional <- labels(Covdata.embed.Regional$covdata)[[2]]
+  }
   # Save selected variables for each species
-  Selected.Variables.Regional <- labels(Covdata.embed.Regional$covdata)[[2]]
   if(save.output){
     #suffix <- 0
     #file_path <- paste0("Results/Regional/Values/", SpeciesName, ".variables.csv")
@@ -189,12 +191,12 @@ NSDM.SelectCovariates <- function(nsdm_finput,
 
   # Subset the regional independent variables for regional projections
   IndVar.Regional.Selected <- IndVar.Regional[[Selected.Variables.Regional]]
-  
+
   # Summary
   summary_regional <- data.frame(Values = c(Number.bands,
 				length(Selected.Variables.Regional)))
 
-  rownames(summary_regional) <- c("Original number of variables at regiona scale", 
+  rownames(summary_regional) <- c("Original number of variables at regiona scale",
 			"Final number of of variables at regional scale")
 
   summary <- rbind(summary, summary_regional)
@@ -205,10 +207,10 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   IndVar.Global.Selected.reg <- terra::wrap(IndVar.Global.Selected.reg)
 
   sabina$Selected.Variables.Global <- Selected.Variables.Global
-  sabina$IndVar.Global.Selected <- IndVar.Global.Selected #@@@# at global resolution for training
+  sabina$IndVar.Global.Selected <- IndVar.Global.Selected
   sabina$Selected.Variables.Regional <- Selected.Variables.Regional
   sabina$IndVar.Regional.Selected <- IndVar.Regional.Selected
-  sabina$IndVar.Global.Selected.reg <- IndVar.Global.Selected.reg #@@@# at regional resolution for projecting
+  sabina$IndVar.Global.Selected.reg <- IndVar.Global.Selected.reg
   sabina$Summary<-summary
   # Make the output lighter
   sabina <- sabina[!names(sabina) %in% c("IndVar.Regional", "IndVar.Global")]
