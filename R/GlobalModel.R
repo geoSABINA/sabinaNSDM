@@ -1,24 +1,24 @@
 #' @name NSDM.Global
 #'
-#' @title Perform nested spatial hierarchical species distribution modeling (NSDM) analysis at global scale.
+#' @title Perform global scale species distribution modeling for spatially-nested hierarchical species distribution modeling (NSDM) analysis.
 #'
-#' @description This function conducts \bold{NSDM} analysis at the global scale. It trains individual models using specified algorithms, evaluates model performance, and projects models to current and new environmental conditions.
+#' @description This function calibrates, evaluates, and projects species distribution models at the \bold{global} scale for \bold{NSDM} analysis. It generates ensemble models (combining a range of single algorithm models), evaluates models performance, and projects models to current and new environmental conditions.
 #'
 #'
-#' @param nsdm_selvars An object of class \code{nsdm.vinput} containing selected covariables for NSDM generated using the \code{\link{NSDM.SelectCovariates}} function.
-#' @param algorithms (\emph{optional, default} \code{'c("GLM", "GAM", "RF")'}) \cr 
-#' Algorithms to use for modeling. Options are \code{'GLM'}, \code{'GAM'}, \code{'GBM'}, \code{'MAXNET'}, \code{'MARS'}, and/or \code{'RF'}.
-#' @param CV.nb.rep (\emph{optional, default} \code{10}) \cr 
-#' An \code{integer} corresponding to the number of sets (repetitions) of cross-validation points that will be drawn.
+#' @param nsdm_selvars An object of class \code{nsdm.vinput} containing the selected covariates for NSDM generated using the \code{\link{NSDM.SelectCovariates}} function.
+#' @param algorithms (\emph{optional, default} \code{'c("GLM", "GAM", "RF")'}) \cr
+#' A \code{vector} containing the statistical algorithms to use for modeling. Options are \code{'GLM'}, \code{'GAM'}, \code{'GBM'}, \code{'MAXNET'}, \code{'MARS'}, and/or \code{'RF'}.
+#' @param CV.nb.rep (\emph{optional, default} \code{10}) \cr
+#' An \code{integer} corresponding to the number of cross-validation sets (repetitions).
 #' @param CV.perc (\emph{optional, default} \code{0.8}) \cr
-#' A \code{numeric} between \code{0} and \code{1} defining the percentage of data that will be kept for calibration.
-#' @param CustomModelOptions (\emph{optional, default} \code{NULL}) \cr 
-#' A \code{\link{BIOMOD.models.options}} object returned by the \code{\link{bm_ModelingOptions}} 
-#' @param metric.select.thresh (\emph{optional, default} \code{0.8}) \cr 
-#' A \code{numeric} between \code{0} and \code{1} corresponding the minimum scores of AUC below which single models will be excluded from the ensemble model building.
-#' @param save.output (\emph{optional, default} \code{TRUE}) \cr 
+#' A \code{numeric} between \code{0} and \code{1} defining the percentage of data that will be kept for calibration in each cross-validation set.
+#' @param CustomModelOptions (\emph{optional, default} \code{NULL}) \cr
+#' A \code{\link{BIOMOD.models.options}} object returned by the \code{\link{bm_ModelingOptions}} to tune models options. If \code{NULL} (the default), biomod2's default parameters are used.
+#' @param metric.select.thresh (\emph{optional, default} \code{0.8}) \cr
+#' A \code{numeric} between \code{0} and \code{1} corresponding to the minimum scores of AUC below which single models will be excluded from the ensemble model building.
+#' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.
-#' @param rm.biomod.folder (\emph{optional, default} \code{TRUE}) \cr 
+#' @param rm.biomod.folder (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value indicating whether the intermediate BIOMOD2 folders should be removed after processing.
 #'
 #'
@@ -29,32 +29,32 @@
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
 #' - `$Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariables at the global scale.
+#' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariates at the global scale.
 #' - `$IndVar.Global.Selected` Selected independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `$Selected.Variables.Regional` A \code{character} vector specifying the names of the selected covariables at the regional scale.
+#' - `$Selected.Variables.Regional` A \code{character} vector specifying the names of the selected covariates at the regional scale.
 #' - `$IndVar.Regional.Selected` Selected independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$IndVar.Global.Selected.reg` Selected variables at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
-#' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling. 
+#' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
 #' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
-#' - `$myEMeval.replicates` Evaluation statistics for each replicate model
-#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model. 
+#' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
+#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE)..
 #' - `$myModelsVarImport` Variable importance measures for individual models.
 #' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores.
 #' - `Summary` Summary information about the modeling process.
 #'
 #'
 #' @details
-#' This function conducts \bold{NSDM} modeling at the global scale. It uses the biomod2 package.
+#' This function uses the (\emph{biomod2} package to generate, evaluate, and project species distribution models at the \bold{global} scale for \bold{NSDM} analysis
 #' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
-#' - the \emph{Results/Global/Projections/} folder, containing the continious and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
-#' - the \emph{Results/Global/Values/} folder, containing replicates statistics, the consensus model statistics, the covariable importance, and the \code{nbestreplicates}, named with the species name and \file{.__replica.csv}, \file{._ensemble.csv}, \file{._indvar.csv} and \file{._nbestreplicates.csv} respectively.
+#' - the \emph{Results/Global/Projections/} folder, containing the continuous and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
+#' - the \emph{Results/Global/Values/} folder, containing replicates statistics, the consensus model statistics, the covariate importance, and the \code{nbestreplicates}, named with the species name and \file{.__replica.csv}, \file{._ensemble.csv}, \file{._indvar.csv} and \file{._nbestreplicates.csv} respectively.
 #'
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}
 #'
-#' 
-#' @examples 
+#'
+#' @examples
 #' # Perform NSDM modeling at global scale  #@@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
 #' myGlobalModel <- NSDM.Global(mySelectedCovs)
 #'
@@ -103,7 +103,6 @@ NSDM.Global <- function(nsdm_selvars,
   Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
   }
 
-
   # GLOBAL SCALE
   # Format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
   myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Global,nsdm_selvars$Background.XY.Global)
@@ -111,7 +110,7 @@ NSDM.Global <- function(nsdm_selvars,
   myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Global)),rep(NA,nrow(nsdm_selvars$Background.XY.Global))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
-  myExpl <- terra::extract(IndVar.Global.Selected, myResp.xy, as.df=TRUE)[, -1]  #@@@#TG antes usaba misma resolucion para entrenar y proyectar el global
+  myExpl <- terra::extract(IndVar.Global.Selected, myResp.xy, as.df=TRUE)[, -1]
 
   # Remaining script sections involve executing biomod2 modeling procedures, including data formatting, model training,
   # projection, evaluation, and visualization. Please refer to biomod2 documentation for detailed explanation of these steps.
@@ -127,19 +126,19 @@ NSDM.Global <- function(nsdm_selvars,
 
   # Calibrate and evaluate individual models with specified statistical algorithms
   # Train and evaluate individual models using BIOMOD_Modeling
-  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,   #@@@## (This function saves outputs, check them and specify them in the description). Outputs: /NSNSDM/Larix.decidua/models/AllModels/Larix.decidua_PA1_RUN1_GBM
+  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,
 	                                      modeling.id = "AllModels",
 	                                      models = models,
 	                                      OPT.user = CustomModelOptions,
 	                                      CV.strategy = "random",
-	                                      CV.nb.rep = CV.nb.rep, 
+	                                      CV.nb.rep = CV.nb.rep,
 					      CV.perc = CV.perc,
-	                                      weights = NULL, 
+	                                      weights = NULL,
 					      var.import = 3,
 	                                      metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"),
-	                                      scale.models = FALSE, 
+	                                      scale.models = FALSE,
 					      do.progress = TRUE,
-	                                      prevalence = 0.5, 
+	                                      prevalence = 0.5,
 					      seed.val = 42,
 	                                      CV.do.full.models = FALSE)
 
@@ -153,7 +152,7 @@ NSDM.Global <- function(nsdm_selvars,
     stop(paste0("\nNo replica for ", SpeciesName, " has reached an AUC value >= ", metric.select.thresh, ".\n"))
   }
   percentage <- 100 * nreplicates/nrow(df_slot)
-  nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates) 
+  nreplicates<-data.frame(Algorithm="All",'Number of replicates'=nreplicates)
   for(algorithm.i in models) {
     nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= metric.select.thresh)))
   }
@@ -167,14 +166,14 @@ NSDM.Global <- function(nsdm_selvars,
 					em.algo = c("EMmean"),
 					metric.select = c('ROC'),
 					metric.select.thresh = metric.select.thresh,
-					var.import = 0, 	#@RGM esto lo he cambiado, creo que solo es necesario en el paso anterior
+					var.import = 0,
 					metric.eval = c('ROC', "TSS", "KAPPA"),
 					seed.val = 42)
 
 
   # Project the individual models to the study area at regional scale under training conditions
   myBiomodProj <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
-					new.env = IndVar.Global.Selected.reg,  #@@@TG Lo he cambiado porque estabamos usando la misma resolucion para entrenar y para proyectar
+					new.env = IndVar.Global.Selected.reg,
 					proj.name = "Current",
 					models.chosen = 'all',
 					build.clamping.mask = FALSE)
@@ -225,7 +224,7 @@ NSDM.Global <- function(nsdm_selvars,
 
   # Values of the evaluation statistics for each replica
   myEMeval.replicates <- biomod2::get_evaluations(myBiomodModelOut)
-  
+
   sabina$myEMeval.replicates <- myEMeval.replicates
 
   if(save.output){
@@ -259,7 +258,7 @@ NSDM.Global <- function(nsdm_selvars,
   # Model projections for future climate scenarios
   ################################################
   if(length(Scenarios) == 0) {
-    warning("No new scenarios for further projections!\n") #Aquí pondría un warning en lugar de message
+    warning("No new scenarios for further projections!\n")
   } else {
     for(i in 1:length(Scenarios)) {
       new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Global]]
@@ -297,7 +296,7 @@ NSDM.Global <- function(nsdm_selvars,
       Pred.bin.TSS.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_TSSbin.tif"))
       Pred.bin.ROC.Scenario<-terra::rast(wrap(Pred.bin.ROC.Scenario))
       Pred.bin.TSS.Scenario<-terra::rast(wrap(Pred.bin.TSS.Scenario))
-      
+
       sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
       sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
@@ -317,31 +316,31 @@ NSDM.Global <- function(nsdm_selvars,
 
   source_folder <- sp.name
   destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
-  
+
   if(rm.biomod.folder){
     # Remove species folder created by biomod2
     fs::dir_delete(source_folder)
-  } else { 
+  } else {
     if(save.output){
       # Move and remove biomod2 results from /sp.name/ to Results/Global/Models/ folder
       fs::dir_create(paste0("Results/",Level,"/Models/",sp.name))
-      fs::dir_copy(source_folder, destination_folder, overwrite = TRUE) #@@@JMB he cambiado esto xq la carpeta estaba vacía.
+      fs::dir_copy(source_folder, destination_folder, overwrite = TRUE)
       fs::dir_delete(source_folder)
     }
   } # rm=F y save=F deja la carpeta de biomod donde está pero se machacará con las siguientes carpetas de las siguientes funciones. #@@@JMB Pensar si dejamos así esto
-    
+
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-				paste(toupper(algorithms),collapse = ", "), 
-				sum(sabina$myEMeval.replicates$metric.eval == "ROC" & sabina$myEMeval.replicates$validation >= metric.select.thresh), 
+				paste(toupper(algorithms),collapse = ", "),
+				sum(sabina$myEMeval.replicates$metric.eval == "ROC" & sabina$myEMeval.replicates$validation >= metric.select.thresh),
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
   rownames(summary) <- c("Species name",
-				"Statistical algorithms at global level", 
-				paste0("Number of replicates with AUC > ",metric.select.thresh, " at global level"), 
-				"AUC of ensemble model at global level", 
+				"Statistical algorithms at global level",
+				paste0("Number of replicates with AUC > ",metric.select.thresh, " at global level"),
+				"AUC of ensemble model at global level",
 				"TSS of ensemble model at global level",
 				"KAPPA of ensemble model at global level")
 
@@ -350,8 +349,8 @@ NSDM.Global <- function(nsdm_selvars,
   if(!is.null(nsdm_selvars$Scenarios)) {
     sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
   }
-  
-  sabina$Summary <- summary 
+
+  sabina$Summary <- summary
 
   attr(sabina, "class") <- "nsdm.predict.g"
 
@@ -366,7 +365,7 @@ NSDM.Global <- function(nsdm_selvars,
     "- Consensus model statistics: /Results/Global/Values/\n",
     "- Variable importance: /Results/Global/Values/"
     ))
-    if(!rm.biomod.folder) { 
+    if(!rm.biomod.folder) {
       message(" - BIOMOD results: /Results/Global/Models/\n")
     }
   }

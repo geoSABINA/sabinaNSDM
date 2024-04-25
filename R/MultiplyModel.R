@@ -1,17 +1,17 @@
 #' @name NSDM.Multiply
 #'
-#' @title Perform ......
+#' @title Perform spatially-nested hierarchical species distribution modeling (NSDM) analysis with the multiply strategy
 #'
-#' @description This function ....
+#' @description This function generates and projects a \bold{NSDM} with the \bold{multiply} strategy. It averages the prediction maps of regional scale and global scale species distribution models.
 #'
 #'
-#' @param nsdm_global An object of class \code{nsdm.predict.g} containing global model generated using the \code{\link{NSDM.Global}} function.
-#' @param nsdm_regional An object of class \code{nsdm.predict.r} containing regional model generated using the \code{\link{NSDM.Regional}} function.
-#' @param method (\emph{optional, default} \code{'Arithmetic'}) \cr 
-#' Options are \code{'Arithmetic'}, or \code{'Geometric'}. The \code{'Arithmetic'} method calculates the arithmetic mean of global and regional predictions, and \code{'Geometric'} calculates a geometric mean.
-#' @param rescale (\emph{optional, default} \code{FALSE}) \cr 
-#' An \code{logical} controls whether global and regional model predictions should be rescaled before combining them.
-#' @param save.output (\emph{optional, default} \code{TRUE}) \cr 
+#' @param nsdm_global An object of class \code{nsdm.predict.g} containing a global model generated using the \code{\link{NSDM.Global}} function.
+#' @param nsdm_regional An object of class \code{nsdm.predict.r} containing a regional model generated using the \code{\link{NSDM.Regional}} function.
+#' @param method (\emph{optional, default} \code{'Arithmetic'}) \cr
+#'  A \code{character} specifying the method for averaging the global and regional predictions. Options are \code{'Arithmetic'}, or \code{'Geometric'}. The \code{'Arithmetic'} method (the default) calculates the arithmetic mean of global and regional predictions, and \code{'Geometric'} calculates a geometric mean.
+#' @param rescale (\emph{optional, default} \code{FALSE}) \cr
+#' A \code{logical} controlling whether global and regional model predictions should be rescaled before averaging them.
+#' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #'
 #'
@@ -23,19 +23,19 @@
 #'
 #'
 #' @details
-#' This function conducts .....
+#' This function generates a \bold{NSDM} with the \bold{multiply} strategy. It averages the predictions of species distribution models at regional and global scales.
 #' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
-#' - the \emph{Results/Multiply/Projections/} folder, containing the continious and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
+#' - the \emph{Results/Multiply/Projections/} folder, containing the continuous and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
 #'
 #'
-#' @examples 
+#' @examples
 #' #@@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
 #' myMultiplyModel <- NSDM.Multiply(myGlobalModel,
 #'
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
 #'
-#' 
+#'
 #' @export
 NSDM.Multiply <- function(nsdm_global,
                           nsdm_regional,
@@ -78,10 +78,7 @@ NSDM.Multiply <- function(nsdm_global,
       }
 
     # Rescale global prediction to a common range
-    if(rescale==FALSE) {
-      Pred.global <- Pred.global
-      Pred.regional <- Pred.regional
-    } else if(rescale==TRUE) {
+    if(rescale==TRUE) {
       # Calculate minimum and maximum values of global prediction
       min_val <- min(terra::values(Pred.global), na.rm = TRUE)
       max_val <- max(values(Pred.global), na.rm = TRUE)
@@ -97,11 +94,10 @@ NSDM.Multiply <- function(nsdm_global,
     }
 
     # Average global and regional
+    Stack.rasters <- c(Pred.global, Pred.regional)
     if(method=="Geometric") {
-      Stack.rasters <- c(Pred.global, Pred.regional)
-      res.average <-  terra::app(Stack.rasters, function(...) exp(mean(log(c(...)))))
+      res.average<-sqrt(Pred.global*Pred.regional)       #@@@# lo he cambiado de esto: res.average <-  terra::app(Stack.rasters, function(...) exp(mean(log(c(...)))))
     } else if(method=="Arithmetic")  {
-      Stack.rasters <- c(Pred.global, Pred.regional)
       res.average <-  terra::mean(Stack.rasters)
     }
 
@@ -126,10 +122,11 @@ NSDM.Multiply <- function(nsdm_global,
   myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_regional$Background.XY.Regional))))
   pred_df <- sabina$current.projections$Pred
   pred_df <- terra::extract(pred_df, myResp.xy)[-1]
+  myExpl <- pred_df
   myResp <- as.vector(myResp)[[1]]
   pred_df <- as.vector(pred_df)[[1]]
- 
-  
+
+
   myRespNA <- replace(myResp, myResp == 0, NA)
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myRespNA,
 	                                     resp.xy = myResp.xy,
@@ -173,7 +170,7 @@ NSDM.Multiply <- function(nsdm_global,
       stat.validation <- rbind(stat.validation, stat)
     }
   } # end for i calib.lines
- 
+
   colnames(cross.validation)[which(colnames(cross.validation) == "best.stat")] <- "calibration"
   cross.validation$validation <- stat.validation$best.stat
 
@@ -184,7 +181,7 @@ NSDM.Multiply <- function(nsdm_global,
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
   				paste(nsdm_regional$args$algorithms,collapse = ", "),
-  				sum(nsdm_regional$myEMeval.replicates$metric.eval == "ROC" & nsdm_regional$myEMeval.replicates$validation >= CV.perc), 
+  				sum(nsdm_regional$myEMeval.replicates$metric.eval == "ROC" & nsdm_regional$myEMeval.replicates$validation >= nsdm_regional$args$CV.perc),
   				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="ROC")],
   				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="TSS")],
   				nsdm_regional$myEMeval.Ensemble$calibration[which(nsdm_regional$myEMeval.Ensemble$metric.eval=="KAPPA")],
@@ -194,9 +191,9 @@ NSDM.Multiply <- function(nsdm_global,
   				round(metric.means$validation[metric.means$metric.eval == "KAPPA"], 2)))
 
   rownames(summary) <- c("Species name",
-  				"Statistical algorithms at regional level", 
-  				paste0("Number of replicates wit AUC > ",nsdm_regional$args$CV.perc," at regional level"), 
-  				"AUC of ensemble model at regional level", 
+  				"Statistical algorithms at regional level",
+  				paste0("Number of replicates with AUC > ",nsdm_regional$args$CV.perc," at regional level"),
+  				"AUC of ensemble model at regional level",
   				"TSS of ensemble model at regional level",
   				"KAPPA of ensemble model at regional level",
   				"Multiply method",
