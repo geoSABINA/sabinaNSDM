@@ -357,7 +357,7 @@ NSDM.Covariate <- function(nsdm_global,
 
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")
-  if(!is.null(nsdm_selvars$Scenarios)) {
+  if(!is.null(nsdm_global$Scenarios)) {
     sabina$new.projections <- rapply(sabina$new.projections, terra::wrap, how = "list")
   }
 
