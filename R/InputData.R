@@ -1,6 +1,6 @@
 #' @name NSDM.InputData
 #'
-#' @title Prepare input data for #@@@@ spatially-nested hierarchical species distribution modeling (NSDM) analysis.
+#' @title Prepare input data for spatially-nested hierarchical species distribution modeling (NSDM) analysis.
 #'
 #' @description This function gathers together all input data (\emph{species presences xy at global and regional level, enviromental covariates at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
 #'
@@ -21,7 +21,7 @@
 #' @return An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
 #'
 #' @details
-#' - The `expl.var.global` and `expl.var.regional` parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing enviromental covariates used to train the global-scale and regional-scale models, respectively. Each band correponds to a different covariate. The regional-scale object must include all the covariates included in the global-scale object (usually climatic), and it can additionally include other covariates only available at this level.
+#' - The `expl.var.global` and `expl.var.regional` parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing environmental covariates used to train the global-scale and regional-scale models, respectively. Each band corresponds to a different covariate. The regional-scale object must include all the covariates included in the global-scale object (usually climatic), and it can additionally include other covariates only available at this level.
 #' - The `new.env` parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} object representing the environmental covariates in new spatial or temporal scenarios. All new scenarios must have the same covariates (same band names) than `expl.var.regional`.
 #' @examples
 #' library(terra)
@@ -36,10 +36,11 @@
 #' expl.var.global<-terra::unwrap(expl.var.global)
 #' expl.var.regional<-terra::unwrap(expl.var.regional)
 #'
-#' # Load new escenarios
+#' # Load new scenarios
 #' data(new.env, package = "sabinaNSDM")
 #' new.env<-terra::unwrap(new.env)
 #'
+#' # Prepare input data
 #' myInputData<-NSDM.InputData(
 #'		SpeciesName = "Fagus.sylvatica",
 #'		spp.data.global = Fagus.sylvatica.xy.global,
@@ -72,11 +73,11 @@ NSDM.InputData <- function(SpeciesName,
       !(is.data.frame(spp.data.regional) &&
         ncol(spp.data.regional) == 2 &&
         all(c('x', 'y') %in% colnames(spp.data.regional)))) {
-    stop(paste0("spp.data.global and spp.data.regional for ", SpeciesName, " must be data.frames with 'x' and 'y' columns."))
+    stop(paste0("spp.data.global and spp.data.regional for ", SpeciesName, " must be data.frames with 'x' and 'y' columns"))
   }
 
   if(!inherits(expl.var.global, "SpatRaster") || !inherits(expl.var.regional, "SpatRaster")) {
-    stop("expl.var.global and expl.var.regional must be SpatRaster objects.")
+    stop("expl.var.global and expl.var.regional must be SpatRaster objects")
   }
 
   if(!is.null(new.env)) {
@@ -105,7 +106,7 @@ NSDM.InputData <- function(SpeciesName,
     var_name %in% names(expl.var.regional)
   })
   if(!all(match_vars2)) {
-    stop("All variables present in expl.var.global must also be present in expl.var.regional.")
+    stop("All variables present in expl.var.global must also be present in expl.var.regional")
   }
   #new.env and regional
   if(!is.null(new.env)) {
@@ -113,7 +114,6 @@ NSDM.InputData <- function(SpeciesName,
       all(names(expl.var.regional) %in% names(file))
     })
     if(!all(match_vars)) {
-      #@@@message("Not all scenarios have the same environmental covariates as expl.var.regional!") #@@@#it doesnt stop?? what if this happens. write what happens in this case
       stop("Not all new scenarios have the same environmental covariates as expl.var.regional")
       }
 

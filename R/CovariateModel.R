@@ -2,7 +2,7 @@
 #'
 #' @title Perform spatially-nested hierarchical species distribution modeling (NSDM) analysis with the covariate strategy
 #'
-#' @description This function calibrates, evaluates, and projects a \bold{NSDM} with the \bold{covariate} strategy. It uses a global scale species distribution model output map as an additional covariate to fit a regional scale species distribution model.
+#' @description This function calibrates, evaluates, and projects a \bold{NSDM} with the \bold{covariate} strategy. It uses a global scale species distribution model output  as an additional covariate to fit a regional scale species distribution model.
 #'
 #'
 #' @param nsdm_global An object of class \code{nsdm.predict.g} containing a global model generated using the \code{\link{NSDM.Global}} function.
@@ -21,18 +21,19 @@
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #' @param rm.biomod.folder (\emph{optional, default} \code{TRUE}) \cr
-#' A \code{logical} value indicating whether the intermediate BIOMOD2 folders should be removed after processing.
+#' A \code{logical} value indicating whether the intermediate biomod2's folders should be removed after processing.
 #'
 #'
 #' @return An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
 #' - `$SpeciesName` Name of the species.
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
+#' - `$Selected.Variables.Covariate` A \code{character} vector specifying the names of the selected covariates at the regional scale used for the covariate model.
 #' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
 #' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
 #' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
-#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
-#' - `$myModelsVarImport` Variable importance measures for individual models.
-#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores.
+#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA).
+#' - `$myModelsVarImport` Covariate importance measures for individual models.
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from AUC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from TSS scores.
 #' - `Summary` Summary information about the modeling process.
 #'
 #'
@@ -47,8 +48,50 @@
 #'
 #'
 #' @examples
-#' # Perform NSDM modeling at global scale  #@@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
+#' library(terra)
+#' library(ecospat)
+#'
+#' # Load species occurrences
+#' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
+#' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
+#'
+#' # Load explanatory variables
+#' data(expl.var.global, package = "sabinaNSDM")
+#' data(expl.var.regional, package = "sabinaNSDM")
+#' expl.var.global<-terra::unwrap(expl.var.global)
+#' expl.var.regional<-terra::unwrap(expl.var.regional)
+#'
+#' # Load new scenarios
+#' data(new.env, package = "sabinaNSDM")
+#' new.env<-terra::unwrap(new.env)
+#'
+#' # Prepare input data
+#' myInputData<-NSDM.InputData(
+#'		SpeciesName = "Fagus.sylvatica",
+#'		spp.data.global = Fagus.sylvatica.xy.global,
+#'		spp.data.regional = Fagus.sylvatica.xy.regional,
+#'		expl.var.global = expl.var.global,
+#'		expl.var.regional = expl.var.regional,
+#'		new.env = new_env,
+#'		new.env.names = c("Scenario1"),
+#'		Background.Global = NULL,
+#'		Background.Regional = NULL
+#' )
+#'
+#' # Format the input data
+#' myFormatedData <- NSDM.FormatingData(myInputData,
+#'					nPoints=1000)
+
+#' # Select covariates
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#'
+#' # Perform global scale SDMs
 #' myGlobalModel <- NSDM.Global(mySelectedCovs)
+#'
+#' # Perform NSDM analysis with the covariate strategy
+#' nsdm_covariate <- NSDM.Covariate(myGlobalModel, algorithms = c("GLM","RF"), rm.corr=TRUE, CV.nb.rep = 1,
+#' CV.perc = 0.8,CustomModelOptions = NULL,metric.select.thresh = 0.8, save.output = TRUE,rm.biomod.folder = TRUE)
+#'
 #'
 #' @export
 NSDM.Covariate <- function(nsdm_global,
@@ -71,11 +114,9 @@ NSDM.Covariate <- function(nsdm_global,
 
   SpeciesName <- nsdm_global$Species.Name
 
-  #sabina<-nsdm_global[!names(nsdm_global) %in% c("Summary", "args", "nbestreplicates", "myEMeval.replicates", "myEMeval.Ensemble", "myModelsVarImport")]
   sabina<-nsdm_global[names(nsdm_global) %in% c("Species.Name")]
   sabina$args <- list()
   sabina$args$rm.corr <- rm.corr
-  #sabina$args$corcut <- if(rm.corr) nsdm_global$corcut #@@@JMB igual innecesario
   sabina$args$algorithms <- algorithms
   sabina$args$CV.nb.rep <- CV.nb.rep
   sabina$args$CV.perc <- CV.perc
@@ -87,9 +128,8 @@ NSDM.Covariate <- function(nsdm_global,
   new.projections$Pred.bin.TSS.Scenario <- list()
   new.projections$Pred.bin.ROC.Scenario <- list()
 
-  # Covariate model calibrated with all the independent variables.
-  # Regional model excluding climatic variables.
-
+  # Covariate model calibrated with all the covariates.
+  # Regional model excluding climatic variables
 
   # Add the global model as an additional variable for the regional model.
   SDM.global <- terra::unwrap(nsdm_global$current.projections$Pred) # Unwrap objects
@@ -111,15 +151,11 @@ NSDM.Covariate <- function(nsdm_global,
     myResp.covsel <- as.vector(myResp.covsel)[[1]]
     myExpl.covsel <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
     myExpl <- covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp.covsel, force="SDM.global", corcut=nsdm_global$corcut)
-    #corr_mat <- cor(myExpl)
-    #if(save.output){ #@@@JMB guardamos esto? #@@@TG yo diría que no, en VarSelection no guardamos la correlacion
-    #  write.csv(corr_mat,file=paste0("Results/Covariate/Values/",SpeciesName,"_vars_corr.csv"))
-    #}
-    #sabina$vars.corr <- corr_mat #@@@JMB no sé si guardar corr_mat aunque rev.corr = FALSE
-    IndVar.Regional.Covariate<-IndVar.Regional.Covariate[[which(names(IndVar.Regional.Covariate) %in% colnames(myExpl))]]
+     IndVar.Regional.Covariate<-IndVar.Regional.Covariate[[which(names(IndVar.Regional.Covariate) %in% colnames(myExpl))]]
   }
 
-  sabina$Selected.Variables.Covariate <- names(myExpl) #@@@JMB guardamos esto? #@@@#TG esto yo diria que si es importante, porque pueden no ser las mismas que dijimos anteriormente
+
+  sabina$Selected.Variables.Covariate <- names(myExpl)
   if(save.output){
     fs::dir_create("Results/Covariate/Values/")
     write.csv(names(myExpl), paste0("Results/Covariate/Values/", SpeciesName, ".variables.csv"))
@@ -135,7 +171,7 @@ NSDM.Covariate <- function(nsdm_global,
 
   # Calibrate and evaluate individual models with specified statistical algorithms.
   # Model training using BIOMOD_Modeling
-  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,
+  myBiomodModelOut <- biomod2::BIOMOD_Modeling(bm.format = myBiomodData,
 	                                      modeling.id = "AllModels",
 	                                      models = models,
 	                                      OPT.user = CustomModelOptions, # Use the specified or default modeling options
@@ -205,7 +241,6 @@ NSDM.Covariate <- function(nsdm_global,
     fs::dir_create("Results/Covariate/Projections/")
     file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".Current.tif")
     terra::writeRaster(Pred, file_path, overwrite=TRUE)
-    #message(paste("Hierarchical covariate projections under training conditions saved in:",file_path))
     fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
   }
 
@@ -221,12 +256,10 @@ NSDM.Covariate <- function(nsdm_global,
   if(save.output){
     file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".Current.bin.ROC.tif")
     terra::writeRaster(Pred.bin.ROC, file_path, overwrite=TRUE)
-    #message(paste("Hierarchical covariate ROC binary projections under training conditions saved in:",file_path))
     fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_ROCbin.tif"))
 
     file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".Current.bin.TSS.tif")
     terra::writeRaster(Pred.bin.TSS, file_path, overwrite=TRUE)
-    #message(paste("Hierarchical covariate TSS binary projections under training conditions saved in:",file_path))
     fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_TSSbin.tif"))
   }
 
@@ -251,7 +284,7 @@ NSDM.Covariate <- function(nsdm_global,
 
   sabina$myEMeval.Ensemble <- myEMeval.Ensemble
 
-  # Variable importance
+  # Covariate importance
   myModelsVarImport <- biomod2::get_variables_importance(myBiomodModelOut)
   if(save.output){
     write.table(myModelsVarImport, file = paste0("Results/Covariate/Values/",SpeciesName,"_indvar.csv"), row.names = T, col.names = T)
@@ -266,7 +299,7 @@ NSDM.Covariate <- function(nsdm_global,
   }
 
   if(length(Scenarios) == 0) {
-    warning("No new scenarios for further projections!\n") #Aquí pondría un warning en lugar de message
+    warning("No new scenarios for further projections!\n")
   } else {
     for(i in 1:length(Scenarios)) {
       NewClim.temp <- Scenarios[[i]][[nsdm_global$Selected.Variables.Regional]]
@@ -299,7 +332,7 @@ NSDM.Covariate <- function(nsdm_global,
         file_path <- paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".tif")
         terra::writeRaster(Pred.Scenario, file_path, overwrite = TRUE)
         fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
-        #message(paste("Hierarchical covariate projections under", Scenario.name,"conditions saved in:",file_path))
+
       }
 
       # Binarized models
@@ -314,12 +347,10 @@ NSDM.Covariate <- function(nsdm_global,
       if(save.output){
         file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif")
         terra::writeRaster(Pred.bin.ROC.Scenario, file_path, overwrite = TRUE)
-        #message(paste("Hierarchical ROC binary covariate projections under", Scenario.name,"conditions saved in:",file_path))
         fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
 
         file_path<-paste0("Results/Covariate/Projections/",SpeciesName,".",Scenario.name,".bin.TSS.tif")
         terra::writeRaster(Pred.bin.TSS.Scenario, file_path, overwrite = TRUE)
-        #message(paste("Hierarchical covariate TSS binary projections under", Scenario.name,"conditions saved in:",file_path))
         fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_TSSbin.tif"))
       }
     } #end for
@@ -371,13 +402,13 @@ NSDM.Covariate <- function(nsdm_global,
   if(save.output){
     message("Results saved in the following local folder/s:")
     message(paste(
-    " - Current and new projections: /Results/Covariate/Projections/\n",
+    "- Current and new projections: /Results/Covariate/Projections/\n",
     "- Replicates statistics: /Results/Covariate/Values/\n",
     "- Consensus model statistics: /Results/Covariate/Values/\n",
-    "- Variable importance: /Results/Covariate/Values/"
+    "- Covariate importance: /Results/Covariate/Values/"
     ))
     if(!rm.biomod.folder) {
-    message(" - BIOMOD results: /Results/Covariate/Models/\n")
+    message("- BIOMOD results: /Results/Covariate/Models/\n")
     }
   }
 
