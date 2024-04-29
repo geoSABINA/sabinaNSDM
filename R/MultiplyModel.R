@@ -15,21 +15,20 @@
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #'
 #'
-#' @return An object of class \code{nsdm.predict} containing model information, predictions and evaluation statistics: #@@@JMB statistics pendiente de definir
+#' @return An object of class \code{nsdm.predict} containing model information, predictions and evaluation statistics: 
 #' - `$SpeciesName` Name of the species.
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `method`, and `rescale`.
-#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
-#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores.
+#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format.
 #'
 #'
 #' @details
 #' This function generates a \bold{NSDM} with the \bold{multiply} strategy. It averages the predictions of species distribution models at regional and global scales.
 #' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
-#' - the \emph{Results/Multiply/Projections/} folder, containing the continuous and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
+#' - the \emph{Results/Multiply/Projections/} folder, containing the continuous current and new projections. Current projections are named with the species name followed by \file{.Current.tif}.
 #'
 #'
 #' @examples
-#' #@@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
 #' myMultiplyModel <- NSDM.Multiply(myGlobalModel,
 #'
 #'
@@ -44,11 +43,11 @@ NSDM.Multiply <- function(nsdm_global,
                           save.output=TRUE) {
 
   if(!inherits(nsdm_regional, "nsdm.predict.r") || !inherits(nsdm_global, "nsdm.predict.g")) {
-    stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.r, respectively.")
+    stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.r, respectively")
   }
 
   if(!method %in% c("Arithmetic", "Geometric")) {
-    stop("Please select 'Arithmetic' or 'Geometric' method.")
+    stop("Please select 'Arithmetic' or 'Geometric' method")
   }
 
   if(!identical(nsdm_regional$Species.Name, nsdm_global$Species.Name)) {
@@ -96,7 +95,7 @@ NSDM.Multiply <- function(nsdm_global,
     # Average global and regional
     Stack.rasters <- c(Pred.global, Pred.regional)
     if(method=="Geometric") {
-      res.average<-sqrt(Pred.global*Pred.regional)       #@@@# lo he cambiado de esto: res.average <-  terra::app(Stack.rasters, function(...) exp(mean(log(c(...)))))
+      res.average <-  sqrt(Pred.global*Pred.regional)
     } else if(method=="Arithmetic")  {
       res.average <-  terra::mean(Stack.rasters)
     }
@@ -112,12 +111,11 @@ NSDM.Multiply <- function(nsdm_global,
       fs::dir_create(c("Results/Multiply/Projections/"))
       file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",projmodel,".tif")
       terra::writeRaster(res.average, file_path, overwrite = TRUE)
-      #message(paste("Multiply projections under",Scenarios[i] ,"conditions saved in:",file_path))
     }
   } # end for
 
 
-  ## Evaluation multiply model 	#@@@JMB Esto queda pendiente de discusión (qué 0s usamos?)
+  ## Evaluation multiply model 	
   myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Background.XY.Regional)
   myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_regional$Background.XY.Regional))))
   pred_df <- sabina$current.projections$Pred
@@ -176,8 +174,6 @@ NSDM.Multiply <- function(nsdm_global,
 
   metric.means <- aggregate(validation ~ metric.eval, data = cross.validation, FUN = mean)
 
-  #@@@JMB Guardar Evaluation multiply model en return?
-
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
   				paste(nsdm_regional$args$algorithms,collapse = ", "),
@@ -215,7 +211,7 @@ NSDM.Multiply <- function(nsdm_global,
   if(save.output){
   message("Results saved in the following local folder/s:")
   message(paste(
-    " - Hierarchical Multiply Models: /Results/Multiply/Projections/\n"
+    "- Hierarchical Multiply Models: /Results/Multiply/Projections/\n"
   ))
   }
 

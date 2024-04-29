@@ -1,19 +1,19 @@
 #' @name NSDM.FormattingData
 #'
-#' @title Formatting input data for #@@@@ spatially-nested hierarchical species distribution modeling (NSDM) analysis.
+#' @title Formatting input data for spatially-nested hierarchical species distribution modeling (NSDM) analysis.
 #'
 #' @description Format input data and background data (if necessary) for usage in \bold{NSDM}.
 #'
 #'
-#' @param nsdm_input An object of class \code{nsdm.input} generated using the \code{\link{NSDM.InputData}} function. #@@@JMB ver como ponemos el hsbm.input class
+#' @param nsdm_input An object of class \code{nsdm.input} generated using the \code{\link{NSDM.InputData}} function.
 #' @param nPoints (\emph{optional, default} \code{10000}) \cr
 #' An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points are not provided at \code{\link{NSDM.InputData}}.
 #' @param Min.Dist.Global (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between species presences points at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the global scale provided in \code{nsdm_input}.
+#' A \code{numeric} corresponding to the minimum distance between species presences occurrences at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the global scale provided in \code{nsdm_input}.
 #' @param Min.Dist.Regional (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between species presences points at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}.
+#' A \code{numeric} corresponding to the minimum distance between species presences occurrences at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}.
 #' @param Background.method  (\emph{optional, default} \code{'random'}) \cr
-#' If no background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}. The "random" (the default) option generates random background points considering the extension of the input environmental covariates at global and regional scales provided in \code{nsdm_input}. The "stratified" method is based on a PCA analysis from all environmental covariates, where the two principal component values are divided into quartiles, and multiplied to generate a total stratified variable of 16 categories (stratum). Then, the background points are generated randomly according to the area occupied by each stratum.
+#' If no background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}. The "random" (the default) option generates random background points considering the extension of the input environmental covariates at the global and the regional scales provided in \code{nsdm_input}. The "stratified" method is based on a PCA analysis from all environmental covariates, where the two principal component values are divided into quartiles, and multiplied to generate a total stratified variable of 16 categories (stratum). Then, the background points are generated randomly according to the area occupied by each stratum.
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved locally.
 #'
@@ -22,14 +22,14 @@
 #' An object of class \code{nsdm.finput} containing formatted input data for the \bold{NSDM}:
 #' - `$Species.Name` The name of the species provided as input.
 #' - `$args` A \code{list} containing the arguments used for data formatting, including: `nPoints`, `Min.Dist.Global`, `Min.Dist.Regional`, and `Background.method`.
-#' - `$SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
-#' - `$SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Global` Species occurrences data at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Regional` Species occurrences data at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
 #' - `$Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
-#' - `$IndVar.Global` Independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `$IndVar.Regional` Independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$IndVar.Global` Covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$IndVar.Regional` Covariates at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `$Summary` Summary of formated input data in \code{data.frame} format.
+#' - `$Summary` Summary of formatted input data in \code{data.frame} format.
 #'
 #'
 #' @details
@@ -44,7 +44,6 @@
 #'
 #'
 #' @examples
-#' # Load the required packages  #@@@JMB en el ejemplo hay que poner también el NSDM.InputData() para tener myInputData? Ver cómo hacen otros #@@@#TG si, yo lo incluiria, para todas las funciones
 #' library(terra)
 #' library(ecospat)
 #'
@@ -62,7 +61,7 @@ NSDM.FormattingData <- function(nsdm_input,
 				save.output=TRUE) {
 
   if(!inherits(nsdm_input, "nsdm.input")){
-      stop("nsdm_input must be an object of nsdm.input class. Consider running NSDM.InputData() function.")
+      stop("nsdm_input must be an object of nsdm.input class. Consider running NSDM.InputData() function")
   }
 
   SpeciesName <- nsdm_input$Species.Name
@@ -88,16 +87,15 @@ NSDM.FormattingData <- function(nsdm_input,
 		"Results/Regional/Background/"))
   }
 
-
   # Unwrap objects if necessary
   IndVar.Global <- terra::unwrap(nsdm_input$IndVar.Global)
   IndVar.Regional <- terra::unwrap(nsdm_input$IndVar.Regional)
 
   # GLOBAL SCALE
   # Generate random background points for model calibration
-  # from Global independent variables (environmental layers)
+  # from Global covariates (environmental layers)
 
-  # Global independent variables (environmental layers)
+  # Global covariates (environmental layers)
   IndVar.Global <- IndVar.Global[[names(IndVar.Global)]]
   Mask.Global <- prod(IndVar.Global, 1)
   IndVar.Global <- terra::mask(IndVar.Global, Mask.Global)
@@ -106,7 +104,7 @@ NSDM.FormattingData <- function(nsdm_input,
   if(is.null(nsdm_input$Background.Global.0) && Background.method == "random") {
     Valid.Cells.Global <- which(!is.na(values(Mask.Global)))
     if(length(Valid.Cells.Global) < nPoints) {
-      stop(paste("The requested number of background nPoints exceeds the number of valid/available cells.
+      stop(paste("The requested number of background nPoints exceeds the number of available cells.
 	Maximum number of background points at global level:",length(Valid.Cells.Global)))
     }
     Sampled.indices.Global <- sample(Valid.Cells.Global, nPoints)
@@ -116,7 +114,7 @@ NSDM.FormattingData <- function(nsdm_input,
     Background.XY.Global <- background_stratified(IndVar.Global, nPoints=nPoints)
   } else {
     #remove NAs and duplicates of Background.Global.0
-    XY.Global <- terra::extract(Mask.Global, nsdm_input$Background.Global.0) #@@@JMB xy=TRE creo que modifica las coordenadas originales
+    XY.Global <- terra::extract(Mask.Global, nsdm_input$Background.Global.0)
     XY.Global <- cbind(XY.Global, nsdm_input$Background.Global.0)
     XY.Global <- na.omit(XY.Global)[, -c(1:2)]
     Background.XY.Global <- unique(XY.Global)
@@ -125,7 +123,6 @@ NSDM.FormattingData <- function(nsdm_input,
   if(save.output){
     write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
   }
-
 
   # Load species data at global scale
   SpeciesData.XY.Global <- nsdm_input$SpeciesData.XY.Global.0
@@ -150,7 +147,7 @@ NSDM.FormattingData <- function(nsdm_input,
       XY.final.Global <- ecospat::ecospat.occ.desaggregation(XY.Global, min.dist = Min.Dist.Global, by = NULL)
     })
   }))
-  message(paste0("Global species data (",SpeciesName,"): from ", nrow(SpeciesData.XY.Global), " to ", nrow(XY.final.Global), " species presences after cleaning and thinning."))
+  message(paste0("Global species data (",SpeciesName,"): from ", nrow(SpeciesData.XY.Global), " to ", nrow(XY.final.Global), " species presences after cleaning and thinning"))
 
   # Save thinning presence data for each species
   if(save.output){
@@ -171,7 +168,7 @@ NSDM.FormattingData <- function(nsdm_input,
 
   # REGIONAL SCALE
   # Generate random background points for model calibration
-  # Regional independent variables (environmental layers)
+  # Regional covariates (environmental layers)
   IndVar.Regional <- IndVar.Regional[[names(IndVar.Regional)]]
   Mask.Regional <- prod(IndVar.Regional)
   IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
@@ -180,7 +177,7 @@ NSDM.FormattingData <- function(nsdm_input,
   if(is.null(nsdm_input$Background.Regional.0) && Background.method == "random") {
     Valid.Cells.Regional <- which(!is.na(values(Mask.Regional)))
     if(length(Valid.Cells.Regional) < nPoints) {
-      stop(paste("The requested number of background nPoints exceeds the number of valid/available cells.
+      stop(paste("The requested number of background nPoints exceeds the number of available cells.
 	Maximum number of background points at regional level:",length(Valid.Cells.Regional)))
     }
     Sampled.indices.Regional <- sample(Valid.Cells.Regional, nPoints)
@@ -283,7 +280,7 @@ background_stratified <- function(expl.var, nPoints) {
   df <- na.omit(vars)
 
   if(nrow(df) < nPoints) {
-    stop(paste("The requested number of background nPoints exceeds the number of valid/available.
+    stop(paste("The requested number of background nPoints exceeds the number of available cells.
     Maximum number of background points at global level:",nrow(df)))
   }
 

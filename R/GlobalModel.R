@@ -19,28 +19,28 @@
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #' @param rm.biomod.folder (\emph{optional, default} \code{TRUE}) \cr
-#' A \code{logical} value indicating whether the intermediate BIOMOD2 folders should be removed after processing.
+#' A \code{logical} value indicating whether the intermediate biomod2's folders should be removed after processing.
 #'
 #'
 #' @return An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
 #' - `$SpeciesName` Name of the species.
-#' - `$SpeciesData.XY.Global` Species presence data at the global level at \code{data.frame} format after applying spatial thinning.
-#' - `$SpeciesData.XY.Regional` Species presence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Global` Species occurrence data at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Regional` Species occurrence data at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
-#' - `$Background.XY.Regional` Species presence data at the regional level at \code{data.frame} format.
+#' - `$Background.XY.Regional` Species occurrence data at the regional level at \code{data.frame} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariates at the global scale.
-#' - `$IndVar.Global.Selected` Selected independent variables at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$IndVar.Global.Selected` Selected covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$Selected.Variables.Regional` A \code{character} vector specifying the names of the selected covariates at the regional scale.
-#' - `$IndVar.Regional.Selected` Selected independent variables at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
-#' - `$IndVar.Global.Selected.reg` Selected variables at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$IndVar.Regional.Selected` Selected covariates at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
+#' - `$IndVar.Global.Selected.reg` Selected covariates at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
 #' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
 #' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
 #' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
-#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE)..
-#' - `$myModelsVarImport` Variable importance measures for individual models.
-#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores.
+#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
+#' - `$myModelsVarImport` Covariate importance measures for individual models.
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from AUC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from TSS scores.
 #' - `Summary` Summary information about the modeling process.
 #'
 #'
@@ -55,7 +55,7 @@
 #'
 #'
 #' @examples
-#' # Perform NSDM modeling at global scale  #@@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
+#' # Perform NSDM modeling at global scale  
 #' myGlobalModel <- NSDM.Global(mySelectedCovs)
 #'
 #' @import biomod2
@@ -71,7 +71,7 @@ NSDM.Global <- function(nsdm_selvars,
 			rm.biomod.folder=TRUE) {
 
   if(!inherits(nsdm_selvars, "nsdm.vinput")){
-      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariates() function.")
+      stop("nsdm_selvars must be an object of nsdm.vinput class. Consider running NSDM.SelectCovariates() function")
   }
 
   models <- toupper(algorithms)
@@ -104,16 +104,13 @@ NSDM.Global <- function(nsdm_selvars,
   }
 
   # GLOBAL SCALE
-  # Format the response (presence/background) and explanatory (environmental variables) data for BIOMOD2
+  # Format the response (presence/background) and covariate data for BIOMOD2
   myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Global,nsdm_selvars$Background.XY.Global)
   row.names(myResp.xy)<-c(1:nrow(myResp.xy))
   myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Global)),rep(NA,nrow(nsdm_selvars$Background.XY.Global))))
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
   myExpl <- terra::extract(IndVar.Global.Selected, myResp.xy, as.df=TRUE)[, -1]
-
-  # Remaining script sections involve executing biomod2 modeling procedures, including data formatting, model training,
-  # projection, evaluation, and visualization. Please refer to biomod2 documentation for detailed explanation of these steps.
 
   # Prepare data required to calibrate the model with biomod2 package (Result: A BIOMOD.formated.data object)
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
@@ -126,7 +123,7 @@ NSDM.Global <- function(nsdm_selvars,
 
   # Calibrate and evaluate individual models with specified statistical algorithms
   # Train and evaluate individual models using BIOMOD_Modeling
-  myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,
+  myBiomodModelOut <- biomod2::BIOMOD_Modeling(bm.format = myBiomodData,
 	                                      modeling.id = "AllModels",
 	                                      models = models,
 	                                      OPT.user = CustomModelOptions,
@@ -157,7 +154,7 @@ NSDM.Global <- function(nsdm_selvars,
     nreplicates<-rbind(nreplicates,c(algorithm.i,sum(df_slot$validation[which(df_slot$algo==algorithm.i)] >= metric.select.thresh)))
   }
 
-  sabina$nbestreplicates <- nreplicates  #@@@JMB sugiero poner nbestreplicates en lugar de nreplicates.
+  sabina$nbestreplicates <- nreplicates
 
   # Generate and evaluate a single ensemble (i.e.,consensus) model that averages the individual models
   myBiomodEM.ROC  <- biomod2::BIOMOD_EnsembleModeling(bm.mod = myBiomodModelOut,
@@ -169,7 +166,6 @@ NSDM.Global <- function(nsdm_selvars,
 					var.import = 0,
 					metric.eval = c('ROC', "TSS", "KAPPA"),
 					seed.val = 42)
-
 
   # Project the individual models to the study area at regional scale under training conditions
   myBiomodProj <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
@@ -197,7 +193,6 @@ NSDM.Global <- function(nsdm_selvars,
     fs::dir_create(paste0("Results/",Level,"/Projections/"))
     file_path <- paste0("Results/",Level,"/Projections/",SpeciesName,".Current.tif")
     terra::writeRaster(Pred, file_path, overwrite=TRUE)
-    #message(paste("Projections at global level under training conditions saved in:",file_path)) #@@@JMB todos estos message están resumidos también al final. Decidir unos u otros.
     fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
   }
 
@@ -213,12 +208,10 @@ NSDM.Global <- function(nsdm_selvars,
   if(save.output){
     file_path <- paste0("Results/",Level,"/Projections/",SpeciesName,".Current.bin.ROC.tif")
     terra::writeRaster(Pred.bin.ROC, file_path, overwrite=TRUE)
-    #message(paste("ROC binary projections at global level under training conditions saved in:",file_path))
     fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_ROCbin.tif"))
 
     file_path <- paste0("Results/",Level,"/Projections/",SpeciesName,".Current.bin.TSS.tif")
     terra::writeRaster(Pred.bin.TSS, file_path, overwrite=TRUE)
-    #message(paste("TSS binary projections at global level under training conditions saved in:",file_path))
     fs::file_delete(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_TSSbin.tif"))
   }
 
@@ -262,7 +255,6 @@ NSDM.Global <- function(nsdm_selvars,
   } else {
     for(i in 1:length(Scenarios)) {
       new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Global]]
-      #new.env <- terra::mask(new.env, IndVar.Global.Selected[[1]])
       Scenario.name <- names(Scenarios[i])
 
       #Project the individual models
@@ -288,7 +280,6 @@ NSDM.Global <- function(nsdm_selvars,
         file_path <- paste0("Results/",Level,"/Projections/",SpeciesName,".",Scenario.name,".tif")
         terra::writeRaster(Pred.Scenario, file_path, overwrite = TRUE)
         fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_", Scenario.name,"_",sp.name,"_ensemble.tif"))
-        #message(paste("Projections at global level under", Scenario.name,"conditions saved in:",file_path))
       }
 
       # Binarized models
@@ -303,12 +294,10 @@ NSDM.Global <- function(nsdm_selvars,
       if(save.output){
         file_path <- paste0("Results/",Level,"/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif")
         terra::writeRaster(Pred.bin.ROC.Scenario, file_path, overwrite = TRUE)
-        #message(paste("ROC binary projections at global level under", Scenario.name,"conditions saved in:",file_path))
         fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
 
         file_path <- paste0("Results/",Level,"/Projections/",SpeciesName,".",Scenario.name,".bin.TSS.tif")
         terra::writeRaster(Pred.bin.TSS.Scenario, file_path, overwrite = TRUE)
-        #message(paste("TSS binary projections at global level under", Scenario.name,"conditions saved in:",file_path))
         fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name, "_ensemble_TSSbin.tif"))
       }
     } # end for
@@ -327,7 +316,7 @@ NSDM.Global <- function(nsdm_selvars,
       fs::dir_copy(source_folder, destination_folder, overwrite = TRUE)
       fs::dir_delete(source_folder)
     }
-  } # rm=F y save=F deja la carpeta de biomod donde está pero se machacará con las siguientes carpetas de las siguientes funciones. #@@@JMB Pensar si dejamos así esto
+  } 
 
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
@@ -360,10 +349,10 @@ NSDM.Global <- function(nsdm_selvars,
   if(save.output){
     message("Results saved in the following local folder/s:")
     message(paste(
-    " - Current and new projections: /Results/Global/Projections/\n",
+    "- Current and new projections: /Results/Global/Projections/\n",
     "- Replicates statistics: /Results/Global/Values/\n",
     "- Consensus model statistics: /Results/Global/Values/\n",
-    "- Variable importance: /Results/Global/Values/"
+    "- Covariate importance: /Results/Global/Values/"
     ))
     if(!rm.biomod.folder) {
       message(" - BIOMOD results: /Results/Global/Models/\n")
