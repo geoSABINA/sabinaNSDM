@@ -183,10 +183,10 @@ NSDM.Multiply <- function(nsdm_global,
                                     strategy = "random",
                                     nb.rep = nsdm_regional$args$CV.nb.rep,
                                     perc =  nsdm_regional$args$CV.perc,
-                                    k = NULL,
-                                    balance = NULL,
+                                    k = 0,
+                                    balance = 'presences',
                                     env.var = NULL,
-                                    strat = NULL,
+                                    strat = 'both',
                                     user.table = NULL,
                                     do.full.models = FALSE)
 
