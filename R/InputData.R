@@ -40,6 +40,7 @@
 #' data(new.env, package = "sabinaNSDM")
 #' new.env<-terra::unwrap(new.env)
 #'
+#' # Prepare input data
 #' myInputData<-NSDM.InputData(
 #'		SpeciesName = "Fagus.sylvatica",
 #'		spp.data.global = Fagus.sylvatica.xy.global,

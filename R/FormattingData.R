@@ -47,9 +47,37 @@
 #' library(terra)
 #' library(ecospat)
 #'
+#' # Load species occurrences
+#' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
+#' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
+#'
+#' # Load explanatory variables
+#' data(expl.var.global, package = "sabinaNSDM")
+#' data(expl.var.regional, package = "sabinaNSDM")
+#' expl.var.global<-terra::unwrap(expl.var.global)
+#' expl.var.regional<-terra::unwrap(expl.var.regional)
+#'
+#' # Load new scenarios
+#' data(new.env, package = "sabinaNSDM")
+#' new.env<-terra::unwrap(new.env)
+#'
+#' # Prepare input data
+#' myInputData<-NSDM.InputData(
+#'		SpeciesName = "Fagus.sylvatica",
+#'		spp.data.global = Fagus.sylvatica.xy.global,
+#'		spp.data.regional = Fagus.sylvatica.xy.regional,
+#'		expl.var.global = expl.var.global,
+#'		expl.var.regional = expl.var.regional,
+#'		new.env = new_env,
+#'		new.env.names = c("Scenario1"),
+#'		Background.Global = NULL,
+#'		Background.Regional = NULL
+#' )
+#'
 #' # Format the input data
 #' myFormatedData <- NSDM.FormatingData(myInputData,
 #'					nPoints=1000)
+#'
 #' @import ecospat sgsR
 #'
 #' @export
@@ -276,15 +304,22 @@ NSDM.FormattingData <- function(nsdm_input,
 
 
 background_stratified <- function(expl.var, nPoints) {
-  vars <- as.data.frame(expl.var)
-  df <- na.omit(vars)
-
+  if (nrow(expl.var)*ncol(expl.var)>20000) {
+    points<-xyFromCell(expl.var[[1]],which(complete.cases(values(expl.var[[1]]))))
+    indices <- sample(1:nrow(points), 20000, replace = FALSE)
+    points<-points[indices,]
+    df<-extract(expl.var,points)
+  }
+  else {
+  df <- as.data.frame(expl.var)
+  }
+  df <- na.omit(df)
   if(nrow(df) < nPoints) {
     stop(paste("The requested number of background nPoints exceeds the number of available cells.
     Maximum number of background points at global level:",nrow(df)))
   }
-
   pca <- princomp(df)
+  rm(df)
   PC1 <- predict(expl.var, pca, index = 1)
   PC2 <- predict(expl.var, pca, index = 2)
 
@@ -293,13 +328,15 @@ background_stratified <- function(expl.var, nPoints) {
   quartiles1 <- global(PC1, fun = quantile, na.rm = TRUE)
   cat1 <- cut(values(PC1), breaks = quartiles1, labels = c(1, 2, 3, 4), include.lowest = TRUE)
   PC1_cat <- setValues(PC1, cat1)
+  rm(PC1)
   quartiles2 <- global(PC2, fun = quantile, na.rm = TRUE)
   cat2 <- cut(values(PC2), breaks = quartiles2, labels = c(1, 2, 3, 4), include.lowest = TRUE)
   PC2_cat <- setValues(PC2, cat2)
+  rm(PC2)
 
   # Combine the 4 new categories in both PCs to create a final Stratum raster with 16 categories
   Stratum <- PC1_cat * PC2_cat
-
+  rm(PC1_cat,PC2_cat)
   # Create background sample
   Background <- sgsR::sample_balanced(Stratum, nPoints)
 

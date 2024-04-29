@@ -5,7 +5,7 @@
 #' @description This function selects the best 'non-colinear' environmental covariates for \bold{NSDM} based on specified criteria and algorithms.
 #'
 #'
-#' @param nsdm_finput An object of class \code{nsdm.finput} generated using the \code{\link{NSDM.FormatingData}} function. 
+#' @param nsdm_finput An object of class \code{nsdm.finput} generated using the \code{\link{NSDM.FormatingData}} function.
 #' @param maxncov.Global (\emph{optional, default} \code{'nocorr'}) \cr
 #' Maximum \code{numeric} value indicating the maximum number of covariates to select at the global scale. If `"nocorr"`, selects all non-correlated covariates.
 #' @param maxncov.Regional (\emph{optional, default} \code{'nocorr'}) \cr
@@ -19,7 +19,7 @@
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #'
 #'
-#' @return An object of class \code{nsdm.vinput} containing selected covariates for \bold{NSDM}: 
+#' @return An object of class \code{nsdm.vinput} containing selected covariates for \bold{NSDM}:
 #' - `$SpeciesName` Name of the species.
 #' - `$args` A \code{list} containing the arguments used during covariates selection procedure, including: `maxncov.Global`, `maxncov.Regional`, `corcut` and `algorithms`.
 #' - `$SpeciesData.XY.Global` Species occurrence data at the global level at \code{data.frame} format after applying spatial thinning.
@@ -36,7 +36,7 @@
 #'
 #'
 #' @details
-#' This function selects covariates for species distribution modeling with \emph{covsel} R package by combining (Step A) a collinearity-filtering algorithm and (Step B) three model-specific embedded regularization techniques, including GLM with elastic net regularization, GAM with null-space penalization, and guided regularized RF. More details can be found in (\emph{covsel} R package \doi{https://doi.org/10.1016/j.ecoinf.2023.102080} 
+#' This function selects covariates for species distribution modeling with \emph{covsel} R package by combining (Step A) a collinearity-filtering algorithm and (Step B) three model-specific embedded regularization techniques, including GLM with elastic net regularization, GAM with null-space penalization, and guided regularized RF. More details can be found in (\emph{covsel} R package \doi{https://doi.org/10.1016/j.ecoinf.2023.102080}
 #' If `save.output=TRUE`, selected covariates at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
 #' - the \emph{Results/Global/Values/} folder, containing the selected 'non-colinear' covariates at the global scale, named with the species name and \code{.variables.csv}.
 #' - the \emph{Results/Regional/Values/} folder, containing the selected 'non-colinear' covariates at the regional scale, named with the species name and \code{.variables.csv}.
@@ -46,6 +46,40 @@
 #'
 #'
 #' @examples
+#' library(terra)
+#' library(ecospat)
+#'
+#' # Load species occurrences
+#' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
+#' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
+#'
+#' # Load explanatory variables
+#' data(expl.var.global, package = "sabinaNSDM")
+#' data(expl.var.regional, package = "sabinaNSDM")
+#' expl.var.global<-terra::unwrap(expl.var.global)
+#' expl.var.regional<-terra::unwrap(expl.var.regional)
+#'
+#' # Load new scenarios
+#' data(new.env, package = "sabinaNSDM")
+#' new.env<-terra::unwrap(new.env)
+#'
+#' # Prepare input data
+#' myInputData<-NSDM.InputData(
+#'		SpeciesName = "Fagus.sylvatica",
+#'		spp.data.global = Fagus.sylvatica.xy.global,
+#'		spp.data.regional = Fagus.sylvatica.xy.regional,
+#'		expl.var.global = expl.var.global,
+#'		expl.var.regional = expl.var.regional,
+#'		new.env = new_env,
+#'		new.env.names = c("Scenario1"),
+#'		Background.Global = NULL,
+#'		Background.Regional = NULL
+#' )
+#'
+#' # Format the input data
+#' myFormatedData <- NSDM.FormatingData(myInputData,
+#'					nPoints=1000)
+
 #' # Select covariates
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #'
@@ -53,7 +87,7 @@
 #'
 #' @export
 NSDM.SelectCovariates <- function(nsdm_finput,
-				maxncov.Global="nocorr", 
+				maxncov.Global="nocorr",
 				maxncov.Regional="nocorr",
 				corcut=0.7,
 				algorithms=c('glm','gam','rf'),
@@ -63,6 +97,9 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   if(!inherits(nsdm_finput, "nsdm.finput")){
       stop("nsdm_finput must be an object of nsdm.finput class. Consider running NSDM.FormatingData() function.")
   }
+  if(!is.null(ClimaticVariablesBands)) {if(!inherits(ClimaticVariablesBands, "numeric") & !inherits(ClimaticVariablesBands, "integer") ){
+    stop("ClimaticVariablesBands must be either NULL or a vector indicating the regional environmental covariate bands to exclude from the selection at regional scale")
+  }}
 
   algorithms <- tolower(algorithms)
   if(any(!algorithms %in% c('glm','gam','rf'))) {
@@ -134,6 +171,9 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   # Exclude climatic bands specified by the user.
   Number.bands <- nlyr(IndVar.Regional)
   if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
+    removed<-IndVar.Regional[[ClimaticVariablesBands]]
+    names(removed)
+    message(paste("The bands", paste(names(removed),collapse=", "), "have been excluded from the selection of regional environmental covariates"))
     # Non eliminated variables
     Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)
     IndVar.Regional <- IndVar.Regional[[Bands.climatic]]
@@ -164,7 +204,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   }
   # Save selected covariates for each species
   if(save.output){
-  
+
   write.csv(Selected.Variables.Regional, paste0("Results/Regional/Values/", SpeciesName, ".variables.csv"))
   }
 

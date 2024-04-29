@@ -37,7 +37,7 @@
 #' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
 #' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
 #' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
-#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
+#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA).
 #' - `$myModelsVarImport` Variable importance measures for individual models.
 #' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from AUC score; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from TSS score.
 #' - `Summary` Summary information about the modeling process.
@@ -54,6 +54,44 @@
 #'
 #'
 #' @examples
+#' library(terra)
+#' library(ecospat)
+#'
+#' # Load species occurrences
+#' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
+#' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
+#'
+#' # Load explanatory variables
+#' data(expl.var.global, package = "sabinaNSDM")
+#' data(expl.var.regional, package = "sabinaNSDM")
+#' expl.var.global<-terra::unwrap(expl.var.global)
+#' expl.var.regional<-terra::unwrap(expl.var.regional)
+#'
+#' # Load new scenarios
+#' data(new.env, package = "sabinaNSDM")
+#' new.env<-terra::unwrap(new.env)
+#'
+#' # Prepare input data
+#' myInputData<-NSDM.InputData(
+#'		SpeciesName = "Fagus.sylvatica",
+#'		spp.data.global = Fagus.sylvatica.xy.global,
+#'		spp.data.regional = Fagus.sylvatica.xy.regional,
+#'		expl.var.global = expl.var.global,
+#'		expl.var.regional = expl.var.regional,
+#'		new.env = new_env,
+#'		new.env.names = c("Scenario1"),
+#'		Background.Global = NULL,
+#'		Background.Regional = NULL
+#' )
+#'
+#' # Format the input data
+#' myFormatedData <- NSDM.FormatingData(myInputData,
+#'					nPoints=1000)
+
+#' # Select covariates
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#'
+#'# Perform regional scale SDMs
 #' myRegionalModel <- NSDM.Regional(mySelectedCovs)
 #'
 #' @export
@@ -243,7 +281,7 @@ NSDM.Regional <- function(nsdm_selvars,
   # Model projections for future climate scenarios
   ################################################
   if(length(Scenarios) == 0) {
-    warning("No new scenarios for further projections!\n") 
+    warning("No new scenarios for further projections!\n")
   } else {
     for(i in 1:length(Scenarios)) {
       new.env <- Scenarios[[i]][[nsdm_selvars$Selected.Variables.Regional]]
