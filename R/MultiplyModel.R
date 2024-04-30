@@ -273,9 +273,9 @@ NSDM.Multiply <- function(nsdm_global,
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
   				method,
-  				round(metric.means$validation[metric.means$metric.eval == "ROC"], 2),
-  				round(metric.means$validation[metric.means$metric.eval == "TSS"], 2),
-  				round(metric.means$validation[metric.means$metric.eval == "KAPPA"], 2)))
+  				round(metric.means$validation[metric.means$metric.eval == "ROC"], 3),
+  				round(metric.means$validation[metric.means$metric.eval == "TSS"], 3),
+  				round(metric.means$validation[metric.means$metric.eval == "KAPPA"], 3)))
 
   rownames(summary) <- c("Species name",
    				"Multiply method",
@@ -295,7 +295,7 @@ NSDM.Multiply <- function(nsdm_global,
 
   # save.out messages
   if(save.output){
-    message("Results saved in the following local folder/s:")
+    message("\nResults saved in the following local folder/s:")
     message(paste(
     "- Hierarchical Multiply Models: /Results/Multiply/Projections/\n"
     ))
