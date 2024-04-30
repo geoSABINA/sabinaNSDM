@@ -15,17 +15,17 @@
 #' @param algorithms (\emph{optional, default} \code{'c("glm", "gam", "rf")'}) \cr
 #' Algorithms to use for ranking the covariates. Options are \code{'glm'}, \code{'gam'}, and/or \code{'rf'}.
 #' @param ClimaticVariablesBands (\emph{optional, default} \code{NULL}) \cr
-#' Indices of the regional environmental covariate bands to exclude from the selection. If \code{NULL} (the default), all regional-level covariates are considered. The excluded covariates typically include climatic covariates already included in global-level analyses.
+#' Indices of the regional environmental covariate bands to exclude from the selection. If \code{NULL} (the default), all regional-level covariates are considered. The excluded covariates typically include climatic covariates already included in global-level analyses. A list of band numbers should be included. For example, use ClimaticVariablesBands = c(2, 3, 4) to exclude bands 2, 3, and 4 in the regional analysis.
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #'
 #'
 #' @return An object of class \code{nsdm.vinput} containing selected covariates for \bold{NSDM}:
 #' - `$SpeciesName` Name of the species.
 #' - `$args` A \code{list} containing the arguments used during covariates selection procedure, including: `maxncov.Global`, `maxncov.Regional`, `corcut` and `algorithms`.
-#' - `$SpeciesData.XY.Global` Species occurrence data at the global level at \code{data.frame} format after applying spatial thinning.
-#' - `$SpeciesData.XY.Regional` Species occurrence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Global` Species occurrences at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Regional` Species occurrences at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
-#' - `$Background.XY.Regional` Species occurrence data at the regional level at \code{data.frame} format.
+#' - `$Background.XY.Regional` Background data at the regional level at \code{data.frame} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariates at the global scale.
 #' - `$IndVar.Global.Selected` Selected covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
@@ -46,14 +46,13 @@
 #'
 #'
 #' @examples
-#' library(terra)
-#' library(ecospat)
+#' library(sabinaNSDM)
 #'
 #' # Load species occurrences
 #' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
 #' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
 #'
-#' # Load explanatory variables
+#' # Load covariates
 #' data(expl.var.global, package = "sabinaNSDM")
 #' data(expl.var.regional, package = "sabinaNSDM")
 #' expl.var.global<-terra::unwrap(expl.var.global)
@@ -80,8 +79,18 @@
 #' myFormatedData <- NSDM.FormatingData(myInputData,
 #'					nPoints=1000)
 
-#' # Select covariates
+#' # Select covariates using default parameters
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#' 
+#' # Select covariates using custom parameters.
+#' nsdm_selvars <- NSDM.SelectCovariates(nsdm_finput,
+#'     maxncov.Global = 5, # Maximum number of global covariates
+#'     maxncov.Regional = 7, # Maximum number of regional covariates
+#'     corcut = 0.7, # Maximum number of regional covariates
+#'     algorithms = c("glm","gam","rf"),  # Algorithms to use for selection
+#'     ClimaticVariablesBands = c(2,3,5), # Bands to exclude in the analysis
+#'     save.output = TRUE  # Save the output externally
+#' )
 #'
 #' @import covsel
 #'
@@ -98,7 +107,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
       stop("nsdm_finput must be an object of nsdm.finput class. Consider running NSDM.FormatingData() function.")
   }
   if(!is.null(ClimaticVariablesBands)) {if(!inherits(ClimaticVariablesBands, "numeric") & !inherits(ClimaticVariablesBands, "integer") ){
-    stop("ClimaticVariablesBands must be either NULL or a vector indicating the regional environmental covariate bands to exclude from the selection at regional scale")
+    stop("ClimaticVariablesBands must be either NULL or a vector indicating the regional environmental covariate bands to exclude from the selection at regional scale.")
   }}
 
   algorithms <- tolower(algorithms)
@@ -173,7 +182,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
     removed<-IndVar.Regional[[ClimaticVariablesBands]]
     names(removed)
-    message(paste("The bands", paste(names(removed),collapse=", "), "have been excluded from the selection of regional environmental covariates"))
+    message(paste("The bands", paste(names(removed),collapse=", "), "have been excluded from the selection of regional environmental covariates."))
     # Non eliminated variables
     Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)
     IndVar.Regional <- IndVar.Regional[[Bands.climatic]]

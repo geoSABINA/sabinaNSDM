@@ -23,10 +23,10 @@
 #'
 #' @return An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
 #' - `$SpeciesName` Name of the species.
-#' - `$SpeciesData.XY.Global` Species occurrence data at the global level at \code{data.frame} format after applying spatial thinning.
-#' - `$SpeciesData.XY.Regional` Species occurrence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Global` Species occurrences at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Regional` Species occurrences at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
-#' - `$Background.XY.Regional` Species occurrence data at the regional level at \code{data.frame} format.
+#' - `$Background.XY.Regional` Background data at the regional level at \code{data.frame} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariates at the global scale.
 #' - `$IndVar.Global.Selected` Selected covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
@@ -35,16 +35,16 @@
 #' - `$IndVar.Global.Selected.reg` Selected covariates at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
 #' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
-#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
+#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current continuous (suitability) projection; \code{Pred.bin.ROC} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
 #' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
 #' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA).
 #' - `$myModelsVarImport` Variable importance measures for individual models.
-#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from AUC score; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from TSS score.
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the TSS statistic as a threshold.
 #' - `Summary` Summary information about the modeling process.
 #'
 #'
 #' @details
-#' This function uses the (\emph{biomod2} package to generate, evaluate, and project species distribution models at the \bold{regional} scale for \bold{NSDM} analysis
+#' This function uses the (\emph{biomod2} package to generate, evaluate, and project species distribution models at the \bold{regional} scale for \bold{NSDM} analysis.
 #' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
 #' - the \emph{Results/Regional/Projections/} folder, containing the continuous and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
 #' - the \emph{Results/Regional/Values/} folder, containing replicates statistics, the consensus model statistics, the covariate importance, and the \code{nbestreplicates}, named with the species name and \file{.__replica.csv}, \file{._ensemble.csv}, \file{._indvar.csv} and \file{._nbestreplicates.csv} respectively.
@@ -54,14 +54,13 @@
 #'
 #'
 #' @examples
-#' library(terra)
-#' library(ecospat)
+#' library(sabinaNSDM)
 #'
 #' # Load species occurrences
 #' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
 #' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
 #'
-#' # Load explanatory variables
+#' # Load covariates
 #' data(expl.var.global, package = "sabinaNSDM")
 #' data(expl.var.regional, package = "sabinaNSDM")
 #' expl.var.global<-terra::unwrap(expl.var.global)
@@ -91,8 +90,25 @@
 #' # Select covariates
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #'
-#'# Perform regional scale SDMs
+#'# Perform regional scale SDMs with default parameters.
 #' myRegionalModel <- NSDM.Regional(mySelectedCovs)
+#' 
+#' # Perform regional scale SDMs with custom parameters.
+#' # This line shows an example how to customize modeling options 
+#' using `bm_ModelingOptions` from the `biomod2` package 
+#'  opt.b <- bm_ModelingOptions(data.type = 'binary', models = c("GAM", "GBM", "RF"),
+#'   strategy = 'bigboss')
+#'   
+#' myRegionalModel <- NSDM.Regional(
+#'     nsdm_selvars,
+#'     algorithms = c("GBM", "RF", "GLM"), # Statistical models used in the ensemble
+#'     CV.nb.rep = 10, # Number of cross-validation replicates
+#'     CV.perc = 0.8, # Percentage of data used for each replicate
+#'     CustomModelOptions = opt.b,  # Optional custom options for statistical models
+#'     metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
+#'     save.output = TRUE, #  Save the output externally
+#'     rm.biomod.folder = TRUE # Remove the temporary Biomod2 output folder
+#' )
 #'
 #' @export
 NSDM.Regional <- function(nsdm_selvars,

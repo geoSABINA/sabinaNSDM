@@ -1,6 +1,6 @@
 #' @name NSDM.Covariate
 #'
-#' @title Perform spatially-nested hierarchical species distribution modeling (NSDM) analysis with the covariate strategy
+#' @title Perform spatially-nested hierarchical species distribution modeling (NSDM) analysis with the covariate strategy.
 #'
 #' @description This function calibrates, evaluates, and projects a \bold{NSDM} with the \bold{covariate} strategy. It uses a global scale species distribution model output  as an additional covariate to fit a regional scale species distribution model.
 #'
@@ -26,21 +26,22 @@
 #'
 #' @return An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
 #' - `$SpeciesName` Name of the species.
-#' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
+#' - `$args` A \code{list} containing the arguments used during modeling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
 #' - `$Selected.Variables.Covariate` A \code{character} vector specifying the names of the selected covariates at the regional scale used for the covariate model.
 #' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
-#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
+#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current continuous (suitability) projection; \code{Pred.bin.ROC} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
 #' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
 #' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA).
 #' - `$myModelsVarImport` Covariate importance measures for individual models.
-#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from AUC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from TSS scores.
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the TSS statistic as a threshold.
+
 #' - `Summary` Summary information about the modeling process.
 #'
 #'
 #' @details
 #' This function generates a \bold{NSDM} with the \bold{covariate} strategy. It uses the (\emph{biomod2} package to generate, evaluate, and project species distribution models at the regional scale incorporating the global model prediction as an additional environmental covariate.
-#' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
-#' - the \emph{Results/Covariate/Projections/} folder, containing the continuous and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
+#' If `save.output=TRUE`, modeling results are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' - the \emph{Results/Covariate/Projections/} folder, containing the continuous (suitability) and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
 #' - the \emph{Results/Covariate/Values/} folder, containing replicates statistics, the consensus model statistics, the covariate importance, and the \code{nbestreplicates}, named with the species name and \file{.__replica.csv}, \file{._ensemble.csv}, \file{._indvar.csv} and \file{._nbestreplicates.csv} respectively.
 #'
 #'
@@ -48,14 +49,13 @@
 #'
 #'
 #' @examples
-#' library(terra)
-#' library(ecospat)
+#' library(sabinaNSDM)
 #'
 #' # Load species occurrences
 #' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
 #' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
 #'
-#' # Load explanatory variables
+#' # Load covariates
 #' data(expl.var.global, package = "sabinaNSDM")
 #' data(expl.var.regional, package = "sabinaNSDM")
 #' expl.var.global<-terra::unwrap(expl.var.global)
@@ -88,11 +88,22 @@
 #' # Perform global scale SDMs
 #' myGlobalModel <- NSDM.Global(mySelectedCovs)
 #'
-#' # Perform NSDM analysis with the covariate strategy
-#' nsdm_covariate <- NSDM.Covariate(myGlobalModel, algorithms = c("GLM","RF"), rm.corr=TRUE, CV.nb.rep = 1,
-#' CV.perc = 0.8,CustomModelOptions = NULL,metric.select.thresh = 0.8, save.output = TRUE,rm.biomod.folder = TRUE)
-#'
-#'
+#' # Perform NSDM analysis using the covariate approach with default settings.
+#'  nsdm_covariate <- NSDM.Covariate(nsdm_global)
+#' 
+#' # Perform NSDM analysis using the covariate approach with custom settings.
+#'  nsdm_covariate <- NSDM.Covariate(
+#'    nsdm_global,  # Global model output used as input
+#'    rm.corr=FALSE,  # Do not remove correlated covariates
+#'    algorithms = c("GBM", "RF", "GLM"), # Algorithms to use for modeling
+#'    CV.nb.rep = 10,   # Number of cross-validation replicates
+#'    CV.perc = 0.8, # Percentage of data used in each cross-validation replicate
+#'    CustomModelOptions = NULL, # Use default modeling options
+#'    metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
+#'    rm.biomod.folder = TRUE, # Remove the temporary Biomod2 output folder
+#'    save.output = TRUE  # Save the output externally
+#' )
+
 #' @export
 NSDM.Covariate <- function(nsdm_global,
 			   algorithms=c("GLM","GAM","RF"),

@@ -18,28 +18,26 @@
 #' @return An object of class \code{nsdm.predict} containing model information, predictions and evaluation statistics:
 #' - `$SpeciesName` Name of the species.
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `method`, and `rescale`.
-#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
-#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from AUC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from TSS scores.
-#' - `$myEMeval.replicates` Evaluation statistics for each cross validation replicate  according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
-#' - `$myEMeval.Ensemble` Evaluation statistics for the multiply model according to different evaluation metrics (ROC, TSS, KAPPA).
+#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current continuous (suitability) projection; \code{Pred.bin.ROC} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the TSS statistic as a threshold.
+#' - `$myEMeval.means` Evaluation statistics according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE). Please note that this is neither an independent evaluation nor a cross-validation, as the final model is the average of the global and regional models. Original occurrences and background data were used to validate the generated multiply model and to calculate optimal threshold for binary models. 
 #'
 #'
 #' @details
 #' This function generates a \bold{NSDM} with the \bold{multiply} strategy. It averages the predictions of species distribution models at regional and global scales.
 #' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
 #' - the \emph{Results/Multiply/Projections/} folder, containing the continuous and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}.
-#' - the \emph{Results/Multiply/Values/} folder, containing replicates statistics, the consensus model statistics, named with the species name and \file{.__replica.csv}, and \file{._ensemble.csv},  respectively.
+#' - the \emph{Results/Multiply/Values/} folder, containing statistics, named with the species name and \file{.__replica.csv}, and \file{._ensemble.csv},  respectively.
 #'
 #'
 #' @examples
-#' library(terra)
-#' library(ecospat)
+#' library(sabinaNSDM)
 #'
 #' # Load species occurrences
 #' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
 #' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
 #'
-#' # Load explanatory variables
+#' # Load covariates
 #' data(expl.var.global, package = "sabinaNSDM")
 #' data(expl.var.regional, package = "sabinaNSDM")
 #' expl.var.global<-terra::unwrap(expl.var.global)
@@ -74,9 +72,16 @@
 #'
 #' # Perform regional scale SDMs
 #' myRegionalModel <- NSDM.Regional(mySelectedCovs)
-#'
-#' # Perform NSDM analysis with the multiply strategy
-#' myMultiplyModel <- NSDM.Multiply(myGlobalModel, myRegionalModel, method = "Arithmetic", rescale = FALSE, save.output=TRUE)
+#' 
+#' # Perform NSDM analysis using the multiply strategy
+#' myMultiplyModel <- NSDM.Multiply(
+#'     myGlobalModel, # Output from the global scale SDM
+#'     myRegionalModel, # Output from the regional scale SDM
+#'     method = "Arithmetic", # Method for combining model outputs. 
+#'     Options include "Arithmetic" or "Geometric"
+#'     rescale = FALSE, # Whether to rescale the model outputs before combining
+#'     save.output = TRUE # Save the combined model output externally
+#')
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
 #'
@@ -89,15 +94,15 @@ NSDM.Multiply <- function(nsdm_global,
                           save.output=TRUE) {
 
   if(!inherits(nsdm_regional, "nsdm.predict.r") || !inherits(nsdm_global, "nsdm.predict.g")) {
-    stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.r, respectively")
+    stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.r, respectively.")
   }
 
   if(!method %in% c("Arithmetic", "Geometric")) {
-    stop("Please select 'Arithmetic' or 'Geometric' method")
+    stop("Please select 'Arithmetic' or 'Geometric' method.")
   }
 
   if(!identical(nsdm_regional$Species.Name, nsdm_global$Species.Name)) {
-    stop("Different species in global and regional levels")
+    stop("Different species in global and regional levels.")
   } else {
     SpeciesName <- nsdm_regional$Species.Name
   }
@@ -217,16 +222,14 @@ NSDM.Multiply <- function(nsdm_global,
   colnames(cross.validation)[which(colnames(cross.validation) == "best.stat")] <- "calibration"
   cross.validation$validation <- stat.validation$best.stat
   myEMeval.replicates<-cross.validation
-  sabina$myEMeval.replicates<-myEMeval.replicates
 
   cross.validation<-cross.validation[which(cross.validation$metric.eval %in% c("ROC","TSS","KAPPA")),]
   metric.means <- aggregate(. ~ metric.eval, data = cross.validation, FUN = mean)
-  sabina$myEMeval.Ensemble<-metric.means
+  sabina$myEMeval.means<-metric.means
 
   # Save some results
    if(save.output){
     fs::dir_create("Results/Multiply/Values/")
-    write.csv(myEMeval.replicates,file=paste0("Results/Multiply/Values/",SpeciesName,"_replica.csv"))
     write.csv(metric.means,file=paste0("Results/Multiply/Values/",SpeciesName,"_ensemble.csv"))
    }
 
