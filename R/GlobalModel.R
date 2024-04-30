@@ -24,10 +24,10 @@
 #'
 #' @return An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
 #' - `$SpeciesName` Name of the species.
-#' - `$SpeciesData.XY.Global` Species occurrence data at the global level at \code{data.frame} format after applying spatial thinning.
-#' - `$SpeciesData.XY.Regional` Species occurrence data at the regional level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Global` Species occurrence at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$SpeciesData.XY.Regional` Species occurrence at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
-#' - `$Background.XY.Regional` Species occurrence data at the regional level at \code{data.frame} format.
+#' - `$Background.XY.Regional` Background data at the regional level at \code{data.frame} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariates at the global scale.
 #' - `$IndVar.Global.Selected` Selected covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
@@ -36,11 +36,11 @@
 #' - `$IndVar.Global.Selected.reg` Selected covariates at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
 #' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
-#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing...... #@@@#esto hay que ponerlo bien en todas las funciones
+#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current continuous (suitability) projection; \code{Pred.bin.ROC} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
 #' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
 #' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA).
 #' - `$myModelsVarImport` Covariate importance measures for individual models.
-#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from AUC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from TSS scores. #@@@#esto hay que ponerlo bien en todas las funciones
+#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the TSS statistic as a threshold.
 #' - `Summary` Summary information about the modeling process.
 #'
 #'
@@ -55,14 +55,13 @@
 #'
 #'
 #' @examples
-#' library(terra)
-#' library(ecospat)
+#' #' library(sabinaNSDM)
 #'
 #' # Load species occurrences
 #' data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
 #' data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
 #'
-#' # Load explanatory variables
+#' # Load covariates
 #' data(expl.var.global, package = "sabinaNSDM")
 #' data(expl.var.regional, package = "sabinaNSDM")
 #' expl.var.global<-terra::unwrap(expl.var.global)
@@ -73,29 +72,42 @@
 #' new.env<-terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(
-#'		SpeciesName = "Fagus.sylvatica",
-#'		spp.data.global = Fagus.sylvatica.xy.global,
-#'		spp.data.regional = Fagus.sylvatica.xy.regional,
-#'		expl.var.global = expl.var.global,
-#'		expl.var.regional = expl.var.regional,
-#'		new.env = new_env,
-#'		new.env.names = c("Scenario1"),
-#'		Background.Global = NULL,
-#'		Background.Regional = NULL
-#' )
+#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#'				spp.data.global = Fagus.sylvatica.xy.global,
+#'				spp.data.regional = Fagus.sylvatica.xy.regional,
+#'				expl.var.global = expl.var.global,
+#'				expl.var.regional = expl.var.regional,
+#'				new.env = new_env,
+#'				new.env.names = c("Scenario1"),
+#'				Background.Global = NULL,
+#'				Background.Regional = NULL)
 #'
 #' # Format the input data
 #' myFormatedData <- NSDM.FormatingData(myInputData,
 #'					nPoints=1000)
-
+#'
 #' # Select covariates
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #'
-#' # Perform global scale SDMs
+#' # Perform global scale SDMs using default parameters. 
 #' myGlobalModel <- NSDM.Global(mySelectedCovs)
+#' 
+#' ## Perform global scale SDMs with custom parameters.
+#' ## This line shows an example how to customize modeling options using `bm_ModelingOptions` from the `biomod2` package 
+#' # opt.b <- bm_ModelingOptions(data.type = 'binary', 
+#' #  				models = c("GAM", "GBM", "RF"),
+#' #				strategy = 'bigboss')
+#'   
+#' # myGlobalModel <- NSDM.Global(nsdm_selvars,
+#' #				algorithms = c("GBM", "RF", "GLM"), # Statistical models used in the ensemble
+#' #				CV.nb.rep = 10, # Number of cross-validation replicates
+#' #				CV.perc = 0.8, # Percentage of data used for each replicate
+#' #				CustomModelOptions = opt.b,  # Optional custom options for statistical models
+#' #				metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
+#' #				save.output = TRUE, #  Save the output externally
+#' #				rm.biomod.folder = TRUE) # Remove the temporary biomod2 output folder
+#' 
 #'
-#' @import biomod2
 #'
 #' @export
 NSDM.Global <- function(nsdm_selvars,
@@ -137,7 +149,7 @@ NSDM.Global <- function(nsdm_selvars,
   IndVar.Global.Selected <- terra::unwrap(nsdm_selvars$IndVar.Global.Selected)
   IndVar.Global.Selected.reg <- terra::unwrap(nsdm_selvars$IndVar.Global.Selected.reg)
   if(!is.null(nsdm_selvars$Scenarios)) {
-  Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
+    Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
   }
 
   # GLOBAL SCALE
@@ -177,7 +189,7 @@ NSDM.Global <- function(nsdm_selvars,
 	                                      CV.do.full.models = FALSE)
 
 
-  # Replicates with ROC > 0.8
+  # Replicates with ROC > metric.select.thresh
   df <- myBiomodModelOut@models.evaluation
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
@@ -221,7 +233,7 @@ NSDM.Global <- function(nsdm_selvars,
 
   # Load the model stored by biomod2 and save it in geotif format
   sp.name<-myBiomodData@sp.name
-  Pred <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif")) #remove duplicated files
+  Pred <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
   Pred<-terra::rast(wrap(Pred))
 
   sabina$current.projections$Pred <- c(setNames(Pred, paste0(SpeciesName, ".Current")))
@@ -284,7 +296,6 @@ NSDM.Global <- function(nsdm_selvars,
     write.csv(myModelsVarImport, file = file_path, row.names = T)
   }
 
-
   # Model projections for future climate scenarios
   ################################################
   if(length(Scenarios) == 0) {
@@ -337,8 +348,8 @@ NSDM.Global <- function(nsdm_selvars,
         terra::writeRaster(Pred.bin.TSS.Scenario, file_path, overwrite = TRUE)
         fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name, "_ensemble_TSSbin.tif"))
       }
-    } # end for
-  } # end if(length(Scenarios) == 0)
+    }
+  }
 
   source_folder <- sp.name
   destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
@@ -364,11 +375,11 @@ NSDM.Global <- function(nsdm_selvars,
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
   rownames(summary) <- c("Species name",
-				"Statistical algorithms at global level",
-				paste0("Number of replicates with AUC > ",metric.select.thresh, " at global level"),
-				"AUC of ensemble model at global level",
-				"TSS of ensemble model at global level",
-				"KAPPA of ensemble model at global level")
+			"Statistical algorithms at global level",
+			paste0("Number of replicates with AUC > ",metric.select.thresh, " at global level"),
+			"AUC of ensemble model at global level",
+			"TSS of ensemble model at global level",
+			"KAPPA of ensemble model at global level")
 
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")

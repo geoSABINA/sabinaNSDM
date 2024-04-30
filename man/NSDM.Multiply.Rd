@@ -2,7 +2,7 @@
 % Please edit documentation in R/MultiplyModel.R
 \name{NSDM.Multiply}
 \alias{NSDM.Multiply}
-\title{Perform ......}
+\title{Perform spatially-nested hierarchical species distribution modeling (NSDM) analysis with the multiply strategy}
 \usage{
 NSDM.Multiply(
   nsdm_global,
@@ -13,41 +13,87 @@ NSDM.Multiply(
 )
 }
 \arguments{
-\item{nsdm_global}{An object of class \code{nsdm.predict.g} containing global model generated using the \code{\link{NSDM.Global}} function.}
+\item{nsdm_global}{An object of class \code{nsdm.predict.g} containing a global model generated using the \code{\link{NSDM.Global}} function.}
 
-\item{nsdm_regional}{An object of class \code{nsdm.predict.r} containing regional model generated using the \code{\link{NSDM.Regional}} function.}
+\item{nsdm_regional}{An object of class \code{nsdm.predict.r} containing a regional model generated using the \code{\link{NSDM.Regional}} function.}
 
 \item{method}{(\emph{optional, default} \code{'Arithmetic'}) \cr
-Options are \code{'Arithmetic'}, or \code{'Geometric'}. The \code{'Arithmetic'} method calculates the arithmetic mean of global and regional predictions, and \code{'Geometric'} calculates a geometric mean.}
+A \code{character} specifying the method for averaging the global and regional predictions. Options are \code{'Arithmetic'}, or \code{'Geometric'}. The \code{'Arithmetic'} method (the default) calculates the arithmetic mean of global and regional predictions, and \code{'Geometric'} calculates a geometric mean.}
 
 \item{rescale}{(\emph{optional, default} \code{FALSE}) \cr
-An \code{logical} controls whether global and regional model predictions should be rescaled before combining them.}
+A \code{logical} controlling whether global and regional model predictions should be rescaled before averaging them.}
 
 \item{save.output}{(\emph{optional, default} \code{TRUE}) \cr
 A \code{logical} value defining whether the outputs should be saved at local.}
 }
 \value{
-An object of class \code{nsdm.predict} containing model information, predictions and evaluation statistics: #@@JMB statistics pendiente de definir
+An object of class \code{nsdm.predict} containing model information, predictions and evaluation statistics:
 \itemize{
 \item \verb{$SpeciesName} Name of the species.
 \item \verb{$args} A \code{list} containing the arguments used during modelling, including: \code{method}, and \code{rescale}.
-\item \verb{$current.projections} A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current projection.....; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing projections ..........; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing......
-\item \verb{$new.projections} A \code{list} containing: \code{Pred.Scenario}, the projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores; and \code{Pred.bin.TSS.Scenario}, the binary projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format, derived from ROC scores.
+\item \verb{$current.projections} A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current continuous (suitability) projection; \code{Pred.bin.ROC} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
+\item \verb{$new.projections} A \code{list} containing: \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the TSS statistic as a threshold.
+\item \verb{$myEMeval.means} Evaluation statistics according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE). Please note that this is neither an independent evaluation nor a cross-validation, as the final model is the average of the global and regional models. Original occurrences and background data were used to validate the generated multiply model and to calculate optimal threshold for binary models.
 }
 }
 \description{
-This function ....
+This function generates and projects a \bold{NSDM} with the \bold{multiply} strategy. It averages the prediction maps of regional scale and global scale species distribution models.
 }
 \details{
-This function conducts .....
+This function generates a \bold{NSDM} with the \bold{multiply} strategy. It averages the predictions of species distribution models at regional and global scales.
 If \code{save.output=TRUE}, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
 \itemize{
-\item the \emph{Results/Multiply/Projections/} folder, containing the continious and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
+\item the \emph{Results/Multiply/Projections/} folder, containing the continuous and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}.
+\item the \emph{Results/Multiply/Values/} folder, containing statistics, named with the species name and \file{.__replica.csv}, and \file{._ensemble.csv},  respectively.
 }
 }
 \examples{
-#@@JMB Ver cómo hacen otros cuando una función depende de objetos anteriores
-myMultiplyModel <- NSDM.Multiply(myGlobalModel,
+library(sabinaNSDM)
+
+# Load species occurrences
+data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
+data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
+
+# Load covariates
+data(expl.var.global, package = "sabinaNSDM")
+data(expl.var.regional, package = "sabinaNSDM")
+expl.var.global<-terra::unwrap(expl.var.global)
+expl.var.regional<-terra::unwrap(expl.var.regional)
+
+# Load new scenarios
+data(new.env, package = "sabinaNSDM")
+new.env<-terra::unwrap(new.env)
+
+# Prepare input data
+myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+			spp.data.global = Fagus.sylvatica.xy.global,
+			spp.data.regional = Fagus.sylvatica.xy.regional,
+			expl.var.global = expl.var.global,
+			expl.var.regional = expl.var.regional,
+			new.env = new_env,
+			new.env.names = c("Scenario1"),
+			Background.Global = NULL,
+			Background.Regional = NULL)
+
+# Format the input data
+myFormatedData <- NSDM.FormatingData(myInputData,
+				nPoints=1000)
+
+# Select covariates
+mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+
+# Perform global scale SDMs
+myGlobalModel <- NSDM.Global(mySelectedCovs)
+
+# Perform regional scale SDMs
+myRegionalModel <- NSDM.Regional(mySelectedCovs)
+
+# Perform NSDM analysis using the multiply strategy
+myMultiplyModel <- NSDM.Multiply(myGlobalModel, 	# Output from the global scale SDM
+			    myRegionalModel, 	# Output from the regional scale SDM
+			    method = "Arithmetic", # Method for combining model outputs. Options include "Arithmetic" or "Geometric"
+			    rescale = FALSE, 	# Whether to rescale the model outputs before combining
+			    save.output = TRUE) # Save the combined model output externally
 
 
 }

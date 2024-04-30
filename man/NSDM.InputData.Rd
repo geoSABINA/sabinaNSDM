@@ -2,7 +2,7 @@
 % Please edit documentation in R/InputData.R
 \name{NSDM.InputData}
 \alias{NSDM.InputData}
-\title{Prepare input data for nested spatial hierarchical species distribution modeling (NSDM) analysis.}
+\title{Prepare input data for spatially-nested hierarchical species distribution modeling (NSDM) analysis.}
 \usage{
 NSDM.InputData(
   SpeciesName,
@@ -28,7 +28,7 @@ NSDM.InputData(
 \item{expl.var.regional}{An object of \code{\link[terra:rast]{SpatRaster}} class representing the environmental covariates at regional level.}
 
 \item{new.env}{(\emph{optional, default} \code{NULL}) \cr
-An object of \code{\link[terra:rast]{SpatRaster}} class or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios for projecting the models to different spatial or temporal scales.}
+An object of \code{\link[terra:rast]{SpatRaster}} class or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing the environmental covariates in new scenarios for projecting the models to different spatial or temporal scales.}
 
 \item{new.env.names}{(\emph{optional, default} \code{NULL}) \cr
 A character \code{vector} specifying names for the new environmental scenarios.}
@@ -43,41 +43,41 @@ An optional \code{data.frame} with two columns, 'x' and 'y', representing backgr
 An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
 }
 \description{
-This function gathers together all input data (\emph{species presences xy at global and regional level, enviromental covariates at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
+This function gathers together all input data (\emph{species occurrences xy at global and regional level, enviromental covariates at global and regional level, new environments, and if available, absence/pseudo-absences/background data}) needed to run \bold{NSDM}.
 }
 \details{
 \itemize{
-\item The \code{expl.var.global} and \code{expl.var.regional} parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing enviromental covariates.  Each band correpond to a different covariate. At the global-scale, only one \code{\link[terra:rast]{SpatRaster}} file must be provided corresponding to the covariates (usually climatic) used to train the global-scale model. At the regional-scale, there must be at least one geotiff file must corresponding to the covariates used to train the regional-scale model. The regional-scale \code{\link[terra:rast]{SpatRaster}} file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
-\item The \code{new.env} parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} objects representing new environmental scenarios.
+\item The \code{expl.var.global} and \code{expl.var.regional} parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing environmental covariates used to train the global-scale and regional-scale models, respectively. Each band corresponds to a different covariate. The regional-scale object must include all the covariates included in the global-scale object (usually climatic), and it can additionally include other covariates only available at this level.
+\item The \code{new.env} parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} object representing the environmental covariates in new spatial or temporal scenarios. All new scenarios must have the same covariates (same band names) than \code{expl.var.regional}.
 }
 }
 \examples{
-library(terra)
+library(sabinaNSDM)
 
 # Load species occurrences
 data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
 data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
 
-# Load explanatory variables
+# Load covariates
 data(expl.var.global, package = "sabinaNSDM")
 data(expl.var.regional, package = "sabinaNSDM")
 expl.var.global<-terra::unwrap(expl.var.global)
 expl.var.regional<-terra::unwrap(expl.var.regional)
 
-# Load new escenarios
+# Load new scenarios
 data(new.env, package = "sabinaNSDM")
 new.env<-terra::unwrap(new.env)
 
-myInputData<-NSDM.InputData(
-	SpeciesName = "Fagus.sylvatica",
-	spp.data.global = Fagus.sylvatica.xy.global,
-	spp.data.regional = Fagus.sylvatica.xy.regional,
-	expl.var.global = expl.var.global,
-	expl.var.regional = expl.var.regional,
-	new.env = new_env,
-	new.env.names = c("Scenario1"),
-	Background.Global = NULL,
-	Background.Regional = NULL
-)
+# Prepare input data
+myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+			spp.data.global = Fagus.sylvatica.xy.global,
+			spp.data.regional = Fagus.sylvatica.xy.regional,
+			expl.var.global = expl.var.global,
+			expl.var.regional = expl.var.regional,
+			new.env = new_env,
+			new.env.names = c("Scenario1"),
+			Background.Global = NULL,
+			Background.Regional = NULL)
+
 
 }

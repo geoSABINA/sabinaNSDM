@@ -1,4 +1,4 @@
-#'@export
+#' @export
 summary.nsdm.input <- function(nsdm_input){
     summary_df <- as.data.frame(nsdm_input$Summary)
    
@@ -6,7 +6,7 @@ summary.nsdm.input <- function(nsdm_input){
 
 }
 
-#'@export
+#' @export
 summary.nsdm.finput <- function(nsdm_finput){
     summary_df <- as.data.frame(nsdm_finput$Summary)
    
@@ -14,7 +14,7 @@ summary.nsdm.finput <- function(nsdm_finput){
 
 }
 
-#'@export
+#' @export
 summary.nsdm.vinput <- function(nsdm_vinput){
     summary_df <- as.data.frame(nsdm_vinput$Summary)
    
@@ -22,7 +22,7 @@ summary.nsdm.vinput <- function(nsdm_vinput){
 
 }
 
-#'@export
+#' @export
 summary.nsdm.predict.g <- function(nsdm_predict){
     summary_df <- as.data.frame(nsdm_predict$Summary)
     
@@ -30,7 +30,7 @@ summary.nsdm.predict.g <- function(nsdm_predict){
 
 }
 
-#'@export
+#' @export
 summary.nsdm.predict.r <- function(nsdm_predict){
     summary_df <- as.data.frame(nsdm_predict$Summary)
     
@@ -38,7 +38,7 @@ summary.nsdm.predict.r <- function(nsdm_predict){
 
 }
 
-#'@export
+#' @export
 summary.nsdm.predict <- function(nsdm_predict){
     summary_df <- as.data.frame(nsdm_predict$Summary)
     
