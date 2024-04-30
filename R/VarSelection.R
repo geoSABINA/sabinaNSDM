@@ -16,6 +16,7 @@
 #' Algorithms to use for ranking the covariates. Options are \code{'glm'}, \code{'gam'}, and/or \code{'rf'}.
 #' @param ClimaticVariablesBands (\emph{optional, default} \code{NULL}) \cr
 #' Indices of the regional environmental covariate bands to exclude from the selection. If \code{NULL} (the default), all regional-level covariates are considered. The excluded covariates typically include climatic covariates already included in global-level analyses. A list of band numbers should be included. For example, use ClimaticVariablesBands = c(2, 3, 4) to exclude bands 2, 3, and 4 in the regional analysis.
+#' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #'
 #'
@@ -63,36 +64,32 @@
 #' new.env<-terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(
-#'		SpeciesName = "Fagus.sylvatica",
-#'		spp.data.global = Fagus.sylvatica.xy.global,
-#'		spp.data.regional = Fagus.sylvatica.xy.regional,
-#'		expl.var.global = expl.var.global,
-#'		expl.var.regional = expl.var.regional,
-#'		new.env = new_env,
-#'		new.env.names = c("Scenario1"),
-#'		Background.Global = NULL,
-#'		Background.Regional = NULL
-#' )
+#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#'				spp.data.global = Fagus.sylvatica.xy.global,
+#'				spp.data.regional = Fagus.sylvatica.xy.regional,
+#'				expl.var.global = expl.var.global,
+#'				expl.var.regional = expl.var.regional,
+#'				new.env = new_env,
+#'				new.env.names = c("Scenario1"),
+#'				Background.Global = NULL,
+#'				Background.Regional = NULL)
 #'
 #' # Format the input data
-#' myFormatedData <- NSDM.FormatingData(myInputData,
+#' myFormattedData <- NSDM.FormatingData(myInputData,
 #'					nPoints=1000)
-
+#'
 #' # Select covariates using default parameters
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #' 
-#' # Select covariates using custom parameters.
-#' nsdm_selvars <- NSDM.SelectCovariates(nsdm_finput,
-#'     maxncov.Global = 5, # Maximum number of global covariates
-#'     maxncov.Regional = 7, # Maximum number of regional covariates
-#'     corcut = 0.7, # Maximum number of regional covariates
-#'     algorithms = c("glm","gam","rf"),  # Algorithms to use for selection
-#'     ClimaticVariablesBands = c(2,3,5), # Bands to exclude in the analysis
-#'     save.output = TRUE  # Save the output externally
-#' )
+#' ## Select covariates using custom parameters.
+#' # mySelectedCovs <- NSDM.SelectCovariates(nsdm_finput,
+#' #					maxncov.Global = 5, 	# Maximum number of global covariates
+#' #					maxncov.Regional = 7, 	# Maximum number of regional covariates
+#' #					corcut = 0.7, 		# Maximum number of regional covariates
+#' #					algorithms = c("glm","gam","rf"),  # Algorithms to use for selection
+#' #					ClimaticVariablesBands = c(2,3,5), # Bands to exclude in the analysis
+#' #					save.output = TRUE)  	# Save the output externally
 #'
-#' @import covsel
 #'
 #' @export
 NSDM.SelectCovariates <- function(nsdm_finput,
@@ -158,9 +155,8 @@ NSDM.SelectCovariates <- function(nsdm_finput,
 
   # Save selected covariates for each species
   if(save.output){
-
     write.csv(Selected.Variables.Global, paste0("Results/Global/Values/", SpeciesName, ".variables.csv"))
-    }
+  }
 
   IndVar.Global.Selected <- IndVar.Global[[Selected.Variables.Global]]
 
@@ -203,7 +199,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   if(maxncov.Regional=="nocorr") {
     maxncov.Regional <- ncol(Covdata.filter.Regional)
     Selected.Variables.Regional <-names(Covdata.filter.Regional)
-  }else{
+  } else {
     Covdata.embed.Regional <- covsel::covsel.embed(covdata = Covdata.filter.Regional,
                                                    pa = myResp.Regional,
                                                    algorithms = algorithms,
@@ -211,10 +207,10 @@ NSDM.SelectCovariates <- function(nsdm_finput,
                                                    nthreads = detectCores() / 2)
     Selected.Variables.Regional <- labels(Covdata.embed.Regional$covdata)[[2]]
   }
+
   # Save selected covariates for each species
   if(save.output){
-
-  write.csv(Selected.Variables.Regional, paste0("Results/Regional/Values/", SpeciesName, ".variables.csv"))
+    write.csv(Selected.Variables.Regional, paste0("Results/Regional/Values/", SpeciesName, ".variables.csv"))
   }
 
   # Subset the regional independent variables for regional projections

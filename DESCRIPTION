@@ -1,6 +1,6 @@
 Package: sabinaNSDM
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Spatially-nested hierarchical species distribution modeling
+Version: 1.0.0
 Authors@R: 
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
@@ -10,12 +10,14 @@ LazyData: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
-URL: https://github.com/JMoralBa/sabina
-BugReports: https://github.com/JMoralBa/sabina/issues
+URL: https://github.com/geoSABINA/sabinaNSDM
+BugReports: https://github.com/geoSABINA/sabinaNSDM/issues
+Depends:
+    R (>= 4.3.2)
 Imports: 
-    biomod2,
+    biomod2 (>= 4.2.5),
     covsel,
-    ecospat,
-    fs,
-    terra,
-    sgsR
+    ecospat (>= 4.0.0),
+    fs (>= 1.6.3),
+    terra (>= 1.7-55),
+    sgsR (>= 1.4.4)

@@ -61,41 +61,34 @@
 #' new.env<-terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(
-#'		SpeciesName = "Fagus.sylvatica",
-#'		spp.data.global = Fagus.sylvatica.xy.global,
-#'		spp.data.regional = Fagus.sylvatica.xy.regional,
-#'		expl.var.global = expl.var.global,
-#'		expl.var.regional = expl.var.regional,
-#'		new.env = new_env,
-#'		new.env.names = c("Scenario1"),
-#'		Background.Global = NULL,
-#'		Background.Regional = NULL
-#' )
+#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#'				spp.data.global = Fagus.sylvatica.xy.global,
+#'				spp.data.regional = Fagus.sylvatica.xy.regional,
+#'				expl.var.global = expl.var.global,
+#'				expl.var.regional = expl.var.regional,
+#'				new.env = new_env,
+#'				new.env.names = c("Scenario1"),
+#'				Background.Global = NULL,
+#'				Background.Regional = NULL)
 #'
 #' # Format the input data using default parameters.
-#' myFormatedData <- NSDM.FormatingData(myInputData)
+#' myFormatedData <- NSDM.FormattingData(myInputData)
 #' 
-#' # Format the input data specifying custom parameters.
-#' nsdm_finput <- NSDM.FormattingData(nsdm_input, 
-#'     nPoints = 10000, # Number of background points to generate
-#'     Min.Dist.Global = "resolution", # Minimum distance between points at 
-#'     the global scale, based on raster resolution
-#'     Min.Dist.Regional = "resolution",# Minimum distance between points at 
-#'     the regional scale, based on raster resolution
-#'     Background.method="random",  # Method used to generate background points,
-#'      here set to 'random'
-#'     save.output = TRUE # save the formatted data externally
-#'  )
-#'
-#' @import ecospat sgsR
+#' ## Format the input data specifying custom parameters.
+#' # myFormatedData <- NSDM.FormattingData(nsdm_input, 
+#' #				      nPoints = 10000, # Number of background points to generate
+#' #				      Min.Dist.Global = "resolution", # Minimum distance between points at the global scale, based on raster resolution
+#' #				      Min.Dist.Regional = "resolution",# Minimum distance between points at the regional scale, based on raster resolution
+#' #				      Background.method="random",  # Method used to generate background points, here set to 'random'
+#' #				      save.output = TRUE)  	# save the formatted data externally
+#' 
 #'
 #' @export
 NSDM.FormattingData <- function(nsdm_input,
 				nPoints=10000,
 				Min.Dist.Global="resolution",
 				Min.Dist.Regional="resolution",
-				Background.method="random", # "stratified"
+				Background.method="random",
 				save.output=TRUE) {
 
   if(!inherits(nsdm_input, "nsdm.input")){
@@ -125,7 +118,7 @@ NSDM.FormattingData <- function(nsdm_input,
 		"Results/Regional/Background/"))
   }
 
-  # Unwrap objects if necessary
+  # Unwrap objects
   IndVar.Global <- terra::unwrap(nsdm_input$IndVar.Global)
   IndVar.Regional <- terra::unwrap(nsdm_input$IndVar.Regional)
 
@@ -237,7 +230,6 @@ NSDM.FormattingData <- function(nsdm_input,
 
   # Load species ocurrence data at regional scale
   SpeciesData.XY.Regional <- nsdm_input$SpeciesData.XY.Regional.0
-  #names(SpeciesData.XY.Regional) <- c("x","y")
 
   # Occurrences from sites with no NA
   XY.Regional <- terra::extract(Mask.Regional, SpeciesData.XY.Regional)
@@ -314,19 +306,18 @@ NSDM.FormattingData <- function(nsdm_input,
 
 
 background_stratified <- function(expl.var, nPoints) {
-  if (nrow(expl.var)*ncol(expl.var)>20000) {
+  if(nrow(expl.var)*ncol(expl.var) > 20000) {
     points<-xyFromCell(expl.var[[1]],which(complete.cases(values(expl.var[[1]]))))
     indices <- sample(1:nrow(points), 20000, replace = FALSE)
     points<-points[indices,]
     df<-extract(expl.var,points)
-  }
-  else {
+  } else {
   df <- as.data.frame(expl.var)
   }
   df <- na.omit(df)
   if(nrow(df) < nPoints) {
     stop(paste("The requested number of background nPoints exceeds the number of available cells.
-    Maximum number of background points at global level:",nrow(df)))
+    Maximum number of background points:",nrow(df)))
   }
   pca <- princomp(df)
   rm(df)

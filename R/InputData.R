@@ -20,9 +20,12 @@
 #'
 #' @return An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
 #'
+#'
 #' @details
 #' - The `expl.var.global` and `expl.var.regional` parameters should be \code{\link[terra:rast]{SpatRaster}} objects representing environmental covariates used to train the global-scale and regional-scale models, respectively. Each band corresponds to a different covariate. The regional-scale object must include all the covariates included in the global-scale object (usually climatic), and it can additionally include other covariates only available at this level.
 #' - The `new.env` parameter can be either a \code{\link[terra:rast]{SpatRaster}} object or a \code{list} of \code{\link[terra:rast]{SpatRaster}} object representing the environmental covariates in new spatial or temporal scenarios. All new scenarios must have the same covariates (same band names) than `expl.var.regional`.
+#'
+#'
 #' @examples
 #' library(sabinaNSDM)
 #'
@@ -41,19 +44,16 @@
 #' new.env<-terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(
-#'		SpeciesName = "Fagus.sylvatica",
-#'		spp.data.global = Fagus.sylvatica.xy.global,
-#'		spp.data.regional = Fagus.sylvatica.xy.regional,
-#'		expl.var.global = expl.var.global,
-#'		expl.var.regional = expl.var.regional,
-#'		new.env = new_env,
-#'		new.env.names = c("Scenario1"),
-#'		Background.Global = NULL,
-#'		Background.Regional = NULL
-#' )
+#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#'				spp.data.global = Fagus.sylvatica.xy.global,
+#'				spp.data.regional = Fagus.sylvatica.xy.regional,
+#'				expl.var.global = expl.var.global,
+#'				expl.var.regional = expl.var.regional,
+#'				new.env = new_env,
+#'				new.env.names = c("Scenario1"),
+#'				Background.Global = NULL,
+#'				Background.Regional = NULL)
 #'
-#' @import terra fs
 #'
 #' @export
 NSDM.InputData <- function(SpeciesName,
@@ -100,21 +100,21 @@ NSDM.InputData <- function(SpeciesName,
   }
 
   # Match variables?
-  #Global vars in regional?
+  # Global vars in regional?
   match_vars2 <- sapply(names(expl.var.global), function(var_name) {
     var_name %in% names(expl.var.regional)
   })
   if(!all(match_vars2)) {
     stop("All variables present in expl.var.global must also be present in expl.var.regional.")
   }
-  #new.env and regional
+  # new.env and regional
   if(!is.null(new.env)) {
     match_vars <- sapply(new.env, function(file) {
       all(names(expl.var.regional) %in% names(file))
     })
     if(!all(match_vars)) {
       stop("Not all new scenarios have the same environmental covariates as expl.var.regional.")
-      }
+    }
 
     # Name and Rename new.env scenarios
     if(is.null(names(new.env)) && is.null(new.env.names)) {

@@ -72,46 +72,42 @@
 #' new.env<-terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(
-#'		SpeciesName = "Fagus.sylvatica",
-#'		spp.data.global = Fagus.sylvatica.xy.global,
-#'		spp.data.regional = Fagus.sylvatica.xy.regional,
-#'		expl.var.global = expl.var.global,
-#'		expl.var.regional = expl.var.regional,
-#'		new.env = new_env,
-#'		new.env.names = c("Scenario1"),
-#'		Background.Global = NULL,
-#'		Background.Regional = NULL
-#' )
+#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#'				spp.data.global = Fagus.sylvatica.xy.global,
+#'				spp.data.regional = Fagus.sylvatica.xy.regional,
+#'				expl.var.global = expl.var.global,
+#'				expl.var.regional = expl.var.regional,
+#'				new.env = new_env,
+#'				new.env.names = c("Scenario1"),
+#'				Background.Global = NULL,
+#'				Background.Regional = NULL)
 #'
 #' # Format the input data
 #' myFormatedData <- NSDM.FormatingData(myInputData,
 #'					nPoints=1000)
-
+#'
 #' # Select covariates
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #'
-#'# Perform global scale SDMs using default parameters. 
+#' # Perform global scale SDMs using default parameters. 
 #' myGlobalModel <- NSDM.Global(mySelectedCovs)
 #' 
-#' # Perform global scale SDMs with custom parameters.
-#' # This line shows an example how to customize modeling options 
-#' using `bm_ModelingOptions` from the `biomod2` package 
-#'  opt.b <- bm_ModelingOptions(data.type = 'binary', models = c("GAM", "GBM", "RF"),
-#'   strategy = 'bigboss')
+#' ## Perform global scale SDMs with custom parameters.
+#' ## This line shows an example how to customize modeling options using `bm_ModelingOptions` from the `biomod2` package 
+#' # opt.b <- bm_ModelingOptions(data.type = 'binary', 
+#' #  				models = c("GAM", "GBM", "RF"),
+#' #				strategy = 'bigboss')
 #'   
-#' nsdm_global <- NSDM.Global(
-#'     nsdm_selvars,
-#'     algorithms = c("GBM", "RF", "GLM"), # Statistical models used in the ensemble
-#'     CV.nb.rep = 10, # Number of cross-validation replicates
-#'     CV.perc = 0.8, # Percentage of data used for each replicate
-#'     CustomModelOptions = opt.b,  # Optional custom options for statistical models
-#'     metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
-#'     save.output = TRUE, #  Save the output externally
-#'     rm.biomod.folder = TRUE # Remove the temporary Biomod2 output folder
-#' )
+#' # myGlobalModel <- NSDM.Global(nsdm_selvars,
+#' #				algorithms = c("GBM", "RF", "GLM"), # Statistical models used in the ensemble
+#' #				CV.nb.rep = 10, # Number of cross-validation replicates
+#' #				CV.perc = 0.8, # Percentage of data used for each replicate
+#' #				CustomModelOptions = opt.b,  # Optional custom options for statistical models
+#' #				metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
+#' #				save.output = TRUE, #  Save the output externally
+#' #				rm.biomod.folder = TRUE) # Remove the temporary biomod2 output folder
+#' 
 #'
-#' @import biomod2
 #'
 #' @export
 NSDM.Global <- function(nsdm_selvars,
@@ -153,7 +149,7 @@ NSDM.Global <- function(nsdm_selvars,
   IndVar.Global.Selected <- terra::unwrap(nsdm_selvars$IndVar.Global.Selected)
   IndVar.Global.Selected.reg <- terra::unwrap(nsdm_selvars$IndVar.Global.Selected.reg)
   if(!is.null(nsdm_selvars$Scenarios)) {
-  Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
+    Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
   }
 
   # GLOBAL SCALE
@@ -193,7 +189,7 @@ NSDM.Global <- function(nsdm_selvars,
 	                                      CV.do.full.models = FALSE)
 
 
-  # Replicates with ROC > 0.8
+  # Replicates with ROC > metric.select.thresh
   df <- myBiomodModelOut@models.evaluation
   df_slot <- slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
@@ -237,7 +233,7 @@ NSDM.Global <- function(nsdm_selvars,
 
   # Load the model stored by biomod2 and save it in geotif format
   sp.name<-myBiomodData@sp.name
-  Pred <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif")) #remove duplicated files
+  Pred <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
   Pred<-terra::rast(wrap(Pred))
 
   sabina$current.projections$Pred <- c(setNames(Pred, paste0(SpeciesName, ".Current")))
@@ -352,8 +348,8 @@ NSDM.Global <- function(nsdm_selvars,
         terra::writeRaster(Pred.bin.TSS.Scenario, file_path, overwrite = TRUE)
         fs::file_delete(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name, "_ensemble_TSSbin.tif"))
       }
-    } # end for
-  } # end if(length(Scenarios) == 0)
+    }
+  }
 
   source_folder <- sp.name
   destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
@@ -379,11 +375,11 @@ NSDM.Global <- function(nsdm_selvars,
 				myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
   rownames(summary) <- c("Species name",
-				"Statistical algorithms at global level",
-				paste0("Number of replicates with AUC > ",metric.select.thresh, " at global level"),
-				"AUC of ensemble model at global level",
-				"TSS of ensemble model at global level",
-				"KAPPA of ensemble model at global level")
+			"Statistical algorithms at global level",
+			paste0("Number of replicates with AUC > ",metric.select.thresh, " at global level"),
+			"AUC of ensemble model at global level",
+			"TSS of ensemble model at global level",
+			"KAPPA of ensemble model at global level")
 
   # Wrap objects
   sabina$current.projections <- rapply(sabina$current.projections, terra::wrap, how = "list")

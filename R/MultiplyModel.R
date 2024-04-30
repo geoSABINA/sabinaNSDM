@@ -48,22 +48,20 @@
 #' new.env<-terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(
-#'		SpeciesName = "Fagus.sylvatica",
-#'		spp.data.global = Fagus.sylvatica.xy.global,
-#'		spp.data.regional = Fagus.sylvatica.xy.regional,
-#'		expl.var.global = expl.var.global,
-#'		expl.var.regional = expl.var.regional,
-#'		new.env = new_env,
-#'		new.env.names = c("Scenario1"),
-#'		Background.Global = NULL,
-#'		Background.Regional = NULL
-#' )
+#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#'				spp.data.global = Fagus.sylvatica.xy.global,
+#'				spp.data.regional = Fagus.sylvatica.xy.regional,
+#'				expl.var.global = expl.var.global,
+#'				expl.var.regional = expl.var.regional,
+#'				new.env = new_env,
+#'				new.env.names = c("Scenario1"),
+#'				Background.Global = NULL,
+#'				Background.Regional = NULL)
 #'
 #' # Format the input data
 #' myFormatedData <- NSDM.FormatingData(myInputData,
 #'					nPoints=1000)
-
+#'
 #' # Select covariates
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #'
@@ -74,14 +72,12 @@
 #' myRegionalModel <- NSDM.Regional(mySelectedCovs)
 #' 
 #' # Perform NSDM analysis using the multiply strategy
-#' myMultiplyModel <- NSDM.Multiply(
-#'     myGlobalModel, # Output from the global scale SDM
-#'     myRegionalModel, # Output from the regional scale SDM
-#'     method = "Arithmetic", # Method for combining model outputs. 
-#'     Options include "Arithmetic" or "Geometric"
-#'     rescale = FALSE, # Whether to rescale the model outputs before combining
-#'     save.output = TRUE # Save the combined model output externally
-#')
+#' myMultiplyModel <- NSDM.Multiply(myGlobalModel, 	# Output from the global scale SDM
+#'				    myRegionalModel, 	# Output from the regional scale SDM
+#'				    method = "Arithmetic", # Method for combining model outputs. Options include "Arithmetic" or "Geometric"
+#'				    rescale = FALSE, 	# Whether to rescale the model outputs before combining
+#'				    save.output = TRUE) # Save the combined model output externally
+#'
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
 #'
@@ -162,7 +158,7 @@ NSDM.Multiply <- function(nsdm_global,
       file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",projmodel,".tif")
       terra::writeRaster(res.average, file_path, overwrite = TRUE)
     }
-  } # end for
+  }
 
 
   ## Evaluation multiply model
@@ -173,7 +169,6 @@ NSDM.Multiply <- function(nsdm_global,
   myExpl <- pred_df
   myResp <- as.vector(myResp)[[1]]
   pred_df <- as.vector(pred_df)[[1]]
-
 
   myRespNA <- replace(myResp, myResp == 0, NA)
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myRespNA,
@@ -217,7 +212,7 @@ NSDM.Multiply <- function(nsdm_global,
 			threshold = cross.validation["cutoff", xx])
       stat.validation <- rbind(stat.validation, stat)
     }
-  } # end for i calib.lines
+  }
 
   colnames(cross.validation)[which(colnames(cross.validation) == "best.stat")] <- "calibration"
   cross.validation$validation <- stat.validation$best.stat
@@ -229,8 +224,8 @@ NSDM.Multiply <- function(nsdm_global,
 
   # Save some results
    if(save.output){
-    fs::dir_create("Results/Multiply/Values/")
-    write.csv(metric.means,file=paste0("Results/Multiply/Values/",SpeciesName,"_ensemble.csv"))
+     fs::dir_create("Results/Multiply/Values/")
+     write.csv(metric.means,file=paste0("Results/Multiply/Values/",SpeciesName,"_ensemble.csv"))
    }
 
 
@@ -244,35 +239,37 @@ NSDM.Multiply <- function(nsdm_global,
       continuous<-sabina$new.projections$Pred.Scenario[[i-1]]
     }
 
-  Pred.bin.ROC <- classify(continuous,rbind(c(0,metric.means$cutoff[which(metric.means$metric.eval=="ROC")],0),c(metric.means$validation[which(metric.means$metric.eval=="ROC")],max(na.omit(values(continuous))),1)))
-  Pred.bin.TSS <- classify(continuous,rbind(c(0,metric.means$cutoff[which(metric.means$metric.eval=="TSS")],0),c(metric.means$validation[which(metric.means$metric.eval=="TSS")],max(na.omit(values(continuous))),1)))
-  Pred.bin.ROC<-terra::rast(wrap(Pred.bin.ROC))
-  Pred.bin.TSS<-terra::rast(wrap(Pred.bin.TSS))
+    Pred.bin.ROC <- classify(continuous,rbind(c(0,metric.means$cutoff[which(metric.means$metric.eval=="ROC")],0),c(metric.means$validation[which(metric.means$metric.eval=="ROC")],max(na.omit(values(continuous))),1)))
+    Pred.bin.TSS <- classify(continuous,rbind(c(0,metric.means$cutoff[which(metric.means$metric.eval=="TSS")],0),c(metric.means$validation[which(metric.means$metric.eval=="TSS")],max(na.omit(values(continuous))),1)))
+    Pred.bin.ROC<-terra::rast(wrap(Pred.bin.ROC))
+    Pred.bin.TSS<-terra::rast(wrap(Pred.bin.TSS))
 
-  if(projmodel =="Current") {
-    sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
-    sabina$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS, paste0(SpeciesName,".Current.bin.TSS"))
+    if(projmodel =="Current") {
+      sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
+      sabina$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS, paste0(SpeciesName,".Current.bin.TSS"))
 
-   if(save.output){
-      file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".Current.bin.ROC.tif")
-      terra::writeRaster(Pred.bin.ROC, file_path, overwrite=TRUE)
-      file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".Current.bin.TSS.tif")
-      terra::writeRaster(Pred.bin.TSS, file_path, overwrite=TRUE)
+      if(save.output){
+        file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".Current.bin.ROC.tif")
+        terra::writeRaster(Pred.bin.ROC, file_path, overwrite=TRUE)
+        file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".Current.bin.TSS.tif")
+        terra::writeRaster(Pred.bin.TSS, file_path, overwrite=TRUE)
       }
-  } else {
-    Scenario.name<-projmodel
-    sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
-    sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
-    if(save.output){
-      file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif")
-      terra::writeRaster(Pred.bin.ROC, file_path, overwrite = TRUE)
+    } else {
+      Scenario.name<-projmodel
+      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
+      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
-      file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",Scenario.name,".bin.TSS.tif")
-      terra::writeRaster(Pred.bin.TSS, file_path, overwrite = TRUE)
+      if(save.output){
+        file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif")
+        terra::writeRaster(Pred.bin.ROC, file_path, overwrite = TRUE)
+
+        file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",Scenario.name,".bin.TSS.tif")
+        terra::writeRaster(Pred.bin.TSS, file_path, overwrite = TRUE)
+      }
     }
   }
-  }
+
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
   				method,
@@ -298,10 +295,10 @@ NSDM.Multiply <- function(nsdm_global,
 
   # save.out messages
   if(save.output){
-  message("Results saved in the following local folder/s:")
-  message(paste(
+    message("Results saved in the following local folder/s:")
+    message(paste(
     "- Hierarchical Multiply Models: /Results/Multiply/Projections/\n"
-  ))
+    ))
   }
 
   return(sabina)
