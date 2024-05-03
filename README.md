@@ -21,8 +21,8 @@ knitr::opts_chunk$set(
 
 <strong>SabinaNSDM</strong> is an R
 package for ....
-calculating fragmentation and landscape connectivity indices
-used in conservation planning. It provides a set of functions to ...
+
+It provides a set of functions to ...
 
 Include some references of NSDMs, like this: (*Landscape ecology*, <https://doi.org/10.1007/s10980-006-0013-z>; Saura
 & Pascual-Hortal, 2007).
