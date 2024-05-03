@@ -1,9 +1,4 @@
----
-output: github_document
-editor_options: 
-  markdown: 
-    wrap: 72
----
+
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
@@ -24,7 +19,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-<strong>SabinaNSDM</strong> *(Connect in Purépecha language)* is an R
+<strong>SabinaNSDM</strong> is an R
 package for ....
 calculating fragmentation and landscape connectivity indices
 used in conservation planning. It provides a set of functions to ...
