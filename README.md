@@ -4,6 +4,7 @@
 
 ```{r, include = FALSE} knitr::opts_chunk$set(collapse = TRUE,comment = "#>",fig.path = "man/figures/README-",out.width = "60%"  message=FALSE, warning=FALSE)
 ```
+xxx
 
 # SabinaNSDM: Spaitally-nested Hierarchical Species Distribution Models (NSDM).
 
