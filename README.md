@@ -14,13 +14,9 @@
 
 ## Overview
 
-<strong>SabinaNSDM</strong> is an R package to generate <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to adress niche truncation and produce more reliable predictions than traditional non-hierarchical sSDMs. sabinaNSDM combines two SDMs calibrated with species occurrence data and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
+<strong>SabinaNSDM</strong> is an R package to generate <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to adress niche truncation and produce more reliable predictions than traditional non-hierarchical SDMs. sabinaNSDM combines two SDMs calibrated with species occurrence data and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
 
-SAY SOMTHING ABOUT ENSEMBLE MODELS
-
-sabinaNSDM streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrence data, covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”).
-
-Multiple studies have shown that NSDMs outperform their non- hierarchical counterparts in various applications (*Journal of Vegetation Science*, <https://doi.org/10.1111/jvs.12726>,Mateo et al. 2019; *Frontiers in Ecology and Evolution*, <https://doi.org/10.3389/fevo.2022.944116>,Chevalier et al. 2022; *Ecography*, <>; Goicolea et al. in press)
+sabinaNSDM streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrence data, covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). sabinaNSDM models use and ensemble modeling approach that combine multiple statistical techniques with the biomod2 package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>,Thuiller et al. 2009) and the embeded covariate selection of the covsel package (*Ecological Informatics*,<>,Adde et al. 2023b).
 
 
 
@@ -201,11 +197,8 @@ nsdm_multiply <- NSDM.Multiply(nsdm_global,
 
 
 
-
-
-
-
-
 <!-- Así para cargar figuras: ![](man/figures/table_protconn.png)--> 
 
 
+
+<!-- Multiple studies have shown that NSDMs outperform their non- hierarchical counterparts in various applications (*Journal of Vegetation Science*, <https://doi.org/10.1111/jvs.12726>,Mateo et al. 2019; *Frontiers in Ecology and Evolution*, <https://doi.org/10.3389/fevo.2022.944116>,Chevalier et al. 2022; *Ecography*, <https://doi.org/10.1016/j.ecoinf.2023.102080>; Goicolea et al. in press)--> 
