@@ -2,9 +2,7 @@
 
 <!-- Esto es para comentarios -->
 
-Quitar esto?
-```{r, include = FALSE} knitr::opts_chunk$set(collapse = TRUE,comment = "#>",fig.path = "man/figures/README-",out.width = "60%"  message=FALSE, warning=FALSE)
-```
+
 
 
 # sabinaNSDM: Spaitally-nested Hierarchical Species Distribution Models (NSDM).
@@ -16,21 +14,22 @@ Quitar esto?
 
 ## Overview
 
-<strong>SabinaNSDM</strong> is an R package for ....
+<strong>SabinaNSDM</strong> is an R package to generate <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to adress niche truncation and produce more reliable predictions than traditional non-hierarchical sSDMs. sabinaNSDM combines two SDMs calibrated with species occurrence data and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
 
-It provides a set of functions to ...
+SAY SOMTHING ABOUT ENSEMBLE MODELS
 
-Include some references of NSDMs, like this: (*Landscape ecology*, <https://doi.org/10.1007/s10980-006-0013-z>; Saura
-& Pascual-Hortal, 2007).
+sabinaNSDM streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrence data, covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”).
+
+Multiple studies have shown that NSDMs outperform their non- hierarchical counterparts in various applications (*Journal of Vegetation Science*, <https://doi.org/10.1111/jvs.12726>,Mateo et al. 2019; *Frontiers in Ecology and Evolution*, <https://doi.org/10.3389/fevo.2022.944116>,Chevalier et al. 2022; *Ecography*, <>; Goicolea et al. in press)
+
 
 
 ### Citing SabinaNSDM package
 
-A research paper detailing the package details and functions is under review, but until it is
-published, please reference the package as following:
+A research paper detailing the package details and functions is under review, but until it is published, please reference the package as following:
 
 <code> <i> Rubén G. Mateo, Jennifer Morales-Barbero, Alejandra Zarzo-Arias,Herlander Lima, Teresa Goicolea 2024. sabinaNSDM: an R package for spatially-nested hierarchical species distribution modeling.
-[![DOI](https://zenodo.org/...)
+[[DOI 10.5281/zenodo.11096287](https://doi.org/10.5281/zenodo.11096288)] (https://zenodo.org/records/11096288)
 </code> </i>
 
 ## Installation
@@ -50,70 +49,163 @@ remotes::install_github("geoSABINA/sabinaNSDM
 
 ## Summary of main *SabinaNSDM* functions
 
-Put here the table with the functions
 
+| Overall Step            | Function          | Objective                                       |
+|-----------------|-------------------|:-----------------:|
+| Data preparation| NSDM.InputData    | Provides the package the species occurrence and environmental variables at both global and regional scales|
+|                 | NSDM.FormatingData| Background data generation and species occurrence filtering|
+|                 | NSDM.SelectCovariates| Selects uncorrelated and the most relevant environmental covariates|
+|Single scale modeling | NSDM.Global| Calibrates, evaluates, and projects ensemble models at global scale|
+|     | NSDM.Regional    | Calibrates, evaluates, and projects ensemble models at regional scale    |
+|Nested modeling  | NSDM.Covariate    | Generate spatially-nested hierarchical species distribution models with the covariate approach. The covariate approach uses the output of the global model as an additional covariate for the regional scale model   |
+|     | NSDM.Multiply   | Generate spatially-nested hierarchical species distribution models with the multiply approach. The multiply approach averages the global and regional models    |
 
 ## Example
 
-This is provides an example on how to use the sabinaNSDM package for conducting spatially-nested hierarchical species distribution modeling. This examples:
-The following makes a hiper link to each of the parts:
--   [Load the input data](#load_input_data)
--   [Format data](#format_data)
--   ...
+This is provides an example on how to use the sabinaNSDM package for conducting spatially-nested hierarchical species distribution modeling. 
+-   [Data preparation](#data_preparation)
+-   [Single scale modeling](#single_scale_modeling)
+-   [Nested modeling](#nested_modeling)
 
-### Load input data {#load_input_data}
+### Data preparation {#data_preparation}
 
-....
+First, set your working directory and load the required packages.
 
-### Format data {#format_data}
-
-....
-
-
-
-#### Así para para poner codigo invisible ITS NOT WORKING
-```{r echo=FALSE, eval=FALSE}
-ecoregions <- read_sf("D:/Paper_Makurhini/Ejemplos/Ecoregiones_Colombia_amazonas.shp")
-Protected_areas <- read_sf("D:/Paper_Makurhini/Ejemplos/PAs_Colombia_amazonas.shp")
-```
-
-#### Así para poner código visible:
 ```{r eval = FALSE}
-test_protconn <- MK_ProtConnMult(nodes = Protected_areas, 
-                                 region = ecoregions,
-                                 area_unit = "ha",
-                                 distance = list(type= "centroid"),
-                                 distance_thresholds = 10000,
-                                 probability = 0.5, 
-                                 transboundary = 50000,
-                                 plot = TRUE, 
-                                 CI = NULL, 
-                                 parallel = 4, 
-                                 intern = FALSE)
-test_protconn[[1]][[1]]
+# setwd("/path/to/your/project") 
+# If the package is not installed, uncomment the line below to install it from GitHub
+# remotes::install_github("geoSABINA/sabinaNSDM")
+
+# Load the sabinaNSDM package
+library(sabinaNSDM)
+```
+Define the species name
+```{r eval = FALSE}
+SpeciesName<-"Fagus.sylvativa"
+```
+Load species occurrence and environmental covariates data.
+species occurrence data.frame must include only two columns: “x” and ”y” coordinates. No row names. The coordinate projection must match that used for the covariates
+
+```{r eval = FALSE}
+ # Species occurrences
+ data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
+spp.data.global <- Fagus.sylvatica.xy.global
+ data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
+spp.data.regional <- Fagus.sylvatica.xy.regional
+```
+The covariates for each spatial scale (i.e., global and regional) should be provided as geotiff files, with each band corresponding to a different covariate. The regional-scale geotiff file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
+
+ ```{r eval = FALSE}
+ data(expl.var.global, package = "sabinaNSDM")
+ data(expl.var.regional, package = "sabinaNSDM")
+ expl.var.global<-terra::unwrap(expl.var.global)
+ expl.var.regional<-terra::unwrap(expl.var.regional)
+```
+Additionally, regional-scale geotiffs corresponding to the covariates used to project the models at different scenarios (i.e., new scenarios) can be provided
+
+ ```{r eval = FALSE}
+# new escenarios
+ data(new.env, package = "sabinaNSDM")
+ new.env<-terra::unwrap(new.env)
+```
+Load the required data for the package with the NSDM.InputData() function
+ ```{r eval = FALSE}
+nsdm_input<-NSDM.InputData(SpeciesName=SpeciesName,
+                    spp.data.global=Fagus.sylvatica.xy.global, 
+                    spp.data.regional=Fagus.sylvatica.xy.regional, 
+                    expl.var.global=expl.var.global, 
+                    expl.var.regional=expl.var.regional,
+                    new.env=new.env,
+                    new.env.names= "scenario1",                     Background.Global=NULL, 
+                    Background.Regional=NULL)
+
+```
+Format the data with the NSDM.FormattingData() function. This function generates random or stratified background points for model calibration when no specific background data was loaded in the NSDM.InputData() function. Additionally, it applies spatial thinning to species occurrence data to remove duplicates and enforce a minimum distance criterion (by default the resolution of the variables). 
+ ```{r eval = FALSE}
+nsdm_finput <- NSDM.FormattingData(nsdm_input,
+                nPoints = 100, # number of background points
+                Min.Dist.Global = "resolution",
+                Min.Dist.Regional = "resolution",
+                Background.method = " random", # method (“random", "stratified”) to generate background points 
+                save.output = TRUE) #save outputs locally
+
+```
+NSDM.SelectCovariates() function selects the most relevant and uncorrelated environmental covariates for both global and regional scales.
+```{r eval = FALSE}
+nsdm_selvars <- NSDM.SelectCovariates(nsdm_finput,
+                maxncov.Global = 5,   # Max number of covariates to be selected at the global scale
+                maxncov.Regional = 7, # Max number of covariates to be selected at the regional scale
+                corcut = 0.7, #  correlation threshold
+                algorithms = c("glm","gam","rf"),
+                ClimaticVariablesBands = NULL, # covariate bands to be excluded in the covariate selection at the regional scale
+                save.output = TRUE)
+
+```
+
+
+### Single scale modeling {#single_scale_modeling}
+
+NSDM.Global() function generates the global component of the NSDM.
+
+```{r eval = FALSE}
+nsdm_global <- NSDM.Global(nsdm_selvars,
+                algorithms = c("GAM","GBM", "RF", "MAXNET","GLM"),# Statistical algorithms used for modeling
+                CV.nb.rep = 10, # number of cross-validation repetitions
+                CV.perc = 0.8, # percentage of the data will be used for training in each cross-validation fold
+                metric.select.thresh = 0.8, #  AUC threshold to include replicates in the final ensemble model
+                CustomModelOptions = NULL, # Allows users to apply custom modeling options. 
+                save.output = TRUE, 
+                rm.biomod.folder = TRUE) # Remove the temporary folders created by `biomod2` 
+
+```
+
+NSDM.Regional() function generates the regional component of the NSDM.
+
+
+```{r eval = FALSE}
+nsdm_regional <- NSDM.Regional(nsdm_selvars,
+                algorithms = c("GAM","GBM", "RF", "MAXNET","GLM"),
+                CV.nb.rep = 10,
+                CV.perc = 0.8,
+                # metric.select.thresh = 0.8,
+                CustomModelOptions = NULL, 
+                save.output = TRUE,
+                rm.biomod.folder = TRUE)
+
 ```
 
 
 
-#### Así para cargar figuras:
+### Nested modeling {#nested_modeling}
 
-![](man/figures/table_protconn.png)
-
-#### Table:
-
-| Edge depth distance (m) | Core Area (%) |
-|-------------------------|:-------------:|
-| 100                     |     83.5%     |
-| 500                     |    34.14%     |
-| 1000                    |     9.78%     |
-
-or with R:
-
-```{r echo=FALSE}
-library(formattable)
-functions_MK <- data.frame(Function = c("MK_Fragmentation", "distancefile", "MK_RMCentrality", "MK_BCentrality",  "MK_dPCIIC", "MK_dECA", "MK_ProtConn", "MK_ProtConnMult", "MK_ProtConn_raster", "MK_Connect_grid", "test_metric_distance"), Purpose = c("Calculate patch and landscape statistics (e.g., mean size patches, edge density, core area percent, shape index, fractal dimension index, effective mesh size).", "Get a table or matrix with the distances between pairs of nodes. Two Euclidean distances ('centroid' and 'edge') and two cost distances that consider the landscape heterogeneity ('least-cost' and 'commute-time, this last is analogous to the resistance distance of circuitscape, see ’gdistance’ package).", "Estimate centrality measures under one or several dispersal distances (e.g., betweenness centrality, node memberships, modularity). It uses the 'distancefile ()' to calculate the distances of the nodes so they can be calculated using Euclidean or cost distances that consider the landscape heterogeneity.", "Calculate the BC, BCIIC and BCPC indexes under one or several distance thresholds using the command line of CONEFOR. It uses the 'distancefile ()' to calculate the distances of the nodes so they can be calculated using Euclidean or cost distances that consider the landscape heterogeneity", "Calculate the integral index of connectivity (IIC) and probability of connectivity (PC) indices under one or several dispersal distances. It computes overall and index fractions (dPC or dIIC, intra, flux and connector) and the effect of restauration in the landscape connectivity when adding new nodes (restoration scenarios). It uses the 'distancefile()'.", "Estimate the Equivalent Connected Area (ECA) and compare the relative change in ECA (dECA) between time periods using one or several dispersal distances. It uses the 'distancefile()'.", "Estimate the Protected Connected (ProtConn) indicator and fractions for one region using one or several dispersal distances and transboundary buffer areas (e.g., ProtConn, ProtUnconn, RelConn, ProtConn[design], ProtConn[bound], ProtConn[Prot], ProtConn[Within], ProtConn[Contig], ProtConn[Trans], ProtConn[Unprot]). It uses the 'distancefile(). This function estimates what we call the ProtConn delta (dProtConn) which estimates the contribution of each protected area to connectivity in the region (ProtConn value)", "Estimate the ProtConn indicator and fractions for multiple regions. It uses the 'distancefile()'.", "Estimate Protected Connected (ProtConn) indicator and fractions for one region using raster inputs (nodes and region). It uses the 'distancefile()'.", "Compute the ProtConn indicator and fractions, PC or IIC overall connectivity metrics (ECA) in a regular grid. It uses the 'distancefile()'.", "Compare ECA or ProtConn connectivity metrics using one or up to four types of distances, computed in the 'distancefile()' function, and multiple dispersion distances."))
-
-formattable(functions_MK,  align =c("l","l"), list(`Function` = formatter(
-              "span", style = ~ style(font.style = "italic"))))
-
+NSDM.Covariate() function generates a NSDM with the covariate strategy. The covariate strategy incorporates the output of global models as an additional covariate in the regional models. 
+```{r eval = FALSE}
+nsdm_covariate <- NSDM.Covariate(nsdm_global,
+                algorithms = c("GLM","RF"),
+                CV.nb.rep = 1,
+                CV.perc = 0.8,
+                # metric.select.thresh = 0.8,
+                CustomModelOptions = NULL,
+                save.output = TRUE,
+                rm.biomod.folder = TRUE)
 ```
+NSDM.Multiply() function generates a NSDM with the multiply strategy. The covariate averages the output of the global and the regional models. 
+
+```{r eval = FALSE}
+nsdm_multiply <- NSDM.Multiply(nsdm_global,
+                nsdm_regional,
+                method = "Arithmetic", # Method for averate model outputs: "Arithmetic" or "Geometric" mean
+                rescale = FALSE,
+                save.output=TRUE)
+```
+
+
+
+
+
+
+
+
+<!-- Así para cargar figuras: ![](man/figures/table_protconn.png)--> 
+
+
