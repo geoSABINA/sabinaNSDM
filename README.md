@@ -16,8 +16,7 @@
 
 <strong>SabinaNSDM</strong> is an R package to generate <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to adress niche truncation and produce more reliable predictions than traditional non-hierarchical SDMs. sabinaNSDM combines two SDMs calibrated with species occurrence data and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
 
-sabinaNSDM streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrence data, covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). sabinaNSDM models use and ensemble modeling approach that combine multiple statistical techniques with the biomod2 package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>,Thuiller et al. 2009) and the embeded covariate selection of the covsel package (*Ecological Informatics*,<>,Adde et al. 2023b).
-
+sabinaNSDM streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrence data, covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). sabinaNSDM models use and ensemble modeling approach that combine multiple statistical techniques with the biomod2 package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009) and the embeded covariate selection of the covsel package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
 
 
 ### Citing SabinaNSDM package
@@ -28,10 +27,10 @@ A research paper detailing the package details and functions is under review, bu
 [[DOI 10.5281/zenodo.11096287](https://doi.org/10.5281/zenodo.11096288)] (https://zenodo.org/records/11096288)
 </code> </i>
 
+
 ## Installation
 
-Depends: 
--   R (\> 4.0.0), ...
+Depends:  R (\> 4.3.2)
 
 
 You can install the released version of SabinaNSDM from
