@@ -73,7 +73,7 @@ This is provides an example on how to use the sabinaNSDM package for conducting 
 -   [Single scale modeling](#single_scale_modeling)
 -   [Nested modeling](#nested_modeling)
 
-### Data preparation {#data_preparation}
+### Data preparation <a name="data_preparation">
 
 First, set your working directory and load the required packages.
 
@@ -149,7 +149,7 @@ nsdm_selvars <- NSDM.SelectCovariates(nsdm_finput,
 ```
 
 
-### Single scale modeling {#single_scale_modeling}
+### Single scale modeling <a name="single_scale_modeling">
 
 NSDM.Global() function generates the global component of the NSDM.
 
@@ -182,13 +182,13 @@ nsdm_regional <- NSDM.Regional(nsdm_selvars,
 
 
 
-### Nested modeling {#nested_modeling}
+### Nested modeling <a name="nested_modeling">
 
 NSDM.Covariate() function generates a NSDM with the covariate strategy. The covariate strategy incorporates the output of global models as an additional covariate in the regional model. 
 ```{r eval = FALSE}
 nsdm_covariate <- NSDM.Covariate(nsdm_global,
-                algorithms = c("GLM","RF"),
-                CV.nb.rep = 1,
+                algorithms = c("GAM","GBM", "RF", "MAXNET","GLM"),
+                CV.nb.rep = 10,
                 CV.perc = 0.8,
                 # metric.select.thresh = 0.8,
                 CustomModelOptions = NULL,
