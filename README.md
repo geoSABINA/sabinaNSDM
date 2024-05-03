@@ -7,10 +7,11 @@ Quitar esto?
 ```
 
 
-# SabinaNSDM: Spaitally-nested Hierarchical Species Distribution Models (NSDM).
+# sabinaNSDM: Spaitally-nested Hierarchical Species Distribution Models (NSDM).
 
-##### @Ruben can u upload the logo?
+
 ![](directory/logo.png)
+<img width="252" alt="logo_s-1" src="https://github.com/geoSABINA/sabinaNSDM/assets/168073517/d29288b9-c1a7-47aa-8753-918c931e4c53">
 
 
 ## Overview
@@ -26,7 +27,7 @@ Include some references of NSDMs, like this: (*Landscape ecology*, <https://doi.
 ### Citing SabinaNSDM package
 
 A research paper detailing the package details and functions is under review, but until it is
-published, please reference the packe as following:
+published, please reference the package as following:
 
 <code> <i> Rubén G. Mateo, Jennifer Morales-Barbero, Alejandra Zarzo-Arias,Herlander Lima, Teresa Goicolea 2024. sabinaNSDM: an R package for spatially-nested hierarchical species distribution modeling.
 [![DOI](https://zenodo.org/...)
