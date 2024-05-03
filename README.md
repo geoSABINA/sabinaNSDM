@@ -68,7 +68,7 @@ remotes::install_github("geoSABINA/sabinaNSDM
 
 ## Example
 
-This is provides an example on how to use the sabinaNSDM package for conducting spatially-nested hierarchical species distribution modeling. 
+This is an example on how to use the sabinaNSDM package for conducting spatially-nested hierarchical species distribution modeling. 
 -   [Data preparation](#data_preparation)
 -   [Single scale modeling](#single_scale_modeling)
 -   [Nested modeling](#nested_modeling)
