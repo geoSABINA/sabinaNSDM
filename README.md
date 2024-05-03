@@ -53,7 +53,7 @@ remotes::install_github("geoSABINA/sabinaNSDM
 ```
 
 
-## Summary of main *SabinaNSDM* functions
+## Summary of main SabinaNSDM functions
 
 
 | Overall Step            | Function          | Objective                                       |
@@ -95,9 +95,9 @@ species occurrence data.frame must include only two columns: “x” and ”y”
 ```{r eval = FALSE}
  # Species occurrences
  data(Fagus.sylvatica.xy.global, package = "sabinaNSDM")
-spp.data.global <- Fagus.sylvatica.xy.global
+ spp.data.global <- Fagus.sylvatica.xy.global
  data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
-spp.data.regional <- Fagus.sylvatica.xy.regional
+ spp.data.regional <- Fagus.sylvatica.xy.regional
 ```
 The covariates for each spatial scale (i.e., global and regional) should be provided as geotiff files, with each band corresponding to a different covariate. The regional-scale geotiff file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
 
@@ -184,7 +184,7 @@ nsdm_regional <- NSDM.Regional(nsdm_selvars,
 
 ### Nested modeling {#nested_modeling}
 
-NSDM.Covariate() function generates a NSDM with the covariate strategy. The covariate strategy incorporates the output of global models as an additional covariate in the regional models. 
+NSDM.Covariate() function generates a NSDM with the covariate strategy. The covariate strategy incorporates the output of global models as an additional covariate in the regional model. 
 ```{r eval = FALSE}
 nsdm_covariate <- NSDM.Covariate(nsdm_global,
                 algorithms = c("GLM","RF"),
