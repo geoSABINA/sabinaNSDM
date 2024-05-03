@@ -3,13 +3,24 @@
 <!-- Esto es para comentarios -->
 
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11096288.svg)](https://doi.org/10.5281/zenodo.11096288)
 
 
-# sabinaNSDM: Spaitally-nested Hierarchical Species Distribution Models (NSDM).
+
+<img width="35%" align= "right" alt="logo_s-1" src="https://github.com/geoSABINA/sabinaNSDM/assets/168073517/d29288b9-c1a7-47aa-8753-918c931e4c53"/>
 
 
-![](directory/logo.png)
-<img width="252" alt="logo_s-1" src="https://github.com/geoSABINA/sabinaNSDM/assets/168073517/d29288b9-c1a7-47aa-8753-918c931e4c53">
+
+
+# sabinaNSDM: Spaitally-nested Hierarchical Species Distribution Models (NSDM)
+
+
+
+ <!-- <img width="252" alt="logo_s-1" src="https://github.com/geoSABINA/sabinaNSDM/assets/168073517/d29288b9-c1a7-47aa-8753-918c931e4c53">-->
+
+ 
+
+   
 
 
 ## Overview
@@ -24,7 +35,7 @@ sabinaNSDM streamlines the data preparation, calibration, integration, and proje
 A research paper detailing the package details and functions is under review, but until it is published, please reference the package as following:
 
 <code> <i> Rubén G. Mateo, Jennifer Morales-Barbero, Alejandra Zarzo-Arias,Herlander Lima, Teresa Goicolea 2024. sabinaNSDM: an R package for spatially-nested hierarchical species distribution modeling.
-[[DOI 10.5281/zenodo.11096287](https://doi.org/10.5281/zenodo.11096288)] (https://zenodo.org/records/11096288)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11096288.svg)](https://doi.org/10.5281/zenodo.11096288)
 </code> </i>
 
 
