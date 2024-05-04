@@ -99,7 +99,7 @@ species occurrence data.frame must include only two columns: “x” and ”y”
  data(Fagus.sylvatica.xy.regional, package = "sabinaNSDM")
  spp.data.regional <- Fagus.sylvatica.xy.regional
 ```
-The covariates for each spatial scale (i.e., global and regional) should be provided as geotiff files, with each band corresponding to a different covariate. The regional-scale geotiff file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
+The covariates for each spatial scale (i.e., global and regional) should be provided as *SpatRaster*, with each band corresponding to a different covariate. The regional-scale geotiff file must include all the covariates included in the global-scale file, and it can additionally include covariates only available at this level.
 
  ```{r eval = FALSE}
  data(expl.var.global, package = "sabinaNSDM")
