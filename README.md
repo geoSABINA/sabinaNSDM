@@ -58,11 +58,11 @@ remotes::install_github("geoSABINA/sabinaNSDM
 
 | Overall Step            | Function          | Objective                                       |
 |-----------------|-------------------|:-----------------:|
-| Data preparation| NSDM.InputData    | Provides the package with the species occurrence and environmental covariates at both global and regional scales|
-|                 | NSDM.FormatingData| Background data generation and species occurrence filtering|
+| Data preparation| NSDM.InputData    | Provides the package with the species occurrences and environmental covariates at both global and regional scales|
+|                 | NSDM.FormatingData| Background data generation and species occurrences thinning|
 |                 | NSDM.SelectCovariates| Selects uncorrelated and the most relevant environmental covariates|
-|Single scale modeling | NSDM.Global| Calibrates, evaluates, and projects ensemble models at global scale|
-|     | NSDM.Regional    | Calibrates, evaluates, and projects ensemble models at regional scale    |
+|Single scale modeling | NSDM.Global| Calibrates, evaluates, and projects ensemble models at the global scale|
+|     | NSDM.Regional    | Calibrates, evaluates, and projects ensemble models at the regional scale    |
 |Nested modeling  | NSDM.Covariate    | Generate spatially-nested hierarchical species distribution models with the covariate approach. The covariate approach uses the output of the global model as an additional covariate for the regional scale model   |
 |     | NSDM.Multiply   | Generate spatially-nested hierarchical species distribution models with the multiply approach. The multiply approach averages the global and regional models    |
 
