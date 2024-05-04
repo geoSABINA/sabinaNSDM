@@ -25,9 +25,9 @@
 
 ## Overview
 
-The <strong>SabinaNSDM</strong> R package generates <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to adress niche truncation and produce more reliable predictions than traditional non-hierarchical SDMs. sabinaNSDM combines two SDMs calibrated with species occurrence data and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
+The <strong>SabinaNSDM</strong> R package generates <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to address niche truncation and produce more reliable predictions than traditional non-hierarchical SDMs. <strong>sabinaNSDM</strong> combines two SDMs calibrated with species occurrences and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
 
-sabinaNSDM streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrence data, covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). sabinaNSDM models use an ensemble modeling approach that combines multiple statistical techniques with the biomod2 package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009) and the embeded covariate selection of the covsel package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
+<strong>sabinaNSDM</strong> streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrences, covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). <strong>sabinaNSDM</strong> models use an ensemble modeling approach that combines multiple statistical techniques with the <strong>biomod2</strong> package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009), thinning of species occurrences with the <strong>ecospat</strong> package (*Ecography*, <https://doi.org/10.1111/ecog.02671.x>, Di Cola et al. 2017), and covariate selection of the <strong>covsel</strong>  package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
 
 
 ### Citing SabinaNSDM package
@@ -58,7 +58,7 @@ remotes::install_github("geoSABINA/sabinaNSDM
 
 | Overall Step            | Function          | Objective                                       |
 |-----------------|-------------------|:-----------------:|
-| Data preparation| NSDM.InputData    | Provides the package the species occurrence and environmental variables at both global and regional scales|
+| Data preparation| NSDM.InputData    | Provides the package with the species occurrence and environmental covariates at both global and regional scales|
 |                 | NSDM.FormatingData| Background data generation and species occurrence filtering|
 |                 | NSDM.SelectCovariates| Selects uncorrelated and the most relevant environmental covariates|
 |Single scale modeling | NSDM.Global| Calibrates, evaluates, and projects ensemble models at global scale|
