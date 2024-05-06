@@ -59,7 +59,7 @@ remotes::install_github("geoSABINA/sabinaNSDM
 | Overall Step            | Function          | Objective                                       |
 |-----------------|-------------------|:-----------------:|
 | Data preparation| NSDM.InputData    | Provides the package with the species occurrences and environmental covariates at both global and regional scales|
-|                 | NSDM.FormatingData| Background data generation and species occurrences thinning|
+|                 | NSDM.FormattingData| Background data generation and species occurrences thinning|
 |                 | NSDM.SelectCovariates| Selects uncorrelated and the most relevant environmental covariates|
 |Single scale modeling | NSDM.Global| Calibrates, evaluates, and projects ensemble models at the global scale|
 |     | NSDM.Regional    | Calibrates, evaluates, and projects ensemble models at the regional scale    |
