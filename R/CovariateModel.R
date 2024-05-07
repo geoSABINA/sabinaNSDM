@@ -158,6 +158,7 @@ NSDM.Covariate <- function(nsdm_global,
     myResp.covsel <- as.vector(myResp.covsel)[[1]]
     myExpl.covsel <- myExpl
     myExpl <- covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp.covsel, force="SDM.global", corcut=nsdm_global$corcut)
+    myExpl<-myExpl[,match( names(IndVar.Regional.Covariate),names(myExpl))]
     IndVar.Regional.Covariate<-IndVar.Regional.Covariate[[which(names(IndVar.Regional.Covariate) %in% colnames(myExpl))]]
   }
 
@@ -171,7 +172,7 @@ NSDM.Covariate <- function(nsdm_global,
   # Data required for the biomod2 package.
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
 					resp.xy = myResp.xy,
-					expl.var = myExpl,
+					expl.var = myExpl, #@@@
 					resp.name = SpeciesName,
 					PA.nb.rep = 1,
 					PA.nb.absences = nrow(nsdm_global$Background.XY.Regional),
@@ -316,7 +317,7 @@ NSDM.Covariate <- function(nsdm_global,
       SDM.global.future <- terra::unwrap(nsdm_global$new.projections$Pred.Scenario[[i]]) # Unwrap objects
       names(SDM.global.future) <- c("SDM.global")
       NewClim <- c(NewClim.temp, SDM.global.future)
-      NewClim<-NewClim[[which(names(NewClim) %in% colnames(myExpl))]]
+      NewClim<-NewClim[[which(names(NewClim) %in% colnames(myExpl))]] #@@@
 
       myBiomomodProjScenario <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
 						new.env = NewClim,
