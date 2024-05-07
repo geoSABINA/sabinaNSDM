@@ -158,7 +158,8 @@ NSDM.Covariate <- function(nsdm_global,
     myResp.covsel <- as.vector(myResp.covsel)[[1]]
     myExpl.covsel <- myExpl
     myExpl <- covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp.covsel, force="SDM.global", corcut=nsdm_global$corcut)
-    myExpl<-myExpl[,match( names(IndVar.Regional.Covariate),names(myExpl))]
+    matching<-intersect(names(IndVar.Regional.Covariate),names(myExpl))
+    myExpl<-myExpl[,match( matching,names(myExpl))]
     IndVar.Regional.Covariate<-IndVar.Regional.Covariate[[which(names(IndVar.Regional.Covariate) %in% colnames(myExpl))]]
   }
 
