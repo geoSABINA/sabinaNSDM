@@ -90,7 +90,7 @@ NSDM.Multiply <- function(nsdm_global,
                           save.output=TRUE) {
 
   if(!inherits(nsdm_regional, "nsdm.predict.r") || !inherits(nsdm_global, "nsdm.predict.g")) {
-    stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.r, respectively.")
+    stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.g, respectively.")
   }
 
   if(!method %in% c("Arithmetic", "Geometric")) {
@@ -126,13 +126,13 @@ NSDM.Multiply <- function(nsdm_global,
     if(rescale==TRUE) {
       # Calculate minimum and maximum values of global prediction
       min_val <- min(terra::values(Pred.global), na.rm = TRUE)
-      max_val <- max(values(Pred.global), na.rm = TRUE)
+      max_val <- max(terra::values(Pred.global), na.rm = TRUE)
 
       Pred.global <- terra::app(Pred.global, fun = function(x) {
       ((x - min_val) / (max_val - min_val) * 999) + 1})
       # Calculate minimum and maximum values of regional prediction
-      min_val <- min(values(Pred.regional), na.rm = TRUE)
-      max_val <- max(values(Pred.regional), na.rm = TRUE)
+      min_val <- min(terra::values(Pred.regional), na.rm = TRUE)
+      max_val <- max(terra::values(Pred.regional), na.rm = TRUE)
 
       Pred.regional <- terra::app(Pred.regional, fun = function(x) {
       ((x - min_val) / (max_val - min_val) * 999) + 1})
@@ -179,7 +179,7 @@ NSDM.Multiply <- function(nsdm_global,
 	                                     PA.nb.absences = nrow(nsdm_regional$Background.XY.Regional),
 	                                     PA.strategy = "random")
 
-  calib.lines <- bm_CrossValidation(bm.format = myBiomodData,
+  calib.lines <- biomod2::bm_CrossValidation(bm.format = myBiomodData,
                                     strategy = "random",
                                     nb.rep = nsdm_regional$args$CV.nb.rep,
                                     perc =  nsdm_regional$args$CV.perc,
@@ -206,7 +206,7 @@ NSDM.Multiply <- function(nsdm_global,
     }
 
     for(xx in metric.eval) {
-      stat <-bm_FindOptimStat(metric.eval = xx,
+      stat <- biomod2::bm_FindOptimStat(metric.eval = xx,
   			obs = myResp[eval.lines.rep],
   			fit = pred_df[eval.lines.rep],
 			threshold = cross.validation["cutoff", xx])
@@ -238,9 +238,10 @@ NSDM.Multiply <- function(nsdm_global,
     } else {
       continuous<-sabina$new.projections$Pred.Scenario[[i-1]]
     }
-
-    Pred.bin.ROC <- classify(continuous,rbind(c(0,metric.means$cutoff[which(metric.means$metric.eval=="ROC")],0),c(metric.means$validation[which(metric.means$metric.eval=="ROC")],max(na.omit(values(continuous))),1)))
-    Pred.bin.TSS <- classify(continuous,rbind(c(0,metric.means$cutoff[which(metric.means$metric.eval=="TSS")],0),c(metric.means$validation[which(metric.means$metric.eval=="TSS")],max(na.omit(values(continuous))),1)))
+    Threshold.ROC <- metric.means$cutoff[which(metric.means$metric.eval=="ROC")]
+    Threshold.TSS <- metric.means$cutoff[which(metric.means$metric.eval=="TSS")]
+    Pred.bin.ROC <- terra::classify(res.average,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
+    Pred.bin.TSS <- terra::classify(res.average,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
     Pred.bin.ROC<-terra::rast(wrap(Pred.bin.ROC))
     Pred.bin.TSS<-terra::rast(wrap(Pred.bin.TSS))
 
