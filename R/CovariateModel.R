@@ -86,10 +86,10 @@
 #' myGlobalModel <- NSDM.Global(mySelectedCovs)
 #'
 #' # Perform NSDM analysis using the covariate approach with default settings.
-#' myCovariateModel <- NSDM.Covariate(nsdm_global)
+#' myCovariateModel <- NSDM.Covariate(myGlobalModel)
 #' 
 #' ## Perform NSDM analysis using the covariate approach with custom settings.
-#' # myGlobalModel <- NSDM.Covariate(nsdm_global,  	# Global model output used as input
+#' # myGlobalModel <- NSDM.Covariate(myGlobalModel,  	# Global model output used as input
 #' #				   rm.corr=FALSE,  	# Do not remove correlated covariates
 #' #				   algorithms = c("GBM", "RF", "GLM"), # Algorithms to use for modeling
 #' #				   CV.nb.rep = 10,   	# Number of cross-validation replicates
