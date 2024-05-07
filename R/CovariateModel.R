@@ -89,15 +89,15 @@
 #' myCovariateModel <- NSDM.Covariate(myGlobalModel)
 #' 
 #' ## Perform NSDM analysis using the covariate approach with custom settings.
-#' # myGlobalModel <- NSDM.Covariate(myGlobalModel,  	# Global model output used as input
-#' #				   rm.corr=FALSE,  	# Do not remove correlated covariates
-#' #				   algorithms = c("GBM", "RF", "GLM"), # Algorithms to use for modeling
-#' #				   CV.nb.rep = 10,   	# Number of cross-validation replicates
-#' #				   CV.perc = 0.8, 	# Percentage of data used in each cross-validation replicate
-#' #				   CustomModelOptions = NULL, # Use default modeling options
-#' #				   metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
-#' #				   rm.biomod.folder = TRUE, # Remove the temporary biomod2 output folder
-#' #				   save.output = TRUE)	# Save the output externally
+#' # myCovariateModel <- NSDM.Covariate(myGlobalModel,  	# Global model output used as input
+#' #					rm.corr=FALSE,  	# Do not remove correlated covariates
+#' #					algorithms = c("GBM", "RF", "GLM"), # Algorithms to use for modeling
+#' #					CV.nb.rep = 10,   	# Number of cross-validation replicates
+#' #					CV.perc = 0.8, 	# Percentage of data used in each cross-validation replicate
+#' #					CustomModelOptions = NULL, # Use default modeling options
+#' #					metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
+#' #					rm.biomod.folder = TRUE, # Remove the temporary biomod2 output folder
+#' #					save.output = TRUE)	# Save the output externally
 #'
 #'
 #' @export
