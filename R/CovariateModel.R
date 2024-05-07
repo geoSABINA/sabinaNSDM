@@ -156,8 +156,10 @@ NSDM.Covariate <- function(nsdm_global,
     # Remove correlated covariates with global model
     myResp.covsel <- replace(myResp, is.na(myResp), 0)
     myResp.covsel <- as.vector(myResp.covsel)[[1]]
-    myExpl.covsel <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
+    myExpl.covsel <- myExpl
     myExpl <- covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp.covsel, force="SDM.global", corcut=nsdm_global$corcut)
+    matching<-intersect(names(IndVar.Regional.Covariate),names(myExpl))
+    myExpl<-myExpl[,match( matching,names(myExpl))]
     IndVar.Regional.Covariate<-IndVar.Regional.Covariate[[which(names(IndVar.Regional.Covariate) %in% colnames(myExpl))]]
   }
 
@@ -171,7 +173,7 @@ NSDM.Covariate <- function(nsdm_global,
   # Data required for the biomod2 package.
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
 					resp.xy = myResp.xy,
-					expl.var = myExpl,
+					expl.var = myExpl, #@@@
 					resp.name = SpeciesName,
 					PA.nb.rep = 1,
 					PA.nb.absences = nrow(nsdm_global$Background.XY.Regional),
@@ -231,7 +233,7 @@ NSDM.Covariate <- function(nsdm_global,
                                         build.clamping.mask = FALSE)
 
   # Project the ensemble model to the study area at regional scale under training conditions.
-  biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
+  myBiomodEMProj<-biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
 					bm.proj = myBiomodProj,
 					models.chosen = 'all',
 					metric.binary = 'all',
@@ -240,7 +242,7 @@ NSDM.Covariate <- function(nsdm_global,
 
   # Load the model stored by biomod2 and save it in geotif format
   sp.name<-myBiomodData@sp.name
-  Pred <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
+  Pred <- terra::unwrap(myBiomodEMProj@proj.out@val)
   Pred<-terra::rast(wrap(Pred))
 
   sabina$current.projections$Pred <- setNames(Pred, paste0(SpeciesName, ".Current"))
@@ -295,7 +297,7 @@ NSDM.Covariate <- function(nsdm_global,
   # Covariate importance
   myModelsVarImport <- biomod2::get_variables_importance(myBiomodModelOut)
   if(save.output){
-    write.table(myModelsVarImport, file = paste0("Results/Covariate/Values/",SpeciesName,"_indvar.csv"), row.names = T, col.names = T)
+    write.csv(myModelsVarImport, file = paste0("Results/Covariate/Values/",SpeciesName,"_indvar.csv"), row.names = T)
   }
 
   sabina$myModelsVarImport <- myModelsVarImport
@@ -304,34 +306,32 @@ NSDM.Covariate <- function(nsdm_global,
   ################################################
   if(!is.null(nsdm_global$Scenarios)) {
     Scenarios <- lapply(nsdm_global$Scenarios, terra::unwrap) # Unwrap objects
-  }
+  }else {Scenarios <-NULL}
 
   if(length(Scenarios) == 0) {
     warning("No new scenarios for further projections!\n")
   } else {
     for(i in 1:length(Scenarios)) {
-      NewClim.temp <- Scenarios[[i]][[nsdm_global$Selected.Variables.Regional]]
+      NewClim.temp <- Scenarios[[i]]
       Scenario.name <- names(Scenarios[i])
 
       SDM.global.future <- terra::unwrap(nsdm_global$new.projections$Pred.Scenario[[i]]) # Unwrap objects
       names(SDM.global.future) <- c("SDM.global")
       NewClim <- c(NewClim.temp, SDM.global.future)
-      if(rm.corr==TRUE) {
-        NewClim<-NewClim[[which(names(NewClim) %in% colnames(myExpl))]]
-      }
+      NewClim<-NewClim[[which(names(NewClim) %in% colnames(myExpl))]] #@@@
 
       myBiomomodProjScenario <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
 						new.env = NewClim,
 						proj.name = Scenario.name,
 						models.chosen = "all")
 
-      biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
+      myBiomodEMProjScenario<-biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
 					bm.proj = myBiomomodProjScenario,
 					models.chosen = "all",
 					metric.binary = "all",
 					metric.filter = "all")
 
-      Pred.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
+      Pred.Scenario <- terra::unwrap(myBiomodEMProjScenario@proj.out@val)
       Pred.Scenario<-terra::rast(wrap(Pred.Scenario))
       sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario, paste0(SpeciesName,".",Scenario.name))
 
@@ -365,15 +365,15 @@ NSDM.Covariate <- function(nsdm_global,
   }
 
   source_folder <- sp.name
-  destination_folder <- paste0("Results/Covariate/Models/",sp.name)
 
   if(rm.biomod.folder){
     # Remove species folder created by biomod2
     fs::dir_delete(source_folder)
   } else {
     if(save.output){
+      destination_folder <- paste0("Results/Covariate/Models/",SpeciesName)
       # Move and remove biomod2 results from /sp.name/ to Results/Global/Models/ folder
-      fs::dir_create(paste0("Results/Covariate/Models/",sp.name))
+      fs::dir_create(destination_folder)
       fs::dir_copy(source_folder, destination_folder, overwrite = TRUE)
       fs::dir_delete(source_folder)
     }

@@ -147,7 +147,7 @@ NSDM.Regional <- function(nsdm_selvars,
   IndVar.Regional.Selected <- terra::unwrap(nsdm_selvars$IndVar.Regional.Selected)
   if(!is.null(nsdm_selvars$Scenarios)) {
   Scenarios <- lapply(nsdm_selvars$Scenarios, terra::unwrap)
-  }
+  }else {Scenarios <-NULL}
 
   # Regional model calibrated with all the covariates
   # Format the response (presence/background) and covariates data for BIOMOD2
@@ -220,7 +220,7 @@ NSDM.Regional <- function(nsdm_selvars,
 					build.clamping.mask = FALSE)
 
   # Project the ensemble model the study area at regional scale under training conditions
-  biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
+  myBiomodEMProj<-biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
                                  bm.proj = myBiomodProj,
                                  models.chosen = 'all',
                                  metric.binary = 'all',
@@ -229,7 +229,7 @@ NSDM.Regional <- function(nsdm_selvars,
 
   # Load the model stored by biomod2 and save it in geotif format
   sp.name<-myBiomodData@sp.name
-  Pred <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble.tif"))
+  Pred <- terra::unwrap(myBiomodEMProj@proj.out@val)
   Pred<-terra::rast(wrap(Pred))
 
   sabina$current.projections$Pred <- setNames(Pred, paste0(SpeciesName, ".Current"))
@@ -305,13 +305,13 @@ NSDM.Regional <- function(nsdm_selvars,
 						proj.name = Scenario.name,
 						models.chosen = "all")
 
-      biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
+      myBiomodEMProjScenario<-biomod2::BIOMOD_EnsembleForecasting(bm.em = myBiomodEM.ROC,
 					bm.proj = myBiomomodProjScenario,
 					models.chosen = "all",
 					metric.binary = "all",
 					metric.filter = "all")
 
-      Pred.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble.tif"))
+      Pred.Scenario <- terra::unwrap(myBiomodEMProjScenario@proj.out@val)
       Pred.Scenario <- terra::rast(wrap(Pred.Scenario))
 
       sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario, paste0(SpeciesName,".",Scenario.name))
@@ -345,15 +345,15 @@ NSDM.Regional <- function(nsdm_selvars,
   }
 
   source_folder <- sp.name
-  destination_folder <- paste0("Results/",Level,"/Models/",sp.name)
 
   if(rm.biomod.folder){
     # Remove species folder created by biomod2
     fs::dir_delete(source_folder)
   } else {
     if(save.output){
+      destination_folder <- paste0("Results/",Level,"/Models/",SpeciesName)
       # Move and remove biomod2 results from /sp.name/ to Results/Regional/Models/ folder
-      fs::dir_create(paste0("Results/",Level,"/Models/",sp.name))
+      fs::dir_create(destination_folder)
       fs::dir_copy(source_folder, destination_folder, overwrite = TRUE)
       fs::dir_delete(source_folder)
     }
