@@ -95,10 +95,6 @@ NSDM.FormattingData <- function(nsdm_input,
       stop("nsdm_input must be an object of nsdm.input class. Consider running NSDM.InputData() function")
   }
 
-  if(any(!Background.method %in% c( "random", "stratified"))) {
-    stop("Please select at least one valid Background.method (\"random\" or \"stratified\").")
-  }
-
   SpeciesName <- nsdm_input$Species.Name
 
   sabina<-list()
