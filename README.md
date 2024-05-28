@@ -44,7 +44,7 @@ A research paper detailing the package details and functions is under review, bu
 Depends:  R (\> 4.3.2)
 
 
-You can install the released version of SabinaNSDM from
+You can install the released version of sabinaNSDM from
 [GitHub](https://github.com) with:
 
 ```{r echo=TRUE, eval=FALSE}
@@ -78,7 +78,16 @@ This is an example on how to use the <strong>sabinaNSDM</strong> package for con
 First, set your working directory and load the required packages.
 
 ```{r eval = FALSE}
-# setwd("/path/to/your/project") 
+# setwd("/path/to/your/project")
+# 
+# Required packages:
+# library(terra)
+# library(covsel)
+# library(biomod2)
+# library(ecospat)
+# library(fs)
+# library(sgsR)
+#
 # If the package is not installed, uncomment the line below to install it from GitHub
 # remotes::install_github("geoSABINA/sabinaNSDM")
 
@@ -132,7 +141,7 @@ nsdm_finput <- NSDM.FormattingData(nsdm_input,
                 nPoints = 100, # number of background points
                 Min.Dist.Global = "resolution",
                 Min.Dist.Regional = "resolution",
-                Background.method = " random", # method (“random", "stratified”) to generate background points 
+                Background.method = "random", # method “random" or "stratified” to generate background points 
                 save.output = TRUE) #save outputs locally
 
 ```
