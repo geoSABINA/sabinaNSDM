@@ -87,7 +87,7 @@ library(sabinaNSDM)
 ```
 Define the species name
 ```{r eval = FALSE}
-SpeciesName<-"Fagus.sylvativa"
+SpeciesName <- "Fagus.sylvativa"
 ```
 Load species occurrence and environmental covariates data. Species occurrence *data.frame* must include only two columns: “x” and ”y” coordinates. No row names. The coordinate projection must match that used for the covariates
 
@@ -103,26 +103,27 @@ The covariates for each spatial scale (i.e., global and regional) should be prov
  ```{r eval = FALSE}
  data(expl.var.global, package = "sabinaNSDM")
  data(expl.var.regional, package = "sabinaNSDM")
- expl.var.global<-terra::unwrap(expl.var.global)
- expl.var.regional<-terra::unwrap(expl.var.regional)
+ expl.var.global <- terra::unwrap(expl.var.global)
+ expl.var.regional <- terra::unwrap(expl.var.regional)
 ```
 Additionally, regional-scale *SpatRaster*  corresponding to the covariates used to project the models at different scenarios (i.e., new scenarios) can be provided
 
  ```{r eval = FALSE}
 # new escenarios
  data(new.env, package = "sabinaNSDM")
- new.env<-terra::unwrap(new.env)
+ new.env <- terra::unwrap(new.env)
 ```
 Load the required data for the package with the *NSDM.InputData()* function
  ```{r eval = FALSE}
-nsdm_input<-NSDM.InputData(SpeciesName=SpeciesName,
-                    spp.data.global=Fagus.sylvatica.xy.global, 
-                    spp.data.regional=Fagus.sylvatica.xy.regional, 
-                    expl.var.global=expl.var.global, 
-                    expl.var.regional=expl.var.regional,
-                    new.env=new.env,
-                    new.env.names= "scenario1",                     Background.Global=NULL, 
-                    Background.Regional=NULL)
+nsdm_input <- NSDM.InputData(SpeciesName  =SpeciesName,
+                    spp.data.global = Fagus.sylvatica.xy.global, 
+                    spp.data.regional = Fagus.sylvatica.xy.regional, 
+                    expl.var.global = expl.var.global, 
+                    expl.var.regional = expl.var.regional,
+                    new.env = new.env,
+                    new.env.names = "scenario1",
+                    Background.Global = NULL, 
+                    Background.Regional = NULL)
 
 ```
 Format the data with the *NSDM.FormattingData()* function. This function generates random or stratified background points for model calibration when no specific background data was loaded in the *NSDM.InputData()* function. Additionally, it applies spatial thinning to species occurrences  to remove duplicates and enforce a minimum distance criterion (by default the resolution of the variables). 
