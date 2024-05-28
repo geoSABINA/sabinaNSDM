@@ -49,7 +49,7 @@ You can install the released version of SabinaNSDM from
 
 ```{r echo=TRUE, eval=FALSE}
 library(remotes)
-remotes::install_github("geoSABINA/sabinaNSDM
+remotes::install_github("geoSABINA/sabinaNSDM")
 ```
 
 
