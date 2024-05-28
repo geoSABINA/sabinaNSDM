@@ -115,7 +115,7 @@ Additionally, regional-scale *SpatRaster*  corresponding to the covariates used 
 ```
 Load the required data for the package with the *NSDM.InputData()* function
  ```{r eval = FALSE}
-nsdm_input <- NSDM.InputData(SpeciesName  =SpeciesName,
+nsdm_input <- NSDM.InputData(SpeciesName = SpeciesName,
                     spp.data.global = Fagus.sylvatica.xy.global, 
                     spp.data.regional = Fagus.sylvatica.xy.regional, 
                     expl.var.global = expl.var.global, 
