@@ -148,7 +148,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
                                                pa=myResp.Global,
                                                algorithms=algorithms,
                                                maxncov=maxncov.Global,
-                                               nthreads=detectCores()/2)
+					       nthreads=detectCores()/2)
     Selected.Variables.Global <- labels(Covdata.embed.Global$covdata)[[2]]
   }
 
@@ -162,7 +162,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
 
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-				nlyr(IndVar.Global),
+				terra::nlyr(IndVar.Global),
 				length(Selected.Variables.Global)))
 
   rownames(summary) <- c("Species name",
@@ -174,7 +174,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]
 
   # Exclude climatic bands specified by the user.
-  Number.bands <- nlyr(IndVar.Regional)
+  Number.bands <- terra::nlyr(IndVar.Regional)
   if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
     removed<-IndVar.Regional[[ClimaticVariablesBands]]
     names(removed)
