@@ -137,7 +137,7 @@ NSDM.FormattingData <- function(nsdm_input,
 
   # Generate random background points for model calibration
   if(is.null(nsdm_input$Background.Global.0) && Background.method == "random") {
-    Valid.Cells.Global <- which(!is.na(values(Mask.Global)))
+    Valid.Cells.Global <- which(!is.na(terra::values(Mask.Global)))
     if(length(Valid.Cells.Global) < nPoints) {
       stop(paste("The requested number of background nPoints exceeds the number of available cells.
 	Maximum number of background points at global level:",length(Valid.Cells.Global)))
@@ -171,7 +171,7 @@ NSDM.FormattingData <- function(nsdm_input,
 
   # Spatial thinning of occurrence data to remove duplicates and apply minimum distance criteria
   if(Min.Dist.Global == "resolution" ) {
-    Min.Dist.Global<-res(Mask.Global)[1]
+    Min.Dist.Global<-terra::res(Mask.Global)[1]
   }
   invisible(capture.output({
     tryCatch({
@@ -210,7 +210,7 @@ NSDM.FormattingData <- function(nsdm_input,
 
   # Generate random background points for model calibration
   if(is.null(nsdm_input$Background.Regional.0) && Background.method == "random") {
-    Valid.Cells.Regional <- which(!is.na(values(Mask.Regional)))
+    Valid.Cells.Regional <- which(!is.na(terra::values(Mask.Regional)))
     if(length(Valid.Cells.Regional) < nPoints) {
       stop(paste("The requested number of background nPoints exceeds the number of available cells.
 	Maximum number of background points at regional level:",length(Valid.Cells.Regional)))
@@ -243,7 +243,7 @@ NSDM.FormattingData <- function(nsdm_input,
 
   # Spatial thinning of occurrence data to remove duplicates and apply minimum distance criteria
   if(Min.Dist.Regional=="resolution") {
-  Min.Dist.Regional<-res(Mask.Regional)[1]
+  Min.Dist.Regional<-terra::res(Mask.Regional)[1]
   }
   invisible(capture.output({
     tryCatch({
@@ -311,7 +311,7 @@ NSDM.FormattingData <- function(nsdm_input,
 
 background_stratified <- function(expl.var, nPoints) {
   if(nrow(expl.var)*ncol(expl.var) > 20000) {
-    points<-xyFromCell(expl.var[[1]],which(complete.cases(values(expl.var[[1]]))))
+    points<-terra::xyFromCell(expl.var[[1]],which(complete.cases(terra::values(expl.var[[1]]))))
     indices <- sample(1:nrow(points), 20000, replace = FALSE)
     points<-points[indices,]
     df<-extract(expl.var,points)
@@ -331,11 +331,11 @@ background_stratified <- function(expl.var, nPoints) {
   gc()
   # Reclassify raster into 4 classes based on quartiles
   quartiles1 <- global(PC1, fun = quantile, na.rm = TRUE)
-  cat1 <- cut(values(PC1), breaks = quartiles1, labels = c(1, 2, 3, 4), include.lowest = TRUE)
+  cat1 <- cut(terra::values(PC1), breaks = quartiles1, labels = c(1, 2, 3, 4), include.lowest = TRUE)
   PC1_cat <- setValues(PC1, cat1)
   rm(PC1)
   quartiles2 <- global(PC2, fun = quantile, na.rm = TRUE)
-  cat2 <- cut(values(PC2), breaks = quartiles2, labels = c(1, 2, 3, 4), include.lowest = TRUE)
+  cat2 <- cut(terra::values(PC2), breaks = quartiles2, labels = c(1, 2, 3, 4), include.lowest = TRUE)
   PC2_cat <- setValues(PC2, cat2)
   rm(PC2)
 
