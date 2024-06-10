@@ -314,7 +314,7 @@ background_stratified <- function(expl.var, nPoints) {
     points<-terra::xyFromCell(expl.var[[1]],which(complete.cases(terra::values(expl.var[[1]]))))
     indices <- sample(1:nrow(points), 20000, replace = FALSE)
     points<-points[indices,]
-    df<-extract(expl.var,points)
+    df<-terra::extract(expl.var,points)
   } else {
   df <- as.data.frame(expl.var)
   }
