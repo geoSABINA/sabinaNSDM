@@ -118,7 +118,7 @@ myGlobalModel <- NSDM.Global(mySelectedCovs)
 #  				models = c("GAM", "GBM", "RF"),
 #				strategy = 'bigboss')
   
-# myGlobalModel <- NSDM.Global(nsdm_selvars,
+# myGlobalModel <- NSDM.Global(mySelectedCovs,
 #				algorithms = c("GBM", "RF", "GLM"), # Statistical models used in the ensemble
 #				CV.nb.rep = 10, # Number of cross-validation replicates
 #				CV.perc = 0.8, # Percentage of data used for each replicate
