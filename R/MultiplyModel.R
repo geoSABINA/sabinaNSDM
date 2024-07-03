@@ -53,13 +53,13 @@
 #'				spp.data.regional = Fagus.sylvatica.xy.regional,
 #'				expl.var.global = expl.var.global,
 #'				expl.var.regional = expl.var.regional,
-#'				new.env = new_env,
+#'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
 #'				Background.Regional = NULL)
 #'
 #' # Format the input data
-#' myFormatedData <- NSDM.FormatingData(myInputData,
+#' myFormattedData <- NSDM.FormattingData(myInputData,
 #'					nPoints=1000)
 #'
 #' # Select covariates
