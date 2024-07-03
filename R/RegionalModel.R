@@ -77,13 +77,13 @@
 #'				spp.data.regional = Fagus.sylvatica.xy.regional,
 #'				expl.var.global = expl.var.global,
 #'				expl.var.regional = expl.var.regional,
-#'				new.env = new_env,
+#'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
 #'				Background.Regional = NULL)
 #'
 #' # Format the input data
-#' myFormatedData <- NSDM.FormatingData(myInputData,
+#' myFormattedData <- NSDM.FormattingData(myInputData,
 #'					nPoints=1000)
 
 #' # Select covariates
@@ -98,7 +98,7 @@
 #' #  				models = c("GAM", "GBM", "RF"),
 #' #				strategy = 'bigboss')
 #'   
-#' # myRegionalModel <- NSDM.Regional(nsdm_selvars,
+#' # myRegionalModel <- NSDM.Regional(mySelectedCovs,
 #' #				     algorithms = c("GBM", "RF", "GLM"), # Statistical models used in the ensemble
 #' #				     CV.nb.rep = 10, # Number of cross-validation replicates
 #' #				     CV.perc = 0.8, # Percentage of data used for each replicate

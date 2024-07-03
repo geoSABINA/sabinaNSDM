@@ -5,7 +5,7 @@
 #' @description This function selects the best 'non-colinear' environmental covariates for \bold{NSDM} based on specified criteria and algorithms.
 #'
 #'
-#' @param nsdm_finput An object of class \code{nsdm.finput} generated using the \code{\link{NSDM.FormatingData}} function.
+#' @param nsdm_finput An object of class \code{nsdm.finput} generated using the \code{\link{NSDM.FormattingData}} function.
 #' @param maxncov.Global (\emph{optional, default} \code{'nocorr'}) \cr
 #' Maximum \code{numeric} value indicating the maximum number of covariates to select at the global scale. If `"nocorr"`, selects all non-correlated covariates.
 #' @param maxncov.Regional (\emph{optional, default} \code{'nocorr'}) \cr
@@ -56,39 +56,45 @@
 #' # Load covariates
 #' data(expl.var.global, package = "sabinaNSDM")
 #' data(expl.var.regional, package = "sabinaNSDM")
-#' expl.var.global<-terra::unwrap(expl.var.global)
-#' expl.var.regional<-terra::unwrap(expl.var.regional)
+#' expl.var.global <- terra::unwrap(expl.var.global)
+#' expl.var.regional <- terra::unwrap(expl.var.regional)
 #'
 #' # Load new scenarios
 #' data(new.env, package = "sabinaNSDM")
-#' new.env<-terra::unwrap(new.env)
+#' new.env <- terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
-#'				spp.data.global = Fagus.sylvatica.xy.global,
-#'				spp.data.regional = Fagus.sylvatica.xy.regional,
-#'				expl.var.global = expl.var.global,
-#'				expl.var.regional = expl.var.regional,
-#'				new.env = new_env,
-#'				new.env.names = c("Scenario1"),
-#'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#' myInputData <- NSDM.InputData(
+#'   SpeciesName = "Fagus.sylvatica",
+#'   spp.data.global = Fagus.sylvatica.xy.global,
+#'   spp.data.regional = Fagus.sylvatica.xy.regional,
+#'   expl.var.global = expl.var.global,
+#'   expl.var.regional = expl.var.regional,
+#'   new.env = new.env,
+#'   new.env.names = c("Scenario1"),
+#'   Background.Global = NULL,
+#'   Background.Regional = NULL
+#' )
 #'
 #' # Format the input data
-#' myFormattedData <- NSDM.FormatingData(myInputData,
-#'					nPoints=1000)
+#' myFormattedData <- NSDM.FormattingData(
+#'   myInputData,
+#'   nPoints = 1000
+#' )
 #'
 #' # Select covariates using default parameters
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #' 
 #' ## Select covariates using custom parameters.
-#' # mySelectedCovs <- NSDM.SelectCovariates(nsdm_finput,
-#' #					maxncov.Global = 5, 	# Maximum number of global covariates
-#' #					maxncov.Regional = 7, 	# Maximum number of regional covariates
-#' #					corcut = 0.7, 		# Maximum number of regional covariates
-#' #					algorithms = c("glm","gam","rf"),  # Algorithms to use for selection
-#' #					ClimaticVariablesBands = c(2,3,5), # Bands to exclude in the analysis
-#' #					save.output = TRUE)  	# Save the output externally
+#' # mySelectedCovs <- NSDM.SelectCovariates(
+#' #   nsdm_finput,
+#' #   maxncov.Global = 5,     # Maximum number of global covariates
+#' #   maxncov.Regional = 7,   # Maximum number of regional covariates
+#' #   corcut = 0.7,           # Maximum number of regional covariates
+#' #   algorithms = c("glm","gam","rf"),  # Algorithms to use for selection
+#' #   ClimaticVariablesBands = c(2,3,5), # Bands to exclude in the analysis
+#' #   save.output = TRUE      # Save the output externally
+#' # )
 #'
 #'
 #' @export
@@ -101,7 +107,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
 				save.output=TRUE) {
 
   if(!inherits(nsdm_finput, "nsdm.finput")){
-      stop("nsdm_finput must be an object of nsdm.finput class. Consider running NSDM.FormatingData() function.")
+      stop("nsdm_finput must be an object of nsdm.finput class. Consider running NSDM.FormattingData() function.")
   }
   if(!is.null(ClimaticVariablesBands)) {if(!inherits(ClimaticVariablesBands, "numeric") & !inherits(ClimaticVariablesBands, "integer") ){
     stop("ClimaticVariablesBands must be either NULL or a vector indicating the regional environmental covariate bands to exclude from the selection at regional scale.")
