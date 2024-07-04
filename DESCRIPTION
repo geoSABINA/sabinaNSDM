@@ -17,6 +17,7 @@ Depends:
 Imports: 
     biomod2 (>= 4.2.5),
     randomForest, 
+    gam,
     covsel,
     ecospat (>= 4.0.0),
     fs (>= 1.6.3),
