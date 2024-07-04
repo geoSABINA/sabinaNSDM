@@ -199,7 +199,7 @@ NSDM.Multiply <- function(nsdm_global,
     eval.lines.rep <- which(rowSums(!calib.lines.rep) == ncol(calib.lines.rep))
 
     for(xx in metric.eval) {
-      stat <-bm_FindOptimStat(metric.eval = xx,
+      stat <-biomod2::bm_FindOptimStat(metric.eval = xx,
   			obs = myResp[-eval.lines.rep],
   			fit = pred_df[-eval.lines.rep])
       cross.validation <- rbind(cross.validation, stat)
