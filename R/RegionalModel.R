@@ -85,7 +85,6 @@
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(myInputData,
 #'					nPoints=1000)
-
 #' # Select covariates
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 #'

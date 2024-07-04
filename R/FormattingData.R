@@ -72,7 +72,8 @@
 #'				Background.Regional = NULL)
 #'
 #' # Format the input data using default parameters.
-#' myFormattedData <- NSDM.FormattingData(myInputData)
+#' myFormattedData <- NSDM.FormattingData(myInputData, 
+#'					nPoints = 1000)
 #' 
 #' ## Format the input data specifying custom parameters.
 #' # myFormattedData <- NSDM.FormattingData(nsdm_input, 
