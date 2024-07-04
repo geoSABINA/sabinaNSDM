@@ -146,7 +146,7 @@ NSDM.Multiply <- function(nsdm_global,
       res.average <-  terra::mean(Stack.rasters)
     }
 
-    res.average<-terra::rast(wrap(res.average))
+    res.average <- terra::rast(terra::wrap(res.average))
     if(projmodel =="Current") {
       sabina$current.projections$Pred <- setNames(res.average, paste0(SpeciesName, ".Current"))
     } else {
@@ -242,8 +242,8 @@ NSDM.Multiply <- function(nsdm_global,
     Threshold.TSS <- metric.means$cutoff[which(metric.means$metric.eval=="TSS")]
     Pred.bin.ROC <- terra::classify(res.average,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
     Pred.bin.TSS <- terra::classify(res.average,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
-    Pred.bin.ROC<-terra::rast(wrap(Pred.bin.ROC))
-    Pred.bin.TSS<-terra::rast(wrap(Pred.bin.TSS))
+    Pred.bin.ROC <- terra::rast(terra::wrap(Pred.bin.ROC))
+    Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
 
     if(projmodel =="Current") {
       sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))

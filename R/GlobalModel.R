@@ -234,7 +234,7 @@ NSDM.Global <- function(nsdm_selvars,
   # Load the model stored by biomod2 and save it in geotif format
   sp.name<-myBiomodData@sp.name
   Pred <- terra::unwrap(myBiomodEMProj@proj.out@val)
-  Pred<-terra::rast(wrap(Pred))
+  Pred<-terra::rast(terra::wrap(Pred))
 
   sabina$current.projections$Pred <- c(setNames(Pred, paste0(SpeciesName, ".Current")))
 
@@ -248,8 +248,8 @@ NSDM.Global <- function(nsdm_selvars,
   # Binary models
   Pred.bin.ROC <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_ROCbin.tif"))
   Pred.bin.TSS <- terra::rast(paste0(sp.name,"/proj_Current/proj_Current_",sp.name,"_ensemble_TSSbin.tif"))
-  Pred.bin.ROC<-terra::rast(wrap(Pred.bin.ROC))
-  Pred.bin.TSS<-terra::rast(wrap(Pred.bin.TSS))
+  Pred.bin.ROC <- terra::rast(terra::wrap(Pred.bin.ROC))
+  Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
 
   sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
   sabina$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS, paste0(SpeciesName,".Current.bin.TSS"))
@@ -319,7 +319,7 @@ NSDM.Global <- function(nsdm_selvars,
 					metric.filter = "all")
 
       Pred.Scenario <- terra::unwrap(myBiomodEMProjScenario@proj.out@val)
-      Pred.Scenario <- terra::rast(wrap(Pred.Scenario))
+      Pred.Scenario <- terra::rast(terra::wrap(Pred.Scenario))
 
       sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario, paste0(SpeciesName,".",Scenario.name))
 
@@ -333,8 +333,8 @@ NSDM.Global <- function(nsdm_selvars,
       # Binarized models
       Pred.bin.ROC.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_ROCbin.tif"))
       Pred.bin.TSS.Scenario <- terra::rast(paste0(sp.name,"/proj_",Scenario.name,"/proj_",Scenario.name,"_",sp.name,"_ensemble_TSSbin.tif"))
-      Pred.bin.ROC.Scenario<-terra::rast(wrap(Pred.bin.ROC.Scenario))
-      Pred.bin.TSS.Scenario<-terra::rast(wrap(Pred.bin.TSS.Scenario))
+      Pred.bin.ROC.Scenario<-terra::rast(terra::wrap(Pred.bin.ROC.Scenario))
+      Pred.bin.TSS.Scenario<-terra::rast(terra::wrap(Pred.bin.TSS.Scenario))
 
       sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
       sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS.Scenario, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
