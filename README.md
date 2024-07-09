@@ -79,18 +79,16 @@ First, set your working directory and load the required packages.
 
 ```{r eval = FALSE}
 # setwd("/path/to/your/project")
-# 
-# Required packages:
-# library(terra)
-# library(covsel)
-# library(biomod2)
-# library(ecospat)
-# library(fs)
-# library(sgsR)
 #
-# If the package is not installed, uncomment the line below to install it from GitHub
-# remotes::install_github("geoSABINA/sabinaNSDM")
-
+if (!requireNamespace("sabinaNSDM", quietly = TRUE)) {
+ library(terra)
+ library(covsel)
+ library(biomod2)
+ library(ecospat)
+ library(fs)
+ library(sgsR)
+remotes::install_github("geoSABINA/sabinaNSDM")
+}
 # Load the sabinaNSDM package
 library(sabinaNSDM)
 ```
