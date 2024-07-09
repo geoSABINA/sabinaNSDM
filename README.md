@@ -196,6 +196,7 @@ nsdm_regional <- NSDM.Regional(nsdm_selvars,
 ```{r eval = FALSE}
 nsdm_covariate <- NSDM.Covariate(nsdm_global,
                 algorithms = c("GAM","GBM", "RF", "MAXNET","GLM"),
+                rm.corr=TRUE,
                 CV.nb.rep = 10,
                 CV.perc = 0.8,
                 # metric.select.thresh = 0.8,
