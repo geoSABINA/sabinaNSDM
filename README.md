@@ -87,7 +87,8 @@ if (!requireNamespace("sabinaNSDM", quietly = TRUE)) {
  library(ecospat)
  library(fs)
  library(sgsR)
-remotes::install_github("geoSABINA/sabinaNSDM")
+ library(remotes)
+ remotes::install_github("geoSABINA/sabinaNSDM")
 }
 # Load the sabinaNSDM package
 library(sabinaNSDM)
