@@ -27,10 +27,10 @@
 
 The <strong>sabinaNSDM</strong> R package generates <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to address niche truncation and produce more reliable predictions than traditional non-hierarchical SDMs. <strong>sabinaNSDM</strong> combines two SDMs calibrated with species occurrences and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
 
-<strong>sabinaNSDM</strong> streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrences, covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). <strong>sabinaNSDM</strong> models use an ensemble modeling approach that combines multiple statistical techniques with the <strong>biomod2</strong> package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009), thinning of species occurrences with the <strong>ecospat</strong> package (*Ecography*, <https://doi.org/10.1111/ecog.02671.x>, Di Cola et al. 2017), and covariate selection of the <strong>covsel</strong>  package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
+<strong>sabinaNSDM</strong> streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrences and absences (if available), covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). <strong>sabinaNSDM</strong> models use an ensemble modeling approach that combines multiple statistical techniques with the <strong>biomod2</strong> package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009), thinning of species occurrences and absences with the <strong>ecospat</strong> package (*Ecography*, <https://doi.org/10.1111/ecog.02671.x>, Di Cola et al. 2017), and covariate selection of the <strong>covsel</strong>  package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
 
 
-### Citing SabinaNSDM package
+### Citing sabinaNSDM package
 
 A research paper detailing the package details and functions is under review, but until it is published, please reference the package as following:
 
@@ -59,7 +59,7 @@ remotes::install_github("geoSABINA/sabinaNSDM")
 | Overall Step            | Function          | Objective                                       |
 |-----------------|-------------------|:-----------------:|
 | Data preparation| NSDM.InputData    | Provides the package with the species occurrences and environmental covariates at both global and regional scales|
-|                 | NSDM.FormattingData| Background data generation and species occurrences thinning|
+|                 | NSDM.FormattingData| Background data generation and species occurrences (and absences if available) thinning|
 |                 | NSDM.SelectCovariates| Selects uncorrelated and the most relevant environmental covariates|
 |Single scale modeling | NSDM.Global| Calibrates, evaluates, and projects ensemble models at the global scale|
 |     | NSDM.Regional    | Calibrates, evaluates, and projects ensemble models at the regional scale    |
@@ -131,10 +131,12 @@ nsdm_input <- NSDM.InputData(SpeciesName = SpeciesName,
                     new.env = new.env,
                     new.env.names = "scenario1",
                     Background.Global = NULL, 
-                    Background.Regional = NULL)
+                    Background.Regional = NULL,
+		    Absences.Global = NULL,
+		    Absences.Regional = NULL)
 
 ```
-Format the data with the *NSDM.FormattingData()* function. This function generates random or stratified background points for model calibration when no specific background data was loaded in the *NSDM.InputData()* function. Additionally, it applies spatial thinning to species occurrences  to remove duplicates and enforce a minimum distance criterion (by default the resolution of the variables). 
+Format the data with the *NSDM.FormattingData()* function. This function generates random or stratified background points for model calibration when no specific background or true absence data was loaded in the *NSDM.InputData()* function. Additionally, it applies spatial thinning to species occurrences and absences (if available) to remove duplicates and enforce a minimum distance criterion (by default the resolution of the variables). 
  ```{r eval = FALSE}
 nsdm_finput <- NSDM.FormattingData(nsdm_input,
                 nPoints = 100, # number of background points

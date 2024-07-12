@@ -17,6 +17,10 @@
 #' An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at global level.
 #' @param Background.Regional (\emph{optional, default} \code{NULL}) \cr
 #' An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at regional level.
+#' @param Absences.Global (\emph{optional, default} \code{NULL}) \cr
+#' An optional \code{data.frame} with two columns, 'x' and 'y', representing absence points at global level.
+#' @param Absences.Regional (\emph{optional, default} \code{NULL}) \cr
+#' An optional \code{data.frame} with two columns, 'x' and 'y', representing absence points at regional level.
 #'
 #' @return An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
 #'
@@ -52,7 +56,9 @@
 #'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#'				Background.Regional = NULL,
+#'				Absences.Global = NULL,
+#'				Absences.Regional = NULL)
 #'
 #'
 #' @export
@@ -64,7 +70,9 @@ NSDM.InputData <- function(SpeciesName,
 				new.env = NULL,
 				new.env.names=NULL,
 				Background.Global = NULL,
-				Background.Regional = NULL) {
+				Background.Regional = NULL,
+				Absences.Global = NULL,
+				Absences.Regional = NULL) {
 
   if(!(is.data.frame(spp.data.global) &&
         ncol(spp.data.global) == 2 &&
@@ -88,6 +96,14 @@ NSDM.InputData <- function(SpeciesName,
     }
   }
 
+  if(!is.null(Absences.Global) && !is.null(Background.Global)) {
+    stop("Background and Absences cannot both be incorporated at the global level.")
+  }
+
+  if(!is.null(Absences.Regional) && !is.null(Background.Regional)) {
+    stop("Background and Absences cannot both be incorporated at the regional level.")
+  }
+
   if(!is.null(Background.Global) && !is.null(Background.Regional)) {
     if(!(is.data.frame(Background.Regional) &&
           ncol(Background.Global) == 2 &&
@@ -97,6 +113,20 @@ NSDM.InputData <- function(SpeciesName,
           all(c('x', 'y') %in% colnames(Background.Regional)))) {
       stop("Background.Global and Background.Regional must be data.frames with 'x' and 'y' columns.")
     }
+  }
+
+  if (!is.null(Absences.Global) && 
+    (!(is.data.frame(Absences.Global) &&
+          ncol(Absences.Global) == 2 &&
+          all(c('x', 'y') %in% colnames(Absences.Global))))) {
+      stop("Absences.Global must be a data.frame with 'x' and 'y' columns.")
+  }
+
+  if (!is.null(Absences.Regional) && 
+    (!(is.data.frame(Absences.Regional) &&
+          ncol(Absences.Regional) == 2 &&
+          all(c('x', 'y') %in% colnames(Absences.Regional))))) {
+      stop("Absences.Regional must be a data.frame with 'x' and 'y' columns.")
   }
 
   # Match variables?
@@ -147,16 +177,20 @@ NSDM.InputData <- function(SpeciesName,
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
 				nrow(spp.data.global),
-				ifelse(is.null(Background.Global), "NULL", nrow(Background.Global)),
+				ifelse(is.null(Background.Global), "NA", nrow(Background.Global)),
+                                ifelse(is.null(Absences.Global), "NA", nrow(Absences.Global)),
 				nrow(spp.data.regional),
-				ifelse(is.null(Background.Regional), "NULL", nrow(Background.Regional)),
+				ifelse(is.null(Background.Regional), "NA", nrow(Background.Regional)),
+                                ifelse(is.null(Absences.Regional), "NA", nrow(Absences.Regional)),
 				length(new.env)))
 
   rownames(summary) <- c("Species name",
                          "Original number of species occurrences at global level",
-			 "N background points at global level",
+			 "Number of background points at global level",
+			 "Number of absence points at global level",
                          "Original number of species occurrences at regional level",
-			 "N background points at regional level",
+			 "Number of background points at regional level",
+			 "Number of absence points at regional level",
                          "Number of new scenarios")
 
   #
@@ -169,6 +203,8 @@ NSDM.InputData <- function(SpeciesName,
     Scenarios = new.env,
     Background.Global.0 = Background.Global,
     Background.Regional.0 = Background.Regional,
+    Absences.Global = Absences.Global,
+    Absences.Regional = Absences.Regional,
     Summary = summary
   )
 

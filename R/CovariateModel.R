@@ -73,7 +73,9 @@
 #'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#'				Background.Regional = NULL,
+#'				Absences.Global = NULL,
+#'				Absences.Regional = NULL)
 #'
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(myInputData,
@@ -144,10 +146,17 @@ NSDM.Covariate <- function(nsdm_global,
   IndVar.Regional.temp <- terra::unwrap(nsdm_global$IndVar.Regional.Selected)  # Unwrap objects
   IndVar.Regional.Covariate <- c(IndVar.Regional.temp, SDM.global)
 
-  myResp.xy <- rbind(nsdm_global$SpeciesData.XY.Regional, nsdm_global$Background.XY.Regional)
-  names(myResp.xy)<-c("x","y")
-  row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-  myResp <- data.frame(c(rep(1,nrow(nsdm_global$SpeciesData.XY.Regional)),rep(NA,nrow(nsdm_global$Background.XY.Regional))))
+  if(!is.null(nsdm_global$Background.XY.Regional)) {
+    # Format the response (presence/background) and covariates data for BIOMOD2
+    myResp.xy <- rbind(nsdm_global$SpeciesData.XY.Regional,nsdm_global$Background.XY.Regional)
+    row.names(myResp.xy)<-c(1:nrow(myResp.xy))
+    myResp <- data.frame(c(rep(1,nrow(nsdm_global$SpeciesData.XY.Regional)),rep(NA,nrow(nsdm_global$Background.XY.Regional))))
+  } else {
+    # Format the response (presence/absence) and covariate data for BIOMOD2
+    myResp.xy <- rbind(nsdm_global$SpeciesData.XY.Regional, nsdm_global$Absences.XY.Regional)
+    row.names(myResp.xy) <- 1:nrow(myResp.xy)
+    myResp <- data.frame(c(rep(1, nrow(nsdm_global$SpeciesData.XY.Regional)), rep(0, nrow(nsdm_global$Absences.XY.Regional))))
+  }
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
   myExpl <- terra::extract(IndVar.Regional.Covariate, myResp.xy, as.df=TRUE)[, -1]
@@ -173,11 +182,11 @@ NSDM.Covariate <- function(nsdm_global,
   # Data required for the biomod2 package.
   myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
 					resp.xy = myResp.xy,
-					expl.var = myExpl, #@@@
+					expl.var = myExpl,
 					resp.name = SpeciesName,
-					PA.nb.rep = 1,
-					PA.nb.absences = nrow(nsdm_global$Background.XY.Regional),
-					PA.strategy = "random")
+					PA.nb.rep = ifelse(!is.null(nsdm_global$Absences.XY.Regional), 0, 1),
+					PA.nb.absences = ifelse(!is.null(nsdm_global$Absences.XY.Regional), 0, nrow(nsdm_global$Background.XY.Regional)),
+					PA.strategy = if(!is.null(nsdm_global$Absences.XY.Regional)) NULL else "random")
 
   # Calibrate and evaluate individual models with specified statistical algorithms.
   # Model training using BIOMOD_Modeling
@@ -318,7 +327,7 @@ NSDM.Covariate <- function(nsdm_global,
       SDM.global.future <- terra::unwrap(nsdm_global$new.projections$Pred.Scenario[[i]]) # Unwrap objects
       names(SDM.global.future) <- c("SDM.global")
       NewClim <- c(NewClim.temp, SDM.global.future)
-      NewClim<-NewClim[[which(names(NewClim) %in% colnames(myExpl))]] #@@@
+      NewClim<-NewClim[[which(names(NewClim) %in% colnames(myExpl))]]
 
       myBiomomodProjScenario <- biomod2::BIOMOD_Projection(bm.mod = myBiomodModelOut,
 						new.env = NewClim,

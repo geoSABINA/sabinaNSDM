@@ -28,6 +28,8 @@
 #' - `$SpeciesData.XY.Regional` Species occurrences at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
 #' - `$Background.XY.Regional` Background data at the regional level at \code{data.frame} format.
+#' - `$Absences.XY.Global` Absence data at the global level at \code{data.frame} format.
+#' - `$Absences.XY.Regional` Absence data at the regional level at \code{data.frame} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$Selected.Variables.Global` A \code{character} vector specifying the names of the selected covariates at the global scale.
 #' - `$IndVar.Global.Selected` Selected covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
@@ -80,7 +82,9 @@
 #'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#'				Background.Regional = NULL,
+#'				Absences.Global = NULL,
+#'				Absences.Regional = NULL)
 #'
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(myInputData,
@@ -149,10 +153,17 @@ NSDM.Regional <- function(nsdm_selvars,
   }else {Scenarios <-NULL}
 
   # Regional model calibrated with all the covariates
-  # Format the response (presence/background) and covariates data for BIOMOD2
-  myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Regional ,nsdm_selvars$Background.XY.Regional)
-  row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-  myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Regional)),rep(NA,nrow(nsdm_selvars$Background.XY.Regional ))))
+  if(!is.null(nsdm_selvars$Background.XY.Regional)) {
+    # Format the response (presence/background) and covariates data for BIOMOD2
+    myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Regional,nsdm_selvars$Background.XY.Regional)
+    row.names(myResp.xy)<-c(1:nrow(myResp.xy))
+    myResp <- data.frame(c(rep(1,nrow(nsdm_selvars$SpeciesData.XY.Regional)),rep(NA,nrow(nsdm_selvars$Background.XY.Regional ))))
+  } else {
+    # Format the response (presence/absence) and covariate data for BIOMOD2
+    myResp.xy <- rbind(nsdm_selvars$SpeciesData.XY.Regional, nsdm_selvars$Absences.XY.Regional)
+    row.names(myResp.xy) <- 1:nrow(myResp.xy)
+    myResp <- data.frame(c(rep(1, nrow(nsdm_selvars$SpeciesData.XY.Regional)), rep(0, nrow(nsdm_selvars$Absences.XY.Regional))))
+  }
   names(myResp)<-"pa"
   row.names(myResp)<-c(1:nrow(myResp.xy))
   myExpl <- terra::extract(IndVar.Regional.Selected , myResp.xy, as.df=TRUE)[, -1]
@@ -162,9 +173,9 @@ NSDM.Regional <- function(nsdm_selvars,
                                            resp.xy = myResp.xy,
                                            expl.var = myExpl,
                                            resp.name = SpeciesName,
-                                           PA.nb.rep = 1,
-                                           PA.nb.absences = nrow(nsdm_selvars$Background.XY.Regional),
-                                           PA.strategy = "random")
+                                           PA.nb.rep = ifelse(!is.null(nsdm_selvars$Absences.XY.Regional), 0, 1),
+                                           PA.nb.absences = ifelse(!is.null(nsdm_selvars$Absences.XY.Regional), 0, nrow(nsdm_selvars$Background.XY.Regional)),
+                                           PA.strategy = if(!is.null(nsdm_selvars$Absences.XY.Regional)) NULL else "random")
 
   # Calibrate and evaluate individual models with specified statistical algorithms
   myBiomodModelOut <- biomod2::BIOMOD_Modeling(bm.format = myBiomodData,

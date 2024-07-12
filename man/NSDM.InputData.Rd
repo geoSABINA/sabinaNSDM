@@ -13,7 +13,9 @@ NSDM.InputData(
   new.env = NULL,
   new.env.names = NULL,
   Background.Global = NULL,
-  Background.Regional = NULL
+  Background.Regional = NULL,
+  Absences.Global = NULL,
+  Absences.Regional = NULL
 )
 }
 \arguments{
@@ -38,6 +40,12 @@ An optional \code{data.frame} with two columns, 'x' and 'y', representing backgr
 
 \item{Background.Regional}{(\emph{optional, default} \code{NULL}) \cr
 An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at regional level.}
+
+\item{Absences.Global}{(\emph{optional, default} \code{NULL}) \cr
+An optional \code{data.frame} with two columns, 'x' and 'y', representing absence points at global level.}
+
+\item{Absences.Regional}{(\emph{optional, default} \code{NULL}) \cr
+An optional \code{data.frame} with two columns, 'x' and 'y', representing absence points at regional level.}
 }
 \value{
 An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
@@ -77,7 +85,9 @@ myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 			new.env = new.env,
 			new.env.names = c("Scenario1"),
 			Background.Global = NULL,
-			Background.Regional = NULL)
+			Background.Regional = NULL,
+			Absences.Global = NULL,
+			Absences.Regional = NULL)
 
 
 }
