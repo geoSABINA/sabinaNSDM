@@ -95,7 +95,9 @@ myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 			new.env = new.env,
 			new.env.names = c("Scenario1"),
 			Background.Global = NULL,
-			Background.Regional = NULL)
+			Background.Regional = NULL,
+			Absences.Global = NULL,
+			Absences.Regional = NULL)
 
 # Format the input data
 myFormattedData <- NSDM.FormattingData(myInputData,

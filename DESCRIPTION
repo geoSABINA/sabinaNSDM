@@ -18,8 +18,8 @@ Imports:
     biomod2 (>= 4.2.5),
     randomForest, 
     gam,
-    covsel,
     ecospat (>= 4.0.0),
     fs (>= 1.6.3),
     terra (>= 1.7-55),
     sgsR (>= 1.4.4)
+Remotes: N-SDM/covsel

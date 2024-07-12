@@ -56,7 +56,9 @@
 #'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#'				Background.Regional = NULL,
+#'				Absences.Global = NULL,
+#'				Absences.Regional = NULL)
 #'
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(myInputData,
@@ -162,8 +164,15 @@ NSDM.Multiply <- function(nsdm_global,
 
 
   ## Evaluation multiply model
-  myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Background.XY.Regional)
-  myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_regional$Background.XY.Regional))))
+  if(!is.null(nsdm_regional$Background.XY.Regional)) {
+    # Format the response (presence/background) and covariates data for BIOMOD2
+    myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Background.XY.Regional)
+    myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_regional$Background.XY.Regional))))
+  } else {
+    # Format the response (presence/absence) and covariate data for BIOMOD2
+    myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Absences.XY.Regional)
+    myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)), rep(0,nrow(nsdm_regional$Absences.XY.Regional))))
+  }
   pred_df <- sabina$current.projections$Pred
   pred_df <- terra::extract(pred_df, myResp.xy)[-1]
   myExpl <- pred_df
@@ -171,13 +180,13 @@ NSDM.Multiply <- function(nsdm_global,
   pred_df <- as.vector(pred_df)[[1]]
 
   myRespNA <- replace(myResp, myResp == 0, NA)
-  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myRespNA,
+  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = if(!is.null(nsdm_regional$Background.XY.Regional)) myRespNA else myResp,
 	                                     resp.xy = myResp.xy,
 	                                     expl.var = myExpl,
 	                                     resp.name = SpeciesName,
-	                                     PA.nb.rep = 1,
-	                                     PA.nb.absences = nrow(nsdm_regional$Background.XY.Regional),
-	                                     PA.strategy = "random")
+	                                     PA.nb.rep = ifelse(!is.null(nsdm_regional$Absences.XY.Regional), 0, 1),
+	                                     PA.nb.absences = ifelse(!is.null(nsdm_regional$Absences.XY.Regional), 0, nrow(nsdm_regional$Background.XY.Regional)),
+	                                     PA.strategy =if(!is.null(nsdm_regional$Absences.XY.Regional)) NULL else "random")
 
   calib.lines <- biomod2::bm_CrossValidation(bm.format = myBiomodData,
                                     strategy = "random",

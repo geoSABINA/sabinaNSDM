@@ -13,7 +13,7 @@
 #' @param Min.Dist.Regional (\emph{optional, default} \code{'resolution'}) \cr
 #' A \code{numeric} corresponding to the minimum distance between species occurrences at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}.
 #' @param Background.method  (\emph{optional, default} \code{'random'}) \cr
-#' If no background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}. The "random" (the default) option generates random background points considering the extension of the input environmental covariates at the global and the regional scales provided in \code{nsdm_input}. The "stratified" method is based on a PCA analysis from all environmental covariates, where the two principal component values are divided into quartiles, and multiplied to generate a total stratified variable of 16 categories (stratum). Then, the background points are generated randomly according to the area occupied by each stratum.
+#' If no absence or background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}. The "random" (the default) option generates random background points considering the extension of the input environmental covariates at the global and the regional scales provided in \code{nsdm_input}. The "stratified" method is based on a PCA analysis from all environmental covariates, where the two principal component values are divided into quartiles, and multiplied to generate a total stratified variable of 16 categories (stratum). Then, the background points are generated randomly according to the area occupied by each stratum.
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved locally.
 #'
@@ -26,6 +26,8 @@
 #' - `$SpeciesData.XY.Regional` Species occurrences at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$Background.XY.Global` Background data at the global level at \code{data.frame} format.
 #' - `$Background.XY.Regional` Background data at the regional level at \code{data.frame} format.
+#' - `$Absences.XY.Global` Absence data at the global level at \code{data.frame} format after applying spatial thinning.
+#' - `$Absences.XY.Regional` Absence data at the regional level at \code{data.frame} format after applying spatial thinning.
 #' - `$IndVar.Global` Covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$IndVar.Regional` Covariates at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$Scenarios` A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
@@ -33,11 +35,11 @@
 #'
 #'
 #' @details
-#' This function formats the input data for \bold{NSDM}, including generating background points, cleaning and thinning of occurrences data, and saving the results to local if specified. If `save.output=TRUE`, outputs (i.e., species occurrences after applying spatial thinning and background points, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
+#' This function formats the input data for \bold{NSDM}, including generating background points, cleaning and thinning of occurrences data (and absence data if available), and saving the results to local if specified. If `save.output=TRUE`, outputs (i.e., species occurrences after applying spatial thinning and background/absences points, at both global and regional level, are stored out of R in the \emph{Results/} folder created in the current working directory:
 #' - the \emph{Results/Global/SpeciesXY/} folder, containing the occurrences data (x and y coordinates) at the global scale after applying spatial thinning, named with the \code{Species.Name} argument.
-#' - the \emph{Results/Global/Background/} folder, containing the background points (x and y coordinates) at the global scale.
+#' - the \emph{Results/Global/AbsencesXY/} folder, containing the background points (x and y coordinates) at the global scale.
 #' - the \emph{Results/Regional/SpeciesXY/} folder, containing the occurrences data (x and y coordinates) at the regional scale, named with the \code{Species.Name} argument.
-#' - the \emph{Results/Regional/Background/} folder, containing the background points (x and y coordinates) at the global scale.
+#' - the \emph{Results/Regional/AbsencesXY/} folder, containing the absences after applying spatial thinning or background points (x and y coordinates) at the global scale.
 #'
 #'
 #' @seealso \code{\link{NSDM.InputData}}
@@ -69,18 +71,20 @@
 #'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#'				Background.Regional = NULL,
+#'				Absences.Global = NULL,
+#'				Absences.Regional = NULL)
 #'
 #' # Format the input data using default parameters.
 #' myFormattedData <- NSDM.FormattingData(myInputData)
 #' 
 #' ## Format the input data specifying custom parameters.
 #' # myFormattedData <- NSDM.FormattingData(nsdm_input, 
-#' #				      nPoints = 1000, # Number of background points to generate
-#' #				      Min.Dist.Global = "resolution", # Minimum distance between points at the global scale, based on raster resolution
-#' #				      Min.Dist.Regional = "resolution",# Minimum distance between points at the regional scale, based on raster resolution
-#' #				      Background.method="random",  # Method used to generate background points, here set to 'random'
-#' #				      save.output = TRUE)  	# save the formatted data externally
+#' #				nPoints = 1000, # Number of background points to generate
+#' #				Min.Dist.Global = "resolution", # Minimum distance between points at the global scale, based on raster resolution
+#' #				Min.Dist.Regional = "resolution",# Minimum distance between points at the regional scale, based on raster resolution
+#' #				Background.method="random",  # Method used to generate background points, here set to 'random'
+#' #				save.output = TRUE)  	# save the formatted data externally
 #' 
 #'
 #' @export
@@ -115,11 +119,11 @@ NSDM.FormattingData <- function(nsdm_input,
 		"Results/Global/",
 		"Results/Global/SpeciesXY/",
 		"Results/Global/Values/",
-		"Results/Global/Background/"))
+		"Results/Global/AbsencesXY/"))
     fs::dir_create(c("Results/Regional/",
 		"Results/Regional/SpeciesXY/",
 		"Results/Regional/Values/",
-		"Results/Regional/Background/"))
+		"Results/Regional/AbsencesXY/"))
   }
 
   # Unwrap objects
@@ -136,27 +140,37 @@ NSDM.FormattingData <- function(nsdm_input,
   IndVar.Global <- terra::mask(IndVar.Global, Mask.Global)
 
   # Generate random background points for model calibration
-  if(is.null(nsdm_input$Background.Global.0) && Background.method == "random") {
-    Valid.Cells.Global <- which(!is.na(terra::values(Mask.Global)))
-    if(length(Valid.Cells.Global) < nPoints) {
-      stop(paste("The requested number of background nPoints exceeds the number of available cells.
-	Maximum number of background points at global level:",length(Valid.Cells.Global)))
+  if(is.null(nsdm_input$Absences.Global)) {
+    if(is.null(nsdm_input$Background.Global.0) && Background.method == "random") {
+      Valid.Cells.Global <- which(!is.na(terra::values(Mask.Global)))
+      if(length(Valid.Cells.Global) < nPoints) {
+        stop(paste("The requested number of background nPoints exceeds the number of available cells.
+    	  Maximum number of background points at global level:",length(Valid.Cells.Global)))
+      }
+      Sampled.indices.Global <- sample(Valid.Cells.Global, nPoints)
+      Coords.Global <- terra::xyFromCell(Mask.Global, Sampled.indices.Global)
+      Background.XY.Global <- as.data.frame(Coords.Global)
+    } else if(is.null(nsdm_input$Background.Global.0) && Background.method == "stratified") {
+      Background.XY.Global <- background_stratified(IndVar.Global, nPoints=nPoints)
+    } else {
+      #remove NAs and duplicates of Background.Global.0
+      XY.Global <- terra::extract(Mask.Global, nsdm_input$Background.Global.0)
+      XY.Global <- cbind(XY.Global, nsdm_input$Background.Global.0)
+      XY.Global <- na.omit(XY.Global)[, -c(1:2)]
+      Background.XY.Global <- unique(XY.Global)
     }
-    Sampled.indices.Global <- sample(Valid.Cells.Global, nPoints)
-    Coords.Global <- terra::xyFromCell(Mask.Global, Sampled.indices.Global)
-    Background.XY.Global <- as.data.frame(Coords.Global)
-  } else if(is.null(nsdm_input$Background.Global.0) && Background.method == "stratified") {
-    Background.XY.Global <- background_stratified(IndVar.Global, nPoints=nPoints)
-  } else {
-    #remove NAs and duplicates of Background.Global.0
-    XY.Global <- terra::extract(Mask.Global, nsdm_input$Background.Global.0)
-    XY.Global <- cbind(XY.Global, nsdm_input$Background.Global.0)
-    XY.Global <- na.omit(XY.Global)[, -c(1:2)]
-    Background.XY.Global <- unique(XY.Global)
-  }
 
-  if(save.output){
-    write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
+    if(save.output){
+      write.csv(Background.XY.Global,  paste0("Results/Global/AbsencesXY/",SpeciesName,"_Background.csv"))
+    }
+  } # end if is.null Absences.Global
+
+  # remove NAs and duplicates of Absences.Global
+  if(!is.null(nsdm_input$Absences.Global)) {
+    XY.Global <- terra::extract(Mask.Global, nsdm_input$Absences.Global)
+    XY.Global <- cbind(XY.Global, nsdm_input$Absences.Global)
+    XY.Global <- na.omit(XY.Global)[, -c(1:2)]
+    Absences.XY.Global <- unique(XY.Global)
   }
 
   # Load species data at global scale
@@ -189,16 +203,47 @@ NSDM.FormattingData <- function(nsdm_input,
   write.csv(XY.final.Global, paste0("Results/Global/SpeciesXY/",SpeciesName,".csv"))
   }
 
+  # Spatial thinning of true absence data
+  if(!is.null(nsdm_input$Absences.Global)) {
+    if(Min.Dist.Global=="resolution") {
+    Min.Dist.Global<-terra::res(Mask.Global)[1]
+    }
+    invisible(capture.output({
+      tryCatch({
+        Absences.XY.final.Global <- ecospat::ecospat.occ.desaggregation(Absences.XY.Global, min.dist = Min.Dist.Global, by = NULL)
+      }, error = function(e) {
+        # If an error occurs, run the alternative block
+        Absences.XY.Global <- unique(Absences.XY.Global)
+        Absences.XY.Global <- round(Absences.XY.Global, digits = 4)
+        Absences.XY.final.Global <- ecospat::ecospat.occ.desaggregation(Absences.XY.Global, min.dist = Min.Dist.Global, by = NULL)
+      })
+    }))
+    message(paste0("Global absence data (",SpeciesName,"): from ", nrow(Absences.XY.Global), " to ", nrow(Absences.XY.final.Global), " absence points after cleaning and thinning.\n"))
+
+    # Save filtered absences data for each species
+    if(save.output){
+    write.csv(Absences.XY.final.Global, paste0("Results/Global/AbsencesXY/",SpeciesName, "_TrueAbsences.csv"))
+    }
+  } # end if is null Absences
+
   # Summary global
   summary <- data.frame(Values = c(SpeciesName,
 				nrow(SpeciesData.XY.Global),
 				nrow(XY.final.Global),
-				ifelse(is.null(nsdm_input$Background.Global.0), nPoints, nrow(nsdm_input$Background.Global.0))))
+                                ifelse(is.null(nsdm_input$Absences.Global), 
+                                  ifelse(is.null(nsdm_input$Background.Global.0), 
+                                            nPoints, 
+                                            nrow(nsdm_input$Background.Global.0)), 
+                                  "NA"),
+				ifelse(is.null(nsdm_input$Absences.Global), "NA", nrow(Absences.XY.Global)),
+                                ifelse(is.null(nsdm_input$Absences.Global), "NA", nrow(Absences.XY.final.Global))))
 
   rownames(summary) <- c("Species name",
 			"Original number of species occurrences at global level",
 			"Final number of species occurrences at global level",
-			"Number of background points at global level")
+			"Number of background points at global level",
+			"Original number of absence points at global level",
+			"Final number of absence points at global level")
 
 
   # REGIONAL SCALE
@@ -209,27 +254,37 @@ NSDM.FormattingData <- function(nsdm_input,
   IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
 
   # Generate random background points for model calibration
-  if(is.null(nsdm_input$Background.Regional.0) && Background.method == "random") {
-    Valid.Cells.Regional <- which(!is.na(terra::values(Mask.Regional)))
-    if(length(Valid.Cells.Regional) < nPoints) {
-      stop(paste("The requested number of background nPoints exceeds the number of available cells.
-	Maximum number of background points at regional level:",length(Valid.Cells.Regional)))
+  if(is.null(nsdm_input$Absences.Regional)) {
+    if(is.null(nsdm_input$Background.Regional.0) && Background.method == "random") {
+      Valid.Cells.Regional <- which(!is.na(terra::values(Mask.Regional)))
+      if(length(Valid.Cells.Regional) < nPoints) {
+        stop(paste("The requested number of background nPoints exceeds the number of available cells.
+	  Maximum number of background points at regional level:",length(Valid.Cells.Regional)))
+      }
+      Sampled.indices.Regional <- sample(Valid.Cells.Regional, nPoints)
+      Coords.Regional <- terra::xyFromCell(Mask.Regional, Sampled.indices.Regional)
+      Background.XY.Regional <- as.data.frame(Coords.Regional)
+    } else if(is.null(nsdm_input$Background.regional.0) && Background.method == "stratified") {
+      Background.XY.Regional <- background_stratified(IndVar.Regional, nPoints=nPoints)
+    } else {
+      #remove NAs and duplicates
+      XY.Regional <- terra::extract(Mask.Regional, nsdm_input$Background.Regional.0)
+      XY.Regional <- cbind(XY.Regional, nsdm_input$Background.Regional.0)
+      XY.Regional <- na.omit(XY.Regional)[, -c(1:2)]
+      Background.XY.Regional <- unique(XY.Regional)
     }
-    Sampled.indices.Regional <- sample(Valid.Cells.Regional, nPoints)
-    Coords.Regional <- terra::xyFromCell(Mask.Regional, Sampled.indices.Regional)
-    Background.XY.Regional <- as.data.frame(Coords.Regional)
-  } else if(is.null(nsdm_input$Background.regional.0) && Background.method == "stratified") {
-    Background.XY.Regional <- background_stratified(IndVar.Regional, nPoints=nPoints)
-  } else {
-    #remove NAs and duplicates
-    XY.Regional <- terra::extract(Mask.Regional, nsdm_input$Background.Regional.0)
-    XY.Regional <- cbind(XY.Regional, nsdm_input$Background.Regional.0)
-    XY.Regional <- na.omit(XY.Regional)[, -c(1:2)]
-    Background.XY.Regional <- unique(XY.Regional)
-  }
 
-  if(save.output){
-    write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
+    if(save.output){
+    write.csv(Background.XY.Regional,  paste0("Results/Regional/AbsencesXY/",SpeciesName,"_Background.csv"))
+    }
+  } # end if is.null Absences.Regional
+
+  # remove NAs and duplicates of Absences.Regional
+  if(!is.null(nsdm_input$Absences.Regional)) {
+    XY.Regional <- terra::extract(Mask.Regional, nsdm_input$Absences.Regional)
+    XY.Regional <- cbind(XY.Regional, nsdm_input$Absences.Regional)
+    XY.Regional <- na.omit(XY.Regional)[, -c(1:2)]
+    Absences.XY.Regional <- unique(XY.Regional)
   }
 
   # Load species ocurrence data at regional scale
@@ -262,14 +317,46 @@ NSDM.FormattingData <- function(nsdm_input,
   write.csv(XY.final.Regional, paste0("Results/Regional/SpeciesXY/", SpeciesName, ".csv"))
   }
 
+# Spatial thinning of true absence data
+  if(!is.null(nsdm_input$Absences.Regional)) {
+
+    if(Min.Dist.Regional=="resolution") {
+    Min.Dist.Regional<-terra::res(Mask.Regional)[1]
+    }
+    invisible(capture.output({
+      tryCatch({
+        Absences.XY.final.Regional <- ecospat::ecospat.occ.desaggregation(Absences.XY.Regional, min.dist = Min.Dist.Regional, by = NULL)
+      }, error = function(e) {
+        # If an error occurs, run the alternative block
+        Absences.XY.Regional <- unique(Absences.XY.Regional)
+        Absences.XY.Regional <- round(Absences.XY.Regional, digits = 4)
+        Absences.XY.final.Regional <- ecospat::ecospat.occ.desaggregation(Absences.XY.Regional, min.dist = Min.Dist.Regional, by = NULL)
+      })
+    }))
+    message(paste0("Regional absence data (",SpeciesName,"): from ", nrow(Absences.XY.Regional), " to ", nrow(Absences.XY.final.Regional), " absence points after cleaning and thinning.\n"))
+
+    # Save filtered absences data for each species
+    if(save.output){
+    write.csv(Absences.XY.final.Regional, paste0("Results/Regional/AbsencesXY/", SpeciesName, "_TrueAbsences.csv"))
+    }
+  } # end is.null Absences
+
   # Summary regional
   summary_regional <- data.frame(Values = c(nrow(SpeciesData.XY.Regional),
 				nrow(XY.final.Regional),
-				ifelse(is.null(nsdm_input$Background.Regional.0), nPoints, nrows(nsdm_input$Background.Regional.0))))
+                                ifelse(is.null(nsdm_input$Absences.Regional), 
+                                  ifelse(is.null(nsdm_input$Background.Regional.0), 
+                                            nPoints, 
+                                            nrow(nsdm_input$Background.Regional.0)), 
+                                  "NA"),
+				ifelse(is.null(nsdm_input$Absences.Regional), "NA", nrow(Absences.XY.Regional)),
+                                ifelse(is.null(nsdm_input$Absences.Regional), "NA", nrow(Absences.XY.final.Regional))))
 
   rownames(summary_regional) <- c("Original number of species occurrences at regional level",
 			"Final number of species ocurrences at regional level",
-			"Number of background points at regional level")
+			"Number of background points at regional level",
+			"Original number of absence points at regional level",
+			"Final number of absence points at regional level")
 
   summary <- rbind(summary, summary_regional)
 
@@ -283,8 +370,26 @@ NSDM.FormattingData <- function(nsdm_input,
 
   sabina$SpeciesData.XY.Global <- XY.final.Global
   sabina$SpeciesData.XY.Regional <- XY.final.Regional
-  sabina$Background.XY.Global <- Background.XY.Global
-  sabina$Background.XY.Regional <- Background.XY.Regional
+  if(exists("Background.XY.Global")) {
+    sabina$Background.XY.Global <- Background.XY.Global
+  } else {
+    sabina$Background.XY.Global <- NULL
+  }
+  if(exists("Background.XY.Regional")) {
+    sabina$Background.XY.Regional <- Background.XY.Regional
+  } else {
+    sabina$Background.XY.Regional <- NULL
+  }
+  if(exists("Absences.XY.Global")) {
+    sabina$Absences.XY.Global <- Absences.XY.final.Global
+  } else {
+    sabina$Absences.XY.Global <- NULL
+  }
+  if(exists("Absences.XY.Regional")) {
+    sabina$Absences.XY.Regional <- Absences.XY.final.Regional
+  } else {
+    sabina$Absences.XY.Regional <- NULL
+  }
   sabina$IndVar.Global <- IndVar.Global
   sabina$IndVar.Regional <- IndVar.Regional
   sabina$Scenarios <- nsdm_input$Scenarios
@@ -296,10 +401,28 @@ NSDM.FormattingData <- function(nsdm_input,
   if(save.output) {
     message("Results saved in the following local folder/s:")
     message(paste0(
-	" - Global background points: /Results/Global/Background/Background.csv\n",
-	" - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
-	" - Regional background points: /Results/Regional/Background/Background.csv\n",
-	" - Regional species occurrences: /Results/Regional/SpeciesXY/", SpeciesName, ".csv\n"
+      if(exists("Background.XY.Global")) {
+        paste0(" - Global background points: /Results/Global/AbsecesXY/", SpeciesName, "_Background.csv\n")
+      } else {
+        ""
+      },
+      " - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
+      if(exists("Absences.XY.Global")) {
+        paste0(" - Global true absence points: /Results/Global/AbsecesXY/", SpeciesName, "_TrueAbsences.csv\n")
+      } else {
+        ""
+      },
+      if(exists("Background.XY.Regional")) {
+        paste0(" - Regional background points: /Results/Regional/AbsencesXY/", SpeciesName, "_Background.csv\n")
+      } else {
+        ""
+      },
+      " - Regional species occurrences: /Results/Regional/SpeciesXY/", SpeciesName, ".csv\n",
+      if(exists("Absences.XY.Regional")) {
+        paste0(" - Regional true absence points: /Results/Regional/AbsecesXY/", SpeciesName, "_TrueAbsences.csv\n")
+      } else {
+        ""
+      }
     ))
   }
 

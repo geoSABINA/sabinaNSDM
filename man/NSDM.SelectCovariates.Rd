@@ -44,6 +44,8 @@ An object of class \code{nsdm.vinput} containing selected covariates for \bold{N
 \item \verb{$SpeciesData.XY.Regional} Species occurrences at the regional level at \code{data.frame} format after applying spatial thinning.
 \item \verb{$Background.XY.Global} Background data at the global level at \code{data.frame} format.
 \item \verb{$Background.XY.Regional} Background data at the regional level at \code{data.frame} format.
+\item \verb{$Absences.XY.Global} Absence data at the global level at \code{data.frame} format.
+\item \verb{$Absences.XY.Regional} Absence data at the regional level at \code{data.frame} format.
 \item \verb{$Scenarios} A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
 \item \verb{$Selected.Variables.Global} A \code{character} vector specifying the names of the selected covariates at the global scale.
 \item \verb{$IndVar.Global.Selected} Selected covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
@@ -92,6 +94,8 @@ myInputData <- NSDM.InputData(
   new.env.names = c("Scenario1"),
   Background.Global = NULL,
   Background.Regional = NULL
+  Absences.Global = NULL,
+  Absences.Regional = NULL
 )
 
 # Format the input data
