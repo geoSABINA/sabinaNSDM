@@ -129,7 +129,7 @@ NSDM.Global <- function(nsdm_selvars,
                           names(mod_call))
   sabina <- do.call(general_nsdm_model, mod_call)
   attr(sabina, "class") <- "nsdm.predict.g"
-  class(sabina) <- c("nsdm.predict.r", "nsdm.predict")
+  class(sabina) <- c("nsdm.predict.g", "nsdm.predict")
 
   return(sabina)
 

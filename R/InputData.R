@@ -56,15 +56,15 @@
 #'
 #'
 #' @export
-NSDM.InputData_new <- function(SpeciesName,
-                               spp.data.global,
-                               spp.data.regional,
-                               expl.var.global,
-                               expl.var.regional,
-                               new.env = NULL,
-                               new.env.names=NULL,
-                               Background.Global = NULL,
-                               Background.Regional = NULL) {
+NSDM.InputData <- function(SpeciesName,
+                           spp.data.global,
+                           spp.data.regional,
+                           expl.var.global,
+                           expl.var.regional,
+                           new.env = NULL,
+                           new.env.names=NULL,
+                           Background.Global = NULL,
+                           Background.Regional = NULL) {
 
   if(!(is.coord.df(spp.data.global)) ||
        !(is.coord.df(spp.data.regional))) {
