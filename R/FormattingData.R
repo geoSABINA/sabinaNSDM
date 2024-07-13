@@ -85,11 +85,11 @@
 #'
 #' @export
 NSDM.FormattingData <- function(nsdm_input,
-				nPoints=10000,
-				Min.Dist.Global="resolution",
-				Min.Dist.Regional="resolution",
-				Background.method="random",
-				save.output=TRUE) {
+                                nPoints=10000,
+                                Min.Dist.Global="resolution",
+                                Min.Dist.Regional="resolution",
+                                Background.method="random",
+                                save.output=TRUE) {
 
   if(!inherits(nsdm_input, "nsdm.input")){
       stop("nsdm_input must be an object of nsdm.input class. Consider running NSDM.InputData() function")
@@ -111,186 +111,39 @@ NSDM.FormattingData <- function(nsdm_input,
 
   # Create directories
   if(save.output){
-    fs::dir_create(c("Results/",
-		"Results/Global/",
-		"Results/Global/SpeciesXY/",
+    fs::dir_create(c("Results/Global/SpeciesXY/",
 		"Results/Global/Values/",
-		"Results/Global/Background/"))
-    fs::dir_create(c("Results/Regional/",
-		"Results/Regional/SpeciesXY/",
+		"Results/Global/Background/"), recurse = TRUE)
+    fs::dir_create(c("Results/Regional/SpeciesXY/",
 		"Results/Regional/Values/",
-		"Results/Regional/Background/"))
+		"Results/Regional/Background/"), recurse = TRUE)
   }
 
-  # Unwrap objects
-  IndVar.Global <- terra::unwrap(nsdm_input$IndVar.Global)
-  IndVar.Regional <- terra::unwrap(nsdm_input$IndVar.Regional)
+  format_global <- gen_background_pts(nsdm_input, "Global",
+                                      Background.method, nPoints, Min.Dist.Global,
+                                      save.output)
+  format_regional <- gen_background_pts(nsdm_input, "Regional",
+                                        Background.method, nPoints, Min.Dist.Regional,
+                                        save.output)
 
-  # GLOBAL SCALE
-  # Generate random background points for model calibration
-  # from Global covariates (environmental layers)
+  main_summary <- rbind(format_global$Summary,
+                        format_regional$Summary[-1, , drop = FALSE])
 
-  # Global covariates (environmental layers)
-  IndVar.Global <- IndVar.Global[[names(IndVar.Global)]]
-  Mask.Global <- prod(IndVar.Global, 1)
-  IndVar.Global <- terra::mask(IndVar.Global, Mask.Global)
+  summary_new <- data.frame(Values = c(length(nsdm_input$Scenarios)))
+  rownames(summary_new) <- c("Number of new scenarios")
+  main_summary <- rbind(main_summary, summary_new)
 
-  # Generate random background points for model calibration
-  if(is.null(nsdm_input$Background.Global.0) && Background.method == "random") {
-    Valid.Cells.Global <- which(!is.na(terra::values(Mask.Global)))
-    if(length(Valid.Cells.Global) < nPoints) {
-      stop(paste("The requested number of background nPoints exceeds the number of available cells.
-	Maximum number of background points at global level:",length(Valid.Cells.Global)))
-    }
-    Sampled.indices.Global <- sample(Valid.Cells.Global, nPoints)
-    Coords.Global <- terra::xyFromCell(Mask.Global, Sampled.indices.Global)
-    Background.XY.Global <- as.data.frame(Coords.Global)
-  } else if(is.null(nsdm_input$Background.Global.0) && Background.method == "stratified") {
-    Background.XY.Global <- background_stratified(IndVar.Global, nPoints=nPoints)
-  } else {
-    #remove NAs and duplicates of Background.Global.0
-    XY.Global <- terra::extract(Mask.Global, nsdm_input$Background.Global.0)
-    XY.Global <- cbind(XY.Global, nsdm_input$Background.Global.0)
-    XY.Global <- na.omit(XY.Global)[, -c(1:2)]
-    Background.XY.Global <- unique(XY.Global)
-  }
-
-  if(save.output){
-    write.csv(Background.XY.Global,  paste0("Results/Global/Background/Background.csv"))
-  }
-
-  # Load species data at global scale
-  SpeciesData.XY.Global <- nsdm_input$SpeciesData.XY.Global.0
-  names(SpeciesData.XY.Global) <- c("x","y")
-
-  # Occurrences from sites with no NAs
-  XY.Global <- terra::extract(Mask.Global, SpeciesData.XY.Global)
-  XY.Global <- cbind(XY.Global, SpeciesData.XY.Global)
-  XY.Global <- na.omit(XY.Global)[, -c(1:2)]
-  XY.Global <- unique(XY.Global)
-
-  # Spatial thinning of occurrence data to remove duplicates and apply minimum distance criteria
-  if(Min.Dist.Global == "resolution" ) {
-    Min.Dist.Global<-terra::res(Mask.Global)[1]
-  }
-  invisible(capture.output({
-    tryCatch({
-      XY.final.Global <- ecospat::ecospat.occ.desaggregation(XY.Global, min.dist = Min.Dist.Global, by = NULL)
-    }, error = function(e) {
-      # If an error occurs, run the alternative block
-      XY.Global <- round(XY.Global, digits = 4)
-      XY.final.Global <- ecospat::ecospat.occ.desaggregation(XY.Global, min.dist = Min.Dist.Global, by = NULL)
-    })
-  }))
-  message(paste0("Global species data (",SpeciesName,"): from ", nrow(SpeciesData.XY.Global), " to ", nrow(XY.final.Global), " species occurrences after cleaning and thinning"))
-
-  # Save thinning occurrence data for each species
-  if(save.output){
-  write.csv(XY.final.Global, paste0("Results/Global/SpeciesXY/",SpeciesName,".csv"))
-  }
-
-  # Summary global
-  summary <- data.frame(Values = c(SpeciesName,
-				nrow(SpeciesData.XY.Global),
-				nrow(XY.final.Global),
-				ifelse(is.null(nsdm_input$Background.Global.0), nPoints, nrow(nsdm_input$Background.Global.0))))
-
-  rownames(summary) <- c("Species name",
-			"Original number of species occurrences at global level",
-			"Final number of species occurrences at global level",
-			"Number of background points at global level")
-
-
-  # REGIONAL SCALE
-  # Generate random background points for model calibration
-  # Regional covariates (environmental layers)
-  IndVar.Regional <- IndVar.Regional[[names(IndVar.Regional)]]
-  Mask.Regional <- prod(IndVar.Regional)
-  IndVar.Regional <- terra::mask(IndVar.Regional, Mask.Regional)
-
-  # Generate random background points for model calibration
-  if(is.null(nsdm_input$Background.Regional.0) && Background.method == "random") {
-    Valid.Cells.Regional <- which(!is.na(terra::values(Mask.Regional)))
-    if(length(Valid.Cells.Regional) < nPoints) {
-      stop(paste("The requested number of background nPoints exceeds the number of available cells.
-	Maximum number of background points at regional level:",length(Valid.Cells.Regional)))
-    }
-    Sampled.indices.Regional <- sample(Valid.Cells.Regional, nPoints)
-    Coords.Regional <- terra::xyFromCell(Mask.Regional, Sampled.indices.Regional)
-    Background.XY.Regional <- as.data.frame(Coords.Regional)
-  } else if(is.null(nsdm_input$Background.regional.0) && Background.method == "stratified") {
-    Background.XY.Regional <- background_stratified(IndVar.Regional, nPoints=nPoints)
-  } else {
-    #remove NAs and duplicates
-    XY.Regional <- terra::extract(Mask.Regional, nsdm_input$Background.Regional.0)
-    XY.Regional <- cbind(XY.Regional, nsdm_input$Background.Regional.0)
-    XY.Regional <- na.omit(XY.Regional)[, -c(1:2)]
-    Background.XY.Regional <- unique(XY.Regional)
-  }
-
-  if(save.output){
-    write.csv(Background.XY.Regional,  paste0("Results/Regional/Background/Background.csv"))
-  }
-
-  # Load species ocurrence data at regional scale
-  SpeciesData.XY.Regional <- nsdm_input$SpeciesData.XY.Regional.0
-
-  # Occurrences from sites with no NA
-  XY.Regional <- terra::extract(Mask.Regional, SpeciesData.XY.Regional)
-  XY.Regional <- cbind(XY.Regional, SpeciesData.XY.Regional)
-  XY.Regional <- na.omit(XY.Regional)[, -c(1:2)]
-  XY.Regional <- unique(XY.Regional)
-
-  # Spatial thinning of occurrence data to remove duplicates and apply minimum distance criteria
-  if(Min.Dist.Regional=="resolution") {
-  Min.Dist.Regional<-terra::res(Mask.Regional)[1]
-  }
-  invisible(capture.output({
-    tryCatch({
-      XY.final.Regional <- ecospat::ecospat.occ.desaggregation(XY.Regional, min.dist = Min.Dist.Regional, by = NULL)
-    }, error = function(e) {
-      # If an error occurs, run the alternative block
-      XY.Regional <- unique(XY.Regional)
-      XY.Regional <- round(XY.Regional, digits = 4)
-      XY.final.Regional <- ecospat::ecospat.occ.desaggregation(XY.Regional, min.dist = Min.Dist.Regional, by = NULL)
-    })
-  }))
-  message(paste0("Regional species data (",SpeciesName,"): from ", nrow(SpeciesData.XY.Regional), " to ", nrow(XY.final.Regional), " species occurrences after cleaning and thinning.\n"))
-
-  # Save filtered occurrences data for each species
-  if(save.output){
-  write.csv(XY.final.Regional, paste0("Results/Regional/SpeciesXY/", SpeciesName, ".csv"))
-  }
-
-  # Summary regional
-  summary_regional <- data.frame(Values = c(nrow(SpeciesData.XY.Regional),
-				nrow(XY.final.Regional),
-				ifelse(is.null(nsdm_input$Background.Regional.0), nPoints, nrows(nsdm_input$Background.Regional.0))))
-
-  rownames(summary_regional) <- c("Original number of species occurrences at regional level",
-			"Final number of species ocurrences at regional level",
-			"Number of background points at regional level")
-
-  summary <- rbind(summary, summary_regional)
-
-  summary_regional <- data.frame(Values = c(length(nsdm_input$Scenarios)))
-  rownames(summary_regional) <- c("Number of new scenarios")
-  summary <- rbind(summary, summary_regional)
-
-  # Wrap objects
-  IndVar.Global <- terra::wrap(IndVar.Global)
-  IndVar.Regional <- terra::wrap(IndVar.Regional)
-
-  sabina$SpeciesData.XY.Global <- XY.final.Global
-  sabina$SpeciesData.XY.Regional <- XY.final.Regional
-  sabina$Background.XY.Global <- Background.XY.Global
-  sabina$Background.XY.Regional <- Background.XY.Regional
-  sabina$IndVar.Global <- IndVar.Global
-  sabina$IndVar.Regional <- IndVar.Regional
+  sabina$SpeciesData.XY.Global <- format_global$SpeciesData.XY
+  sabina$SpeciesData.XY.Regional <- format_regional$SpeciesData.XY
+  sabina$Background.XY.Global <- format_global$Background.XY
+  sabina$Background.XY.Regional <- format_regional$Background.XY
+  sabina$IndVar.Global <- format_global$IndVar
+  sabina$IndVar.Regional <- format_regional$IndVar
   sabina$Scenarios <- nsdm_input$Scenarios
-  sabina$Summary<-summary
+  sabina$Summary <- main_summary
 
   attr(sabina, "class") <- "nsdm.finput"
+  class(sabina) <- c("nsdm.finput", "nsdm.input")
 
   # save.out messages
   if(save.output) {
@@ -305,7 +158,7 @@ NSDM.FormattingData <- function(nsdm_input,
 
   return(sabina)
 
-  }
+}
 
 
 
@@ -330,13 +183,13 @@ background_stratified <- function(expl.var, nPoints) {
 
   gc()
   # Reclassify raster into 4 classes based on quartiles
-  quartiles1 <- global(PC1, fun = quantile, na.rm = TRUE)
+  quartiles1 <- terra::global(PC1, fun = quantile, na.rm = TRUE)
   cat1 <- cut(terra::values(PC1), breaks = quartiles1, labels = c(1, 2, 3, 4), include.lowest = TRUE)
-  PC1_cat <- setValues(PC1, cat1)
+  PC1_cat <- terra::setValues(PC1, cat1)
   rm(PC1)
-  quartiles2 <- global(PC2, fun = quantile, na.rm = TRUE)
+  quartiles2 <- terra::global(PC2, fun = quantile, na.rm = TRUE)
   cat2 <- cut(terra::values(PC2), breaks = quartiles2, labels = c(1, 2, 3, 4), include.lowest = TRUE)
-  PC2_cat <- setValues(PC2, cat2)
+  PC2_cat <- terra::setValues(PC2, cat2)
   rm(PC2)
 
   # Combine the 4 new categories in both PCs to create a final Stratum raster with 16 categories
@@ -350,5 +203,104 @@ background_stratified <- function(expl.var, nPoints) {
   colnames(Background_df) <- c("x", "y")
 
   return(Background_df)
+
+}
+
+gen_background_pts <- function(nsdm_input, scale,
+                               Background.method, nPoints, Min.Dist,
+                               save.output){
+
+  if(!(scale %in% c("Global", "Regional"))){
+    stop("scale must be either Global or Regional")
+  }
+
+  SpeciesName <- nsdm_input$Species.Name
+
+  lowcase_scale <- tolower(scale)
+  IndVar <- terra::unwrap(nsdm_input[[paste0("IndVar.", scale)]])
+  # Generate random background points for model calibration
+  # Covariates (environmental layers)
+  IndVar <- IndVar[[names(IndVar)]]
+  Mask <- prod(IndVar)
+  IndVar <- terra::mask(IndVar, Mask)
+
+  background_scale <- nsdm_input[[paste0("Background.", scale, ".0")]]
+  # Generate random background points for model calibration
+  if(is.null(background_scale) &&
+       Background.method == "random") {
+    Valid.Cells <- which(!is.na(terra::values(Mask)))
+    if(length(Valid.Cells) < nPoints) {
+      stop(paste("The requested number of background nPoints exceeds the number of available cells.
+	Maximum number of background points at", lowcase_scale, "level:",length(Valid.Cells)))
+    }
+    Sampled.indices <- sample(Valid.Cells, nPoints)
+    Coords <- terra::xyFromCell(Mask, Sampled.indices)
+    Background.XY <- as.data.frame(Coords)
+  } else if(is.null(background_scale) && Background.method == "stratified") {
+    Background.XY <- background_stratified(IndVar, nPoints=nPoints)
+  } else {
+    #remove NAs and duplicates
+    XY <- clean_data(Mask, background_scale)
+    Background.XY <- XY
+  }
+
+  if(save.output){
+    write.csv(Background.XY,
+              paste0("Results/", scale, "/Background/Background.csv"))
+  }
+
+  # Load species ocurrence data at regional scale
+  species_scale <- paste0("SpeciesData.XY.", scale, ".0")
+  SpeciesData.XY <- nsdm_input[[species_scale]]
+
+  # Occurrences from sites with no NA
+  XY <- clean_data(Mask, SpeciesData.XY)
+
+  # Spatial thinning of occurrence data to remove duplicates and apply minimum distance criteria
+  if(Min.Dist == "resolution") {
+    Min.Dist <- terra::res(Mask)[1]
+  }
+  invisible(capture.output({
+    tryCatch({
+      XY.final <- ecospat::ecospat.occ.desaggregation(XY,
+                                                     min.dist = Min.Dist,
+                                                     by = NULL)
+    }, error = function(e) {
+      XY <- unique(XY)
+      XY <- round(XY, digits = 4)
+      XY.final <- ecospat::ecospat.occ.desaggregation(XY,
+                                                     min.dist = Min.Dist,
+                                                     by = NULL)
+    })
+  }))
+  message(paste0(scale, " species data (",SpeciesName,"): from ",
+                 nrow(SpeciesData.XY), " to ", nrow(XY.final),
+                 " species occurrences after cleaning and thinning.\n"))
+
+  # Save filtered occurrences data for each species
+  if(save.output){
+    write.csv(XY.final, paste0("Results/", scale,
+                               "/SpeciesXY/", SpeciesName, ".csv"))
+  }
+
+  scale_summary <- data.frame(Values = c(SpeciesName,
+                                         nrow(SpeciesData.XY),
+                                         nrow(XY.final),
+                                         ifelse(is.null(background_scale),
+                                                nPoints,
+                                                nrow(background_scale))))
+
+  rownames(scale_summary) <- c("Species name",
+                               paste("Original number of species occurrences at", lowcase_scale, "level"),
+                               paste("Final number of species occurrences at", lowcase_scale, "level"),
+                               paste("Number of background points at", lowcase_scale, "level"))
+
+  return(list(
+          SpeciesData.XY = XY.final,
+          Background.XY = Background.XY,
+          IndVar = terra::wrap(IndVar),
+          Summary = scale_summary
+
+  ))
 
 }

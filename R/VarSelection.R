@@ -93,17 +93,18 @@
 #'
 #' @export
 NSDM.SelectCovariates <- function(nsdm_finput,
-				maxncov.Global="nocorr",
-				maxncov.Regional="nocorr",
-				corcut=0.7,
-				algorithms=c('glm','gam','rf'),
-				ClimaticVariablesBands=NULL,
-				save.output=TRUE) {
+                                  maxncov.Global="nocorr",
+                                  maxncov.Regional="nocorr",
+                                  corcut=0.7,
+                                  algorithms=c('glm','gam','rf'),
+                                  ClimaticVariablesBands=NULL,
+                                  save.output=TRUE) {
 
   if(!inherits(nsdm_finput, "nsdm.finput")){
       stop("nsdm_finput must be an object of nsdm.finput class. Consider running NSDM.FormatingData() function.")
   }
-  if(!is.null(ClimaticVariablesBands)) {if(!inherits(ClimaticVariablesBands, "numeric") & !inherits(ClimaticVariablesBands, "integer") ){
+  if(!is.null(ClimaticVariablesBands)){
+      if(!(is.numeric(ClimaticVariablesBands)) & !(is.integer(ClimaticVariablesBands)) ){
     stop("ClimaticVariablesBands must be either NULL or a vector indicating the regional environmental covariate bands to exclude from the selection at regional scale.")
   }}
 
@@ -112,7 +113,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
     stop("Please select a valid algorithm (\"glm\", \"gam\", or \"rf\")")
   }
 
-  sabina<-nsdm_finput[!names(nsdm_finput) %in% "Summary"]
+  sabina<-nsdm_finput[!(names(nsdm_finput) %in% "Summary")]
   sabina$args <- list()
   sabina$args$maxncov.Global <- maxncov.Global
   sabina$args$maxncov.Regional <- maxncov.Regional
@@ -121,125 +122,31 @@ NSDM.SelectCovariates <- function(nsdm_finput,
 
   SpeciesName <- nsdm_finput$Species.Name
 
-  # Unwrap objects
-  # Global independent covariates (environmental layers)
-  IndVar.Global <- terra::unwrap(nsdm_finput$IndVar.Global)
-  # Regional independent covariates (environmental layers)
-  IndVar.Regional <- terra::unwrap(nsdm_finput$IndVar.Regional)
+  selected_global <- select_cov(nsdm_finput, scale = "Global",
+                                ClimaticVariablesBands,
+                                maxncov.Global, corcut, algorithms,
+                                save.output)
 
-  # GLOBAL SCALE
-  # Select the best subset of independent covariates for each species using covsel package
-  myResp.xy.Global <- rbind(nsdm_finput$SpeciesData.XY.Global, nsdm_finput$Background.XY.Global)
-  names(myResp.xy.Global)<-c("x","y")
-  row.names(myResp.xy.Global)<-c(1:nrow(myResp.xy.Global))
-  myResp.Global <- as.vector(c(rep(1,nrow(nsdm_finput$SpeciesData.XY.Global)),rep(0,nrow(nsdm_finput$Background.XY.Global))))
-  myExpl.covsel.Global <- terra::extract(IndVar.Global, myResp.xy.Global, as.df=TRUE)[, -1]
+  selected_regional <- select_cov(nsdm_finput, scale = "Regional",
+                                  ClimaticVariablesBands,
+                                  maxncov.Regional, corcut, algorithms,
+                                  save.output,
+                                  selected_global$Selected.Variables)
 
-  # Covariates selection process
-  # Collinearity filtering
-  Covdata.filter.Global<-covsel::covsel.filteralgo(covdata=myExpl.covsel.Global, pa=myResp.Global, corcut=corcut)
+  main_summary <- rbind(selected_global$Summary,
+                        selected_regional$Summary)
 
-  # Embedding selected covariates
-  if(maxncov.Global=="nocorr") {
-    maxncov.Global <- ncol(Covdata.filter.Global)
-    Selected.Variables.Global <- names(Covdata.filter.Global)
-  } else{
-    Covdata.embed.Global<-covsel::covsel.embed(covdata=Covdata.filter.Global,
-                                               pa=myResp.Global,
-                                               algorithms=algorithms,
-                                               maxncov=maxncov.Global,
-					       nthreads=detectCores()/2)
-    Selected.Variables.Global <- labels(Covdata.embed.Global$covdata)[[2]]
-  }
-
-
-  # Save selected covariates for each species
-  if(save.output){
-    write.csv(Selected.Variables.Global, paste0("Results/Global/Values/", SpeciesName, ".variables.csv"))
-  }
-
-  IndVar.Global.Selected <- IndVar.Global[[Selected.Variables.Global]]
-
-  # Summary
-  summary <- data.frame(Values = c(SpeciesName,
-				terra::nlyr(IndVar.Global),
-				length(Selected.Variables.Global)))
-
-  rownames(summary) <- c("Species name",
-			"Original number of covariates at the global scale",
-			"Final number of selected covariates at the global scale")
-
-  # REGIONAL SCALE
-  # Subset the global covariates for regional projections
-  IndVar.Global.Selected.reg <- IndVar.Regional[[Selected.Variables.Global]]
-
-  # Exclude climatic bands specified by the user.
-  Number.bands <- terra::nlyr(IndVar.Regional)
-  if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
-    removed<-IndVar.Regional[[ClimaticVariablesBands]]
-    names(removed)
-    message(paste("The bands", paste(names(removed),collapse=", "), "have been excluded from the selection of regional environmental covariates."))
-    # Non eliminated variables
-    Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)
-    IndVar.Regional <- IndVar.Regional[[Bands.climatic]]
-  } else {
-    # If no bands are specified for exclusion, use all bands
-    IndVar.Regional <- IndVar.Regional
-  }
-
-  # Select the best subset of covariates for each species using covsel package
-  myResp.xy.Regional <- rbind(nsdm_finput$SpeciesData.XY.Regional, nsdm_finput$Background.XY.Regional)
-  row.names(myResp.xy.Regional) <- c(1:nrow(myResp.xy.Regional))
-  myResp.Regional <- as.vector(c(rep(1, nrow(nsdm_finput$SpeciesData.XY.Regional)), rep(0, nrow(nsdm_finput$Background.XY.Regional))))
-  myExpl.covsel.Regional <- terra::extract(IndVar.Regional, myResp.xy.Regional, rm.na=TRUE, df=TRUE)[, -1]
-
-  Covdata.filter.Regional <- covsel::covsel.filteralgo(covdata = myExpl.covsel.Regional, pa = myResp.Regional, corcut = corcut)
-
-  # Embedding selected covariates
-  if(maxncov.Regional=="nocorr") {
-    maxncov.Regional <- ncol(Covdata.filter.Regional)
-    Selected.Variables.Regional <-names(Covdata.filter.Regional)
-  } else {
-    Covdata.embed.Regional <- covsel::covsel.embed(covdata = Covdata.filter.Regional,
-                                                   pa = myResp.Regional,
-                                                   algorithms = algorithms,
-                                                   maxncov = maxncov.Regional,
-                                                   nthreads = detectCores() / 2)
-    Selected.Variables.Regional <- labels(Covdata.embed.Regional$covdata)[[2]]
-  }
-
-  # Save selected covariates for each species
-  if(save.output){
-    write.csv(Selected.Variables.Regional, paste0("Results/Regional/Values/", SpeciesName, ".variables.csv"))
-  }
-
-  # Subset the regional independent variables for regional projections
-  IndVar.Regional.Selected <- IndVar.Regional[[Selected.Variables.Regional]]
-
-  # Summary
-  summary_regional <- data.frame(Values = c(Number.bands,
-				length(Selected.Variables.Regional)))
-
-  rownames(summary_regional) <- c("Original number of covariates at regiona scale",
-			"Final number of covariates at regional scale")
-
-  summary <- rbind(summary, summary_regional)
-
-  # Wrap objects
-  IndVar.Global.Selected <- terra::wrap(IndVar.Global.Selected)
-  IndVar.Regional.Selected <- terra::wrap(IndVar.Regional.Selected)
-  IndVar.Global.Selected.reg <- terra::wrap(IndVar.Global.Selected.reg)
-
-  sabina$Selected.Variables.Global <- Selected.Variables.Global
-  sabina$IndVar.Global.Selected <- IndVar.Global.Selected
-  sabina$Selected.Variables.Regional <- Selected.Variables.Regional
-  sabina$IndVar.Regional.Selected <- IndVar.Regional.Selected
-  sabina$IndVar.Global.Selected.reg <- IndVar.Global.Selected.reg
-  sabina$Summary<-summary
+  sabina$Selected.Variables.Global <- selected_global$Selected.Variables
+  sabina$IndVar.Global.Selected <- selected_global$IndVar.Selected
+  sabina$Selected.Variables.Regional <- selected_regional$Selected.Variables
+  sabina$IndVar.Regional.Selected <- selected_regional$IndVar.Selected
+  sabina$IndVar.Global.Selected.reg <- selected_regional$IndVar.Global.Selected.reg
+  sabina$Summary <- main_summary
   # Make the output lighter
   sabina <- sabina[!names(sabina) %in% c("IndVar.Regional", "IndVar.Global")]
 
   attr(sabina, "class") <- "nsdm.vinput"
+  class(sabina) <- c("nsdm.vinput", "nsdm.input")
 
   # save.out messages
   if(save.output){
@@ -251,5 +158,96 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   }
 
   return(sabina)
+
+}
+
+select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
+                       maxncov, corcut, algorithms, save.output,
+                       Selected.Variables.Global = NULL){
+
+  if(!(scale %in% c("Global", "Regional"))){
+    stop("scale must be either Global or Regional")
+  }
+
+  if(scale == "Regional" && is.null(Selected.Variables.Global)){
+      stop("Regional scale variable selecion requires running select_cov on Global scale ",
+           "and provide Selected.Variables.Global as argument.")
+  }
+
+  IndVar <- terra::unwrap(nsdm_finput[[paste0("IndVar.", scale)]])
+
+  if(scale == "Regional"){
+    # Subset the global covariates for regional projections
+    IndVar.Global.Selected.reg <- IndVar[[Selected.Variables.Global]]
+
+    # Exclude climatic bands specified by the user.
+    Number.bands <- terra::nlyr(IndVar)
+    if(!is.null(ClimaticVariablesBands) && length(ClimaticVariablesBands) > 0) {
+      removed<-IndVar[[ClimaticVariablesBands]]
+      message(paste("The bands", paste(names(removed),collapse=", "),
+                    "have been excluded from the selection of regional environmental covariates."))
+      # Non eliminated variables
+      Bands.climatic <- setdiff(1:Number.bands, ClimaticVariablesBands)
+      IndVar <- IndVar[[Bands.climatic]]
+    }
+  }
+
+  species_name <- paste0("SpeciesData.XY.", scale)
+  background_name <- paste0("Background.XY.", scale)
+
+  # Select the best subset of covariates for each species using covsel package
+  myResp.xy <- rbind(nsdm_finput[[species_name]], nsdm_finput[[background_name]])
+  row.names(myResp.xy) <- c(1:nrow(myResp.xy))
+  myResp <- as.vector(c(rep(1, nrow(nsdm_finput[[species_name]])), rep(0, nrow(nsdm_finput[[background_name]]))))
+  myExpl.covsel <- terra::extract(IndVar, myResp.xy, rm.na=TRUE, df=TRUE)[, -1]
+
+  Covdata.filter <- covsel::covsel.filteralgo(covdata = myExpl.covsel,
+                                            pa = myResp, corcut = corcut)
+
+  # Embedding selected covariates
+  if(maxncov == "nocorr") {
+    maxncov <- ncol(Covdata.filter)
+    Selected.Variables <-names(Covdata.filter)
+  } else {
+    Covdata.embed <- covsel::covsel.embed(covdata = Covdata.filter,
+                                          pa = myResp,
+                                          algorithms = algorithms,
+                                          maxncov = maxncov,
+                                          nthreads = detectCores() / 2)
+    Selected.Variables <- labels(Covdata.embed$covdata)[[2]]
+  }
+
+  # Save selected covariates for each species
+  if(save.output){
+    write.csv(Selected.Variables, paste0("Results/", scale, "/Values/", SpeciesName, ".variables.csv"))
+  }
+
+  # Subset the regional independent variables for regional projections
+  IndVar.Selected <- IndVar[[Selected.Variables]]
+
+  if(scale == "Global"){
+    summary <- data.frame(Values = c(SpeciesName,
+                                     terra::nlyr(IndVar),
+                                     length(Selected.Variables)))
+
+    rownames(summary) <- c("Species name",
+                           "Original number of covariates at the global scale",
+                           "Final number of selected covariates at the global scale")
+  }else if(scale == "Regional"){
+    summary <- data.frame(Values = c(Number.bands,
+                                     length(Selected.Variables)))
+    rownames(summary) <- c("Original number of covariates at regional scale",
+                           "Final number of covariates at regional scale")
+
+  }
+
+  select_list <- list(IndVar.Selected = terra::wrap(IndVar.Selected),
+                      Selected.Variables = Selected.Variables,
+                      Summary = summary)
+  if(scale == "Regional"){
+      select_list$IndVar.Global.Selected.reg <- terra::wrap(IndVar.Global.Selected.reg)
+  }
+
+  return(select_list)
 
 }
