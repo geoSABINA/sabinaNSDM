@@ -23,22 +23,6 @@ summary.nsdm.vinput <- function(nsdm_vinput){
 }
 
 #' @export
-summary.nsdm.predict.g <- function(nsdm_predict){
-    summary_df <- as.data.frame(nsdm_predict$Summary)
-    
-    return(summary_df)
-
-}
-
-#' @export
-summary.nsdm.predict.r <- function(nsdm_predict){
-    summary_df <- as.data.frame(nsdm_predict$Summary)
-    
-    return(summary_df)
-
-}
-
-#' @export
 summary.nsdm.predict <- function(nsdm_predict){
     summary_df <- as.data.frame(nsdm_predict$Summary)
     
