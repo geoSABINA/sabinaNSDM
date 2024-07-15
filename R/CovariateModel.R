@@ -116,7 +116,7 @@ NSDM.Covariate <- function(nsdm_global,
   }
 
   mod_call <- as.list(match.call()[-1])
-  mod_call$model.type = "Regional"
+  mod_call$model.type = "Covariate"
   names(mod_call) <- gsub("nsdm_global.*", "nsdm.obj",
                           names(mod_call))
   sabina <- do.call(general_nsdm_model, mod_call)

@@ -255,7 +255,6 @@ general_nsdm_model <- function(nsdm.obj,
 
   # Model projections for future climate scenarios
   if(!is.null(Scenarios)) {
-    Selected.Variables <- nsdm.obj[[paste0("Selected.Variables.", scale)]]
     for(i in 1:length(Scenarios)) {
       if(model.type == "Covariate"){
         new.env.tmp <- Scenarios[[i]]
@@ -265,6 +264,7 @@ general_nsdm_model <- function(nsdm.obj,
         new.env<-new.env[[which(names(new.env) %in% colnames(myExpl))]]
 
       }else{
+        Selected.Variables <- nsdm.obj[[paste0("Selected.Variables.", model.type)]]
         new.env <- Scenarios[[i]][[Selected.Variables]]
       }
       Scenario.name <- names(Scenarios[i])
@@ -312,11 +312,11 @@ general_nsdm_model <- function(nsdm.obj,
                                    myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
   rownames(summary) <- c("Species name",
-                         "Statistical algorithms at global level",
-                         paste0("Number of replicates with AUC > ",metric.select.thresh, " at global level"),
-                         "AUC of ensemble model at global level",
-                         "TSS of ensemble model at global level",
-                         "KAPPA of ensemble model at global level")
+                         paste0("Statistical algorithms for ", model.type, " model"),
+                         paste0("Number of replicates with AUC > ",metric.select.thresh, " for ", model.type, " model"),
+                         paste0("AUC of ensemble for ", model.type, " model"),
+                         paste0("TSS of ensemble for ", model.type, " model"),
+                         paste0("KAPPA of ensemble for ", model.type, " model"))
 
   sabina$Summary <- summary
 
