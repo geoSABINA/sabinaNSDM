@@ -454,13 +454,13 @@ background_stratified <- function(expl.var, nPoints) {
 
   gc()
   # Reclassify raster into 4 classes based on quartiles
-  quartiles1 <- global(PC1, fun = quantile, na.rm = TRUE)
+  quartiles1 <- terra::global(PC1, fun = quantile, na.rm = TRUE)
   cat1 <- cut(terra::values(PC1), breaks = quartiles1, labels = c(1, 2, 3, 4), include.lowest = TRUE)
-  PC1_cat <- setValues(PC1, cat1)
+  PC1_cat <- terra::setValues(PC1, cat1)
   rm(PC1)
-  quartiles2 <- global(PC2, fun = quantile, na.rm = TRUE)
+  quartiles2 <- terra::global(PC2, fun = quantile, na.rm = TRUE)
   cat2 <- cut(terra::values(PC2), breaks = quartiles2, labels = c(1, 2, 3, 4), include.lowest = TRUE)
-  PC2_cat <- setValues(PC2, cat2)
+  PC2_cat <- terra::setValues(PC2, cat2)
   rm(PC2)
 
   # Combine the 4 new categories in both PCs to create a final Stratum raster with 16 categories
