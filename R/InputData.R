@@ -139,8 +139,8 @@ NSDM.InputData <- function(SpeciesName,
   }
   # new.env and regional
   if(!is.null(new.env)) {
-    match_vars <- sapply(new.env, function(file) {
-      all(names(expl.var.regional) %in% names(file))
+    match_vars <- sapply(new.env, function(x) {
+      all(names(expl.var.regional) %in% names(x))
     })
     if(!all(match_vars)) {
       stop("Not all new scenarios have the same environmental covariates as expl.var.regional.")
@@ -149,7 +149,7 @@ NSDM.InputData <- function(SpeciesName,
     # Name and Rename new.env scenarios
     if(is.null(names(new.env)) && is.null(new.env.names)) {
       source_names <- lapply(new.env, function(x) {
-        s <- sources(x)
+        s <- terra::sources(x)
         s |> fs::path_file() |> fs::path_ext_remove()
       })
       names(new.env) <- source_names
