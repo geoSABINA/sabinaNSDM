@@ -9,15 +9,19 @@
 #'
 #' @param output A character. Either "intensity" or "probability".
 #'
-#' @param 
+#' @return A list with three elements: \code{fit} (mode fit), \code{pred}
+#' (prediction from the model) and \code{pred_sp} (prediction of the
+#' spatial effect.
 #'
-#' @return
-#'
-#' @details
+#' @details TBC.
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}
 #'
 #' @examples
+#'
+#' # FIXME: Add these packages to DESCRIPTION?
+#' library("glmnet")
+#' library("stringi")
 #'
 #' # Example from GitHub
 #' 
