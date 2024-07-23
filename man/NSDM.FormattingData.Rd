@@ -96,11 +96,11 @@ myFormattedData <- NSDM.FormattingData(myInputData,
 
 ## Format the input data specifying custom parameters.
 # myFormattedData <- NSDM.FormattingData(nsdm_input, 
-#				      nPoints = 1000, # Number of background points to generate
-#				      Min.Dist.Global = "resolution", # Minimum distance between points at the global scale, based on raster resolution
-#				      Min.Dist.Regional = "resolution",# Minimum distance between points at the regional scale, based on raster resolution
-#				      Background.method="random",  # Method used to generate background points, here set to 'random'
-#				      save.output = TRUE)  	# save the formatted data externally
+#				nPoints = 1000, # Number of background points to generate
+#				Min.Dist.Global = "resolution", # Minimum distance between points at the global scale, based on raster resolution
+#				Min.Dist.Regional = "resolution",# Minimum distance between points at the regional scale, based on raster resolution
+#				Background.method="random",  # Method used to generate background points, here set to 'random'
+#				save.output = TRUE)  	# save the formatted data externally
 
 
 }
