@@ -76,7 +76,7 @@
 #' 
 #' @export
 
-nsdm_inlabru <- function(nsdmobj, output = "probability") {
+NSDM.inlabru <- function(nsdmobj, output = "probability") {
 
   # Checks
   if(!(output %in% c("probability", "intensity")))
