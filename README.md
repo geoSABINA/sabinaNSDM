@@ -132,8 +132,8 @@ nsdm_input <- NSDM.InputData(SpeciesName = SpeciesName,
                     new.env.names = "scenario1",
                     Background.Global = NULL, 
                     Background.Regional = NULL,
-		    Absences.Global = NULL,
-		    Absences.Regional = NULL)
+                    Absences.Global = NULL,
+                    Absences.Regional = NULL)
 
 ```
 Format the data with the *NSDM.FormattingData()* function. This function generates random or stratified background points for model calibration when no specific background or true absence data was loaded in the *NSDM.InputData()* function. Additionally, it applies spatial thinning to species occurrences and absences (if available) to remove duplicates and enforce a minimum distance criterion (by default the resolution of the variables). 
