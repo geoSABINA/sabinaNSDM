@@ -41,7 +41,7 @@ A research paper detailing the package details and functions is under review, bu
 
 ## Installation
 
-Depends:  R (\> 4.3.2)
+Depends:  R (\> 4.3.0)
 
 
 You can install the released version of sabinaNSDM from
