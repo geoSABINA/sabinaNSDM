@@ -171,23 +171,23 @@ NSDM.FormattingData <- function(nsdm_input,
     message(paste0(
       " - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
       if(!is.null(format_global$Background.XY)) {
-        paste0(" - Global background points: /Results/Global/AbsecesXY/", SpeciesName, "_Background.csv\n")
+        paste0(" - Global background points: /Results/Global/AbsencesXY/", SpeciesName, "_Background.csv\n")
       } else {
         ""
       },
       if(!is.null(format_global$Absences.XY)) {
-        paste0(" - Global true absence points: /Results/Global/AbsecesXY/", SpeciesName, "_TrueAbsences.csv\n")
+        paste0(" - Global true absence points: /Results/Global/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n")
       } else {
         ""
       },
       " - Regional species occurrences: /Results/Regional/SpeciesXY/", SpeciesName, ".csv\n",
       if(!is.null(format_regional$Background.XY)) {
-        paste0(" - Regional background points: /Results/Regional/AbsecesXY/", SpeciesName, "_Background.csv\n")
+        paste0(" - Regional background points: /Results/Regional/AbsencesXY/", SpeciesName, "_Background.csv\n")
       } else {
         ""
       },
       if(!is.null(format_regional$Absences.XY)) {
-        paste0(" - Regional true absence points: /Results/Regional/AbsecesXY/", SpeciesName, "_TrueAbsences.csv\n")
+        paste0(" - Regional true absence points: /Results/Regional/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n")
       } else {
         ""
       }

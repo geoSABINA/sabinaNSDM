@@ -207,9 +207,9 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
   }
   row.names(myResp.xy)<-c(1:nrow(myResp.xy))
   if(!is.null(nsdm_finput[[background_name]])) {
-    myResp <- as.vector(c(rep(1,nrow(nsdm_finput[[species_name]])),rep(0,nrow(nsdm_finput[[background_name]]))))
+    myResp <- c(rep(1,nrow(nsdm_finput[[species_name]])),rep(0,nrow(nsdm_finput[[background_name]])))
   } else {
-    myResp <- as.vector(c(rep(1, nrow(nsdm_finput[[species_name]])), rep(0, nrow(nsdm_finput[[absences_name]]))))
+    myResp <- c(rep(1, nrow(nsdm_finput[[species_name]])), rep(0, nrow(nsdm_finput[[absences_name]])))
   }
   myExpl.covsel <- terra::extract(IndVar, myResp.xy, as.df=TRUE)[, -1]
 
