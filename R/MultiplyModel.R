@@ -80,6 +80,8 @@
 #'				    rescale = FALSE, 	# Whether to rescale the model outputs before combining
 #'				    save.output = TRUE) # Save the combined model output externally
 #'
+#' summary(myMultiplyModel)
+#'
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
 #'
@@ -92,7 +94,7 @@ NSDM.Multiply <- function(nsdm_global,
                           save.output=TRUE) {
 
   if(!inherits(nsdm_regional, "nsdm.predict.r") || !inherits(nsdm_global, "nsdm.predict.g")) {
-    stop("nsdm_regional and nsdm_global must be objects of class nsdm.predict.r and nsdm.predict.g, respectively.")
+    stop("nsdm_global and nsdm_regional must be objects of class nsdm.predict.g and nsdm.predict.r, respectively.")
   }
 
   if(!method %in% c("Arithmetic", "Geometric")) {
@@ -117,12 +119,12 @@ NSDM.Multiply <- function(nsdm_global,
     projmodel <- Scenarios[i]
     # Load raster data at global and regional scales
     if(projmodel =="Current") {
-      Pred.global <- terra::unwrap(nsdm_global$current.projections$Pred) # Unwrap object
-      Pred.regional <- terra::unwrap(nsdm_regional$current.projections$Pred)  # Unwrap object
+      Pred.global <- terra::unwrap(nsdm_global$current.projections$Pred)
+      Pred.regional <- terra::unwrap(nsdm_regional$current.projections$Pred)
     } else {
-        Pred.global <- terra::unwrap(nsdm_global$new.projections$Pred.Scenario[[i-1]])  # Unwrap object
-        Pred.regional <- terra::unwrap(nsdm_regional$new.projections$Pred.Scenario[[i-1]])  # Unwrap object
-      }
+        Pred.global <- terra::unwrap(nsdm_global$new.projections$Pred.Scenario[[i-1]])
+        Pred.regional <- terra::unwrap(nsdm_regional$new.projections$Pred.Scenario[[i-1]])
+    }
 
     # Rescale global prediction to a common range
     if(rescale==TRUE) {
@@ -130,14 +132,17 @@ NSDM.Multiply <- function(nsdm_global,
       min_val <- min(terra::values(Pred.global), na.rm = TRUE)
       max_val <- max(terra::values(Pred.global), na.rm = TRUE)
 
-      Pred.global <- terra::app(Pred.global, fun = function(x) {
-      ((x - min_val) / (max_val - min_val) * 999) + 1})
+      Pred.global <- terra::app(Pred.global,
+                                fun = function(x) {
+                                  ((x - min_val) / (max_val - min_val) * 999) + 1})
+
       # Calculate minimum and maximum values of regional prediction
       min_val <- min(terra::values(Pred.regional), na.rm = TRUE)
       max_val <- max(terra::values(Pred.regional), na.rm = TRUE)
 
-      Pred.regional <- terra::app(Pred.regional, fun = function(x) {
-      ((x - min_val) / (max_val - min_val) * 999) + 1})
+      Pred.regional <- terra::app(Pred.regional,
+                                  fun = function(x) {
+                                    ((x - min_val) / (max_val - min_val) * 999) + 1})
     }
 
     # Average global and regional
@@ -149,10 +154,13 @@ NSDM.Multiply <- function(nsdm_global,
     }
 
     res.average <- terra::rast(terra::wrap(res.average))
+
     if(projmodel =="Current") {
-      sabina$current.projections$Pred <- setNames(res.average, paste0(SpeciesName, ".Current"))
+      sabina$current.projections$Pred <- setNames(res.average,
+                                                  paste0(SpeciesName, ".Current"))
     } else {
-      sabina$new.projections$Pred.Scenario[[i-1]]<- setNames(res.average, paste0(SpeciesName,".", projmodel))
+      sabina$new.projections$Pred.Scenario[[i-1]]<- setNames(res.average,
+                                                             paste0(SpeciesName,".", projmodel))
     }
 
     if(save.output){
@@ -166,12 +174,16 @@ NSDM.Multiply <- function(nsdm_global,
   ## Evaluation multiply model
   if(!is.null(nsdm_regional$Background.XY.Regional)) {
     # Format the response (presence/background) and covariates data for BIOMOD2
-    myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Background.XY.Regional)
-    myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),rep(0,nrow(nsdm_regional$Background.XY.Regional))))
+    myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional,
+                       nsdm_regional$Background.XY.Regional)
+    myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),
+                           rep(0,nrow(nsdm_regional$Background.XY.Regional))))
   } else {
     # Format the response (presence/absence) and covariate data for BIOMOD2
-    myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional, nsdm_regional$Absences.XY.Regional)
-    myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)), rep(0,nrow(nsdm_regional$Absences.XY.Regional))))
+    myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional,
+                       nsdm_regional$Absences.XY.Regional)
+    myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)), 
+                           rep(0,nrow(nsdm_regional$Absences.XY.Regional))))
   }
   pred_df <- sabina$current.projections$Pred
   pred_df <- terra::extract(pred_df, myResp.xy)[-1]
@@ -186,7 +198,7 @@ NSDM.Multiply <- function(nsdm_global,
 	                                     resp.name = SpeciesName,
 	                                     PA.nb.rep = ifelse(!is.null(nsdm_regional$Absences.XY.Regional), 0, 1),
 	                                     PA.nb.absences = ifelse(!is.null(nsdm_regional$Absences.XY.Regional), 0, nrow(nsdm_regional$Background.XY.Regional)),
-	                                     PA.strategy =if(!is.null(nsdm_regional$Absences.XY.Regional)) NULL else "random")
+	                                     PA.strategy = if(!is.null(nsdm_regional$Absences.XY.Regional)) NULL else "random")
 
   calib.lines <- biomod2::bm_CrossValidation(bm.format = myBiomodData,
                                     strategy = "random",
@@ -208,17 +220,17 @@ NSDM.Multiply <- function(nsdm_global,
     eval.lines.rep <- which(rowSums(!calib.lines.rep) == ncol(calib.lines.rep))
 
     for(xx in metric.eval) {
-      stat <-biomod2::bm_FindOptimStat(metric.eval = xx,
-  			obs = myResp[-eval.lines.rep],
-  			fit = pred_df[-eval.lines.rep])
+      stat <- biomod2::bm_FindOptimStat(metric.eval = xx,
+                               obs = myResp[-eval.lines.rep],
+                               fit = pred_df[-eval.lines.rep])
       cross.validation <- rbind(cross.validation, stat)
     }
 
     for(xx in metric.eval) {
       stat <- biomod2::bm_FindOptimStat(metric.eval = xx,
-  			obs = myResp[eval.lines.rep],
-  			fit = pred_df[eval.lines.rep],
-			threshold = cross.validation["cutoff", xx])
+                                        obs = myResp[eval.lines.rep],
+                                        fit = pred_df[eval.lines.rep],
+                                        threshold = cross.validation["cutoff", xx])
       stat.validation <- rbind(stat.validation, stat)
     }
   }
@@ -236,7 +248,6 @@ NSDM.Multiply <- function(nsdm_global,
      fs::dir_create("Results/Multiply/Values/")
      write.csv(metric.means,file=paste0("Results/Multiply/Values/",SpeciesName,"_ensemble.csv"))
    }
-
 
   # Binary models
   for(i in seq_along(Scenarios)) {
@@ -282,16 +293,16 @@ NSDM.Multiply <- function(nsdm_global,
 
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-  				method,
-  				round(metric.means$validation[metric.means$metric.eval == "ROC"], 3),
-  				round(metric.means$validation[metric.means$metric.eval == "TSS"], 3),
-  				round(metric.means$validation[metric.means$metric.eval == "KAPPA"], 3)))
+                                   method,
+                                   round(metric.means$validation[metric.means$metric.eval == "ROC"], 3),
+                                   round(metric.means$validation[metric.means$metric.eval == "TSS"], 3),
+                                   round(metric.means$validation[metric.means$metric.eval == "KAPPA"], 3)))
 
   rownames(summary) <- c("Species name",
-   				"Multiply method",
-  				"AUC of hierarchical multiply ensemble model",
-  				"TSS of hierarchical multiply ensemble model",
- 				"KAPPA of hierarchical multiply ensemble model")
+                         "Multiply method",
+                         "AUC of hierarchical multiply ensemble model",
+                         "TSS of hierarchical multiply ensemble model",
+                         "KAPPA of hierarchical multiply ensemble model")
 
   sabina$Summary <- summary
 
@@ -314,4 +325,3 @@ NSDM.Multiply <- function(nsdm_global,
   return(sabina)
 
 }
-

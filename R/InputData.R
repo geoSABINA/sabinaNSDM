@@ -60,26 +60,24 @@
 #'				Absences.Global = NULL,
 #'				Absences.Regional = NULL)
 #'
+#' summary(myInputData)
+#'
 #'
 #' @export
 NSDM.InputData <- function(SpeciesName,
-				spp.data.global,
-				spp.data.regional,
-				expl.var.global,
-				expl.var.regional,
-				new.env = NULL,
-				new.env.names=NULL,
-				Background.Global = NULL,
-				Background.Regional = NULL,
-				Absences.Global = NULL,
-				Absences.Regional = NULL) {
+                           spp.data.global,
+                           spp.data.regional,
+                           expl.var.global,
+                           expl.var.regional,
+                           new.env = NULL,
+                           new.env.names=NULL,
+                           Background.Global = NULL,
+                           Background.Regional = NULL,
+                           Absences.Global = NULL,
+                           Absences.Regional = NULL) {
 
-  if(!(is.data.frame(spp.data.global) &&
-        ncol(spp.data.global) == 2 &&
-        all(c('x', 'y') %in% colnames(spp.data.global))) ||
-      !(is.data.frame(spp.data.regional) &&
-        ncol(spp.data.regional) == 2 &&
-        all(c('x', 'y') %in% colnames(spp.data.regional)))) {
+  if(!(is.coord.df(spp.data.global)) ||
+       !(is.coord.df(spp.data.regional))) {
     stop(paste0("spp.data.global and spp.data.regional for ", SpeciesName, " must be data.frames with 'x' and 'y' columns."))
   }
 
@@ -105,35 +103,23 @@ NSDM.InputData <- function(SpeciesName,
   }
 
   if(!is.null(Background.Global) && !is.null(Background.Regional)) {
-    if(!(is.data.frame(Background.Regional) &&
-          ncol(Background.Global) == 2 &&
-          all(c('x', 'y') %in% colnames(Background.Global))) ||
-        !(is.data.frame(Background.Regional) &&
-          ncol(Background.Regional) == 2 &&
-          all(c('x', 'y') %in% colnames(Background.Regional)))) {
+    if(!(is.coord.df(Background.Global)) ||
+       !(is.coord.df(Background.Regional))) {
       stop("Background.Global and Background.Regional must be data.frames with 'x' and 'y' columns.")
     }
   }
 
-  if (!is.null(Absences.Global) && 
-    (!(is.data.frame(Absences.Global) &&
-          ncol(Absences.Global) == 2 &&
-          all(c('x', 'y') %in% colnames(Absences.Global))))) {
-      stop("Absences.Global must be a data.frame with 'x' and 'y' columns.")
+  if(!is.null(Absences.Global) && !is.coord.df(Absences.Global)) {
+    stop("Absences.Global must be a data.frame with 'x' and 'y' columns.")
   }
 
-  if (!is.null(Absences.Regional) && 
-    (!(is.data.frame(Absences.Regional) &&
-          ncol(Absences.Regional) == 2 &&
-          all(c('x', 'y') %in% colnames(Absences.Regional))))) {
-      stop("Absences.Regional must be a data.frame with 'x' and 'y' columns.")
+  if(!is.null(Absences.Regional) && !is.coord.df(Absences.Regional)) {
+    stop("Absences.Regional must be a data.frame with 'x' and 'y' columns.")
   }
 
   # Match variables?
   # Global vars in regional?
-  match_vars2 <- sapply(names(expl.var.global), function(var_name) {
-    var_name %in% names(expl.var.regional)
-  })
+  match_vars2 <- names(expl.var.global) %in% names(expl.var.regional)
   if(!all(match_vars2)) {
     stop("All variables present in expl.var.global must also be present in expl.var.regional.")
   }
@@ -153,9 +139,11 @@ NSDM.InputData <- function(SpeciesName,
         s |> fs::path_file() |> fs::path_ext_remove()
       })
       names(new.env) <- source_names
-      valid_names <- sapply(names(new.env), function(x) sum(nchar(x)))
-      if(!all(valid_names > 0)) {
-        stop("Names of new.env is NULL. Please provide names of new scenarios in names.new.env.")
+      valid_names <- sapply(names(new.env),
+                            function(x){
+                                !is.null(x) && all(nchar(x) > 0)})
+      if(!all(valid_names)) {
+        stop("Names of new.env are NULL or empty strings. Please provide names of new scenarios in names.new.env.")
       }
     } else if(!is.null(new.env.names)) {
       if(length(new.env) != length(new.env.names)) {
@@ -176,21 +164,25 @@ NSDM.InputData <- function(SpeciesName,
 
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-				nrow(spp.data.global),
-				ifelse(is.null(Background.Global), "NA", nrow(Background.Global)),
-                                ifelse(is.null(Absences.Global), "NA", nrow(Absences.Global)),
-				nrow(spp.data.regional),
-				ifelse(is.null(Background.Regional), "NA", nrow(Background.Regional)),
-                                ifelse(is.null(Absences.Regional), "NA", nrow(Absences.Regional)),
-				length(new.env)))
+                                   nrow(spp.data.global),
+                                   ifelse(is.null(Background.Global),
+                                          "NA", nrow(Background.Global)),
+                                   ifelse(is.null(Absences.Global), 
+                                          "NA", nrow(Absences.Global)),
+                                   nrow(spp.data.regional),
+                                   ifelse(is.null(Background.Regional),
+                                          "NA", nrow(Background.Regional)),
+                                   ifelse(is.null(Absences.Regional),
+                                          "NA", nrow(Absences.Regional)),
+                                   length(new.env)))
 
   rownames(summary) <- c("Species name",
                          "Original number of species occurrences at global level",
 			 "Number of background points at global level",
-			 "Number of absence points at global level",
+			 "Number of true absence points at global level",
                          "Original number of species occurrences at regional level",
 			 "Number of background points at regional level",
-			 "Number of absence points at regional level",
+			 "Number of true absence points at regional level",
                          "Number of new scenarios")
 
   #
@@ -212,6 +204,3 @@ NSDM.InputData <- function(SpeciesName,
 
   return(sabina)
 }
-
-
-
