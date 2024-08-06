@@ -118,7 +118,7 @@ The covariates for each spatial scale (i.e., global and regional) should be prov
 Additionally, regional-scale *SpatRaster*  corresponding to the covariates used to project the models at different scenarios (i.e., new scenarios) can be provided
 
  ```{r eval = FALSE}
-# new escenarios
+# new scenarios
  data(new.env, package = "sabinaNSDM")
  new.env <- terra::unwrap(new.env)
 ```

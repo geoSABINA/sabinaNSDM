@@ -91,6 +91,8 @@
 #'
 #' # Perform global scale SDMs using default parameters. 
 #' myGlobalModel <- NSDM.Global(mySelectedCovs)
+#'
+#' summary(myGlobalModel)
 #' 
 #' ## Perform global scale SDMs with custom parameters.
 #' ## This line shows an example how to customize modeling options using `bm_ModelingOptions` from the `biomod2` package 
