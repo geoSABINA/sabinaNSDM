@@ -87,6 +87,8 @@
 #'
 #' # Perform NSDM analysis using the covariate approach with default settings.
 #' myCovariateModel <- NSDM.Covariate(myGlobalModel)
+#'
+#' summary(myCovariateModel)
 #' 
 #' ## Perform NSDM analysis using the covariate approach with custom settings.
 #' # myCovariateModel <- NSDM.Covariate(myGlobalModel,  	# Global model output used as input

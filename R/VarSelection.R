@@ -80,12 +80,14 @@
 #'
 #' # Select covariates using default parameters
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#'
+#' summary(mySelectedCovs)
 #' 
 #' ## Select covariates using custom parameters.
 #' # mySelectedCovs <- NSDM.SelectCovariates(nsdm_finput,
 #' #					maxncov.Global = 5, 	# Maximum number of global covariates
 #' #					maxncov.Regional = 7, 	# Maximum number of regional covariates
-#' #					corcut = 0.7, 		# Maximum number of regional covariates
+#' #					corcut = 0.7, 		# Value of the correlation coefficient threshold used for identifying collinearity
 #' #					algorithms = c("glm","gam","rf"),  # Algorithms to use for selection
 #' #					ClimaticVariablesBands = c(2,3,5), # Bands to exclude in the analysis
 #' #					save.output = TRUE)  	# Save the output externally
@@ -194,15 +196,25 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
 
   species_name <- paste0("SpeciesData.XY.", scale)
   background_name <- paste0("Background.XY.", scale)
+  absences_name <- paste0("Absences.XY.", scale)
+
 
   # Select the best subset of covariates for each species using covsel package
-  myResp.xy <- rbind(nsdm_finput[[species_name]], nsdm_finput[[background_name]])
-  row.names(myResp.xy) <- c(1:nrow(myResp.xy))
-  myResp <- as.vector(c(rep(1, nrow(nsdm_finput[[species_name]])), rep(0, nrow(nsdm_finput[[background_name]]))))
-  myExpl.covsel <- terra::extract(IndVar, myResp.xy, rm.na=TRUE, df=TRUE)[, -1]
+  if(!is.null(nsdm_finput[[background_name]])) {
+    myResp.xy <- rbind(nsdm_finput[[species_name]], nsdm_finput[[background_name]])
+  } else {
+    myResp.xy <- rbind(nsdm_finput[[species_name]], nsdm_finput[[absences_name]])
+  }
+  row.names(myResp.xy)<-c(1:nrow(myResp.xy))
+  if(!is.null(nsdm_finput[[background_name]])) {
+    myResp <- as.vector(c(rep(1,nrow(nsdm_finput[[species_name]])),rep(0,nrow(nsdm_finput[[background_name]]))))
+  } else {
+    myResp <- as.vector(c(rep(1, nrow(nsdm_finput[[species_name]])), rep(0, nrow(nsdm_finput[[absences_name]]))))
+  }
+  myExpl.covsel <- terra::extract(IndVar, myResp.xy, as.df=TRUE)[, -1]
 
   Covdata.filter <- covsel::covsel.filteralgo(covdata = myExpl.covsel,
-                                            pa = myResp, corcut = corcut)
+                                              pa = myResp, corcut = corcut)
 
   # Embedding selected covariates
   if(maxncov == "nocorr") {

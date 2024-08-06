@@ -91,6 +91,9 @@
 #'
 #' # Perform regional scale SDMs with default parameters.
 #' myRegionalModel <- NSDM.Regional(mySelectedCovs)
+#'
+#' summary(myRegionalModel)
+#'
 #' 
 #' ## Perform regional scale SDMs with custom parameters.
 #' ## This line shows an example how to customize modeling options using `bm_ModelingOptions` from the `biomod2` package 

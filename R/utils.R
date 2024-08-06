@@ -16,13 +16,20 @@ clean_data <- function(mask, data){
     return(XY)
 }
 
-# Format the response (presence/background) and covariates data for BIOMOD2
-biomod_format <- function(sp_data, background_data, indvar){
+# Format the response (presence/background) or (presence/true absences) and covariates data for BIOMOD2
+biomod_format <- function(sp_data, background_data, trueabsences_data, indvar){
 
-    myResp.xy <- rbind(sp_data, background_data)
-    row.names(myResp.xy)<-c(1:nrow(myResp.xy))
-    myResp <- data.frame(c(rep(1,nrow(sp_data)),
-                           rep(NA,nrow(background_data))))
+    if(!is.null(background_data)) {
+      myResp.xy <- rbind(sp_data, background_data)
+      row.names(myResp.xy)<-c(1:nrow(myResp.xy))
+      myResp <- data.frame(c(rep(1,nrow(sp_data)),
+                             rep(NA,nrow(background_data))))
+    } else {
+      myResp.xy <- rbind(sp_data, trueabsences_data)
+      row.names(myResp.xy)<-c(1:nrow(myResp.xy))
+      myResp <- data.frame(c(rep(1,nrow(sp_data)),
+                             rep(0,nrow(trueabsences_data))))
+    }
     names(myResp)<-"pa"
     row.names(myResp)<-c(1:nrow(myResp.xy))
     myExpl <- terra::extract(indvar, myResp.xy, as.df=TRUE)[, -1]
@@ -92,15 +99,17 @@ general_nsdm_model <- function(nsdm.obj,
     # Regional model excluding climatic variables
 
     # Add the global model as an additional variable for the regional model.
-    SDM.global <- terra::unwrap(nsdm.obj$current.projections$Pred) # Unwrap objects
+    SDM.global <- terra::unwrap(nsdm.obj$current.projections$Pred)
     names(SDM.global) <- c("SDM.global")
-    IndVar.Regional.temp <- terra::unwrap(nsdm.obj$IndVar.Regional.Selected)  # Unwrap objects
+    IndVar.Regional.temp <- terra::unwrap(nsdm.obj$IndVar.Regional.Selected)
     IndVar.Regional.Covariate <- c(IndVar.Regional.temp, SDM.global)
 
     sp_data <- nsdm.obj$SpeciesData.XY.Regional
     background_data <- nsdm.obj$Background.XY.Regional
+    trueabsences_data <- nsdm.obj$Absences.XY.Regional
     biomod_inpt <- biomod_format(sp_data,
                                  background_data,
+                                 trueabsences_data,
                                  IndVar.Regional.Covariate)
     myResp <- biomod_inpt$myResp
     myResp.xy <- biomod_inpt$myResp.xy
@@ -131,8 +140,10 @@ general_nsdm_model <- function(nsdm.obj,
     }
     sp_data <- nsdm.obj[[paste0("SpeciesData.XY.", scale)]]
     background_data <- nsdm.obj[[paste0("Background.XY.", scale)]]
+    trueabsences_data <- nsdm.obj[[paste0("Absences.XY.", scale)]]
     biomod_inpt <- biomod_format(sp_data,
                                  background_data,
+                                 trueabsences_data,
                                  IndVar.Selected)
     myResp <- biomod_inpt$myResp
     myResp.xy <- biomod_inpt$myResp.xy
@@ -145,9 +156,9 @@ general_nsdm_model <- function(nsdm.obj,
                                                 resp.xy = myResp.xy,
                                                 expl.var = myExpl,
                                                 resp.name = SpeciesName,
-                                                PA.nb.rep = 1,
-                                                PA.nb.absences = nrow(background_data),
-                                                PA.strategy = "random")
+                                                PA.nb.rep = ifelse(!is.null(trueabsences_data), 0, 1),
+                                                PA.nb.absences = ifelse(!is.null(trueabsences_data), 0, nrow(background_data)),
+                                                PA.strategy = if(!is.null(trueabsences_data)) NULL else "random")
 
   # Calibrate and evaluate individual models with specified statistical algorithms
   # Train and evaluate individual models using BIOMOD_Modeling
@@ -388,7 +399,7 @@ general_nsdm_model <- function(nsdm.obj,
 
     message("Results saved in the following local folder/s:")
     message(paste(
-    "- Current and new projections: ", projection_path, "\n",
+    " - Current and new projections: ", projection_path, "\n",
     "- Replicates statistics: ", values_path, "\n",
     "- Consensus model statistics: ", values_path, "\n",
     "- Covariate importance: ", values_path, "\n"

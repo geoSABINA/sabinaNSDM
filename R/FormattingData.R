@@ -73,6 +73,8 @@
 #'
 #' # Format the input data using default parameters.
 #' myFormatedData <- NSDM.FormattingData(myInputData)
+#'
+#' summary(myFormatedData)
 #' 
 #' ## Format the input data specifying custom parameters.
 #' # myFormatedData <- NSDM.FormattingData(nsdm_input, 
@@ -113,10 +115,10 @@ NSDM.FormattingData <- function(nsdm_input,
   if(save.output){
     fs::dir_create(c("Results/Global/SpeciesXY/",
 		"Results/Global/Values/",
-		"Results/Global/Background/"), recurse = TRUE)
+		"Results/Global/AbsencesXY/"), recurse = TRUE)
     fs::dir_create(c("Results/Regional/SpeciesXY/",
 		"Results/Regional/Values/",
-		"Results/Regional/Background/"), recurse = TRUE)
+		"Results/Regional/AbsencesXY/"), recurse = TRUE)
   }
 
   format_global <- gen_background_pts(nsdm_input, "Global",
@@ -135,8 +137,26 @@ NSDM.FormattingData <- function(nsdm_input,
 
   sabina$SpeciesData.XY.Global <- format_global$SpeciesData.XY
   sabina$SpeciesData.XY.Regional <- format_regional$SpeciesData.XY
-  sabina$Background.XY.Global <- format_global$Background.XY
-  sabina$Background.XY.Regional <- format_regional$Background.XY
+  if(!is.null(format_global$Background.XY)) {
+    sabina$Background.XY.Global <- format_global$Background.XY
+  } else {
+    sabina$Background.XY.Global <- NULL
+  }
+  if(!is.null(format_regional$Background.XY)) {
+    sabina$Background.XY.Regional <- format_regional$Background.XY
+  } else {
+    sabina$Background.XY.Regional <- NULL
+  }
+  if(!is.null(format_global$Absences.XY)) {
+    sabina$Absences.XY.Global <- format_global$Absences.XY
+  } else {
+    sabina$Absences.XY.Global <- NULL
+  }
+  if(!is.null(format_regional$Absences.XY)) {
+    sabina$Absences.XY.Regional <- format_regional$Absences.XY
+  } else {
+    sabina$Absences.XY.Regional <- NULL
+  }
   sabina$IndVar.Global <- format_global$IndVar
   sabina$IndVar.Regional <- format_regional$IndVar
   sabina$Scenarios <- nsdm_input$Scenarios
@@ -149,10 +169,28 @@ NSDM.FormattingData <- function(nsdm_input,
   if(save.output) {
     message("Results saved in the following local folder/s:")
     message(paste0(
-	" - Global background points: /Results/Global/Background/Background.csv\n",
-	" - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
-	" - Regional background points: /Results/Regional/Background/Background.csv\n",
-	" - Regional species occurrences: /Results/Regional/SpeciesXY/", SpeciesName, ".csv\n"
+      " - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
+      if(!is.null(format_global$Background.XY)) {
+        paste0(" - Global background points: /Results/Global/AbsecesXY/", SpeciesName, "_Background.csv\n")
+      } else {
+        ""
+      },
+      if(!is.null(format_global$Absences.XY)) {
+        paste0(" - Global true absence points: /Results/Global/AbsecesXY/", SpeciesName, "_TrueAbsences.csv\n")
+      } else {
+        ""
+      },
+      " - Regional species occurrences: /Results/Regional/SpeciesXY/", SpeciesName, ".csv\n",
+      if(!is.null(format_regional$Background.XY)) {
+        paste0(" - Regional background points: /Results/Regional/AbsecesXY/", SpeciesName, "_Background.csv\n")
+      } else {
+        ""
+      },
+      if(!is.null(format_regional$Absences.XY)) {
+        paste0(" - Regional true absence points: /Results/Regional/AbsecesXY/", SpeciesName, "_TrueAbsences.csv\n")
+      } else {
+        ""
+      }
     ))
   }
 
@@ -218,6 +256,7 @@ gen_background_pts <- function(nsdm_input, scale,
 
   lowcase_scale <- tolower(scale)
   IndVar <- terra::unwrap(nsdm_input[[paste0("IndVar.", scale)]])
+
   # Generate random background points for model calibration
   # Covariates (environmental layers)
   IndVar <- IndVar[[names(IndVar)]]
@@ -225,28 +264,37 @@ gen_background_pts <- function(nsdm_input, scale,
   IndVar <- terra::mask(IndVar, Mask)
 
   background_scale <- nsdm_input[[paste0("Background.", scale, ".0")]]
+  absences_scale <- nsdm_input[[paste0("Absences.", scale)]]
   # Generate random background points for model calibration
-  if(is.null(background_scale) &&
-       Background.method == "random") {
-    Valid.Cells <- which(!is.na(terra::values(Mask)))
-    if(length(Valid.Cells) < nPoints) {
-      stop(paste("The requested number of background nPoints exceeds the number of available cells.
-	Maximum number of background points at", lowcase_scale, "level:",length(Valid.Cells)))
+  if(is.null(absences_scale)) {
+    if(is.null(background_scale) &&
+         Background.method == "random") {
+      Valid.Cells <- which(!is.na(terra::values(Mask)))
+      if(length(Valid.Cells) < nPoints) {
+        stop(paste("The requested number of background nPoints exceeds the number of available cells.
+	  Maximum number of background points at", lowcase_scale, "level:",length(Valid.Cells)))
+      }
+      Sampled.indices <- sample(Valid.Cells, nPoints)
+      Coords <- terra::xyFromCell(Mask, Sampled.indices)
+      Background.XY <- as.data.frame(Coords)
+    } else if(is.null(background_scale) && Background.method == "stratified") {
+      Background.XY <- background_stratified(IndVar, nPoints=nPoints)
+    } else {
+      #remove NAs and duplicates
+      XY <- clean_data(Mask, background_scale)
+      Background.XY <- XY
     }
-    Sampled.indices <- sample(Valid.Cells, nPoints)
-    Coords <- terra::xyFromCell(Mask, Sampled.indices)
-    Background.XY <- as.data.frame(Coords)
-  } else if(is.null(background_scale) && Background.method == "stratified") {
-    Background.XY <- background_stratified(IndVar, nPoints=nPoints)
-  } else {
-    #remove NAs and duplicates
-    XY <- clean_data(Mask, background_scale)
-    Background.XY <- XY
+
+    if(save.output){
+      write.csv(Background.XY,
+                paste0("Results/", scale, "/AbsencesXY/", SpeciesName, "_Background.csv"))
+    }
   }
 
-  if(save.output){
-    write.csv(Background.XY,
-              paste0("Results/", scale, "/Background/Background.csv"))
+  # remove NAs and duplicates of true absences
+  if(!is.null(absences_scale)) {
+    XY <- clean_data(Mask, absences_scale)
+    Absences.XY <- XY
   }
 
   # Load species ocurrence data at regional scale
@@ -283,24 +331,60 @@ gen_background_pts <- function(nsdm_input, scale,
                                "/SpeciesXY/", SpeciesName, ".csv"))
   }
 
+  # Spatial thinning of true absence data
+  if(!is.null(absences_scale)) {
+    if(Min.Dist == "resolution") {
+      Min.Dist <- terra::res(Mask)[1]
+    }
+    invisible(capture.output({
+      tryCatch({
+        Absences.XY.final <- ecospat::ecospat.occ.desaggregation(Absences.XY, 
+                                                                 min.dist = Min.Dist, 
+                                                                 by = NULL)
+      }, error = function(e) {
+        Absences.XY <- unique(Absences.XY)
+        Absences.XY <- round(Absences.XY, digits = 4)
+        Absences.XY.final <- ecospat::ecospat.occ.desaggregation(Absences.XY,
+                                                                 min.dist = Min.Dist,
+                                                                 by = NULL)
+      })
+    }))
+    message(paste0(scale, " absence data (",SpeciesName,"): from ",
+                   nrow(Absences.XY), " to ", nrow(Absences.XY.final),
+                   " absence points after cleaning and thinning.\n"))
+
+    # Save filtered absences data for each species
+    if(save.output){
+    write.csv(Absences.XY.final, paste0("Results/", scale,
+                                        "/AbsencesXY/", SpeciesName, "_TrueAbsences.csv"))
+    }
+  }
+
   scale_summary <- data.frame(Values = c(SpeciesName,
                                          nrow(SpeciesData.XY),
                                          nrow(XY.final),
-                                         ifelse(is.null(background_scale),
+                                         ifelse(is.null(absences_scale),
+                                           ifelse(is.null(background_scale),
                                                 nPoints,
-                                                nrow(background_scale))))
+                                                nrow(background_scale)),
+                                           "NA"),
+                                        ifelse(is.null(absences_scale), "NA", nrow(Absences.XY)),
+                                        ifelse(is.null(absences_scale), "NA", nrow(Absences.XY.final))))
 
   rownames(scale_summary) <- c("Species name",
-                               paste("Original number of species occurrences at", lowcase_scale, "level"),
-                               paste("Final number of species occurrences at", lowcase_scale, "level"),
-                               paste("Number of background points at", lowcase_scale, "level"))
+                               paste0("Original number of species occurrences at ", lowcase_scale, " level"),
+                               paste0("Final number of species occurrences at ", lowcase_scale, " level"),
+                               paste0("Number of background points at ", lowcase_scale, " level"),
+                               paste0("Original number of true absence points at ", lowcase_scale, " level"),
+                               paste0("Final number of true absence points at ", lowcase_scale, " level"))
 
   return(list(
           SpeciesData.XY = XY.final,
-          Background.XY = Background.XY,
+          Background.XY = if(!is.null(Background.XY)) Background.XY else NULL,
+          Absences.XY = if(!is.null(absences_scale)) Absences.XY.final else NULL,
           IndVar = terra::wrap(IndVar),
           Summary = scale_summary
-
   ))
 
 }
+

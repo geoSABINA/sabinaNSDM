@@ -78,6 +78,8 @@
 #'				    rescale = FALSE, 	# Whether to rescale the model outputs before combining
 #'				    save.output = TRUE) # Save the combined model output externally
 #'
+#' summary(myMultiplyModel)
+#'
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
 #'
@@ -120,7 +122,7 @@ NSDM.Multiply <- function(nsdm_global,
     } else {
         Pred.global <- terra::unwrap(nsdm_global$new.projections$Pred.Scenario[[i-1]])
         Pred.regional <- terra::unwrap(nsdm_regional$new.projections$Pred.Scenario[[i-1]])
-      }
+    }
 
     # Rescale global prediction to a common range
     if(rescale==TRUE) {
@@ -167,10 +169,19 @@ NSDM.Multiply <- function(nsdm_global,
 
 
   ## Evaluation multiply model
-  myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional,
-                     nsdm_regional$Background.XY.Regional)
-  myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),
-                         rep(0,nrow(nsdm_regional$Background.XY.Regional))))
+  if(!is.null(nsdm_regional$Background.XY.Regional)) {
+    # Format the response (presence/background) and covariates data for BIOMOD2
+    myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional,
+                       nsdm_regional$Background.XY.Regional)
+    myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)),
+                           rep(0,nrow(nsdm_regional$Background.XY.Regional))))
+  } else {
+    # Format the response (presence/absence) and covariate data for BIOMOD2
+    myResp.xy <- rbind(nsdm_regional$SpeciesData.XY.Regional,
+                       nsdm_regional$Absences.XY.Regional)
+    myResp <- data.frame(c(rep(1,nrow(nsdm_regional$SpeciesData.XY.Regional)), 
+                           rep(0,nrow(nsdm_regional$Absences.XY.Regional))))
+  }
   pred_df <- sabina$current.projections$Pred
   pred_df <- terra::extract(pred_df, myResp.xy)[-1]
   myExpl <- pred_df
@@ -178,13 +189,13 @@ NSDM.Multiply <- function(nsdm_global,
   pred_df <- as.vector(pred_df)[[1]]
 
   myRespNA <- replace(myResp, myResp == 0, NA)
-  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myRespNA,
+  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = if(!is.null(nsdm_regional$Background.XY.Regional)) myRespNA else myResp,
 	                                     resp.xy = myResp.xy,
 	                                     expl.var = myExpl,
 	                                     resp.name = SpeciesName,
-	                                     PA.nb.rep = 1,
-	                                     PA.nb.absences = nrow(nsdm_regional$Background.XY.Regional),
-	                                     PA.strategy = "random")
+	                                     PA.nb.rep = ifelse(!is.null(nsdm_regional$Absences.XY.Regional), 0, 1),
+	                                     PA.nb.absences = ifelse(!is.null(nsdm_regional$Absences.XY.Regional), 0, nrow(nsdm_regional$Background.XY.Regional)),
+	                                     PA.strategy = if(!is.null(nsdm_regional$Absences.XY.Regional)) NULL else "random")
 
   calib.lines <- biomod2::bm_CrossValidation(bm.format = myBiomodData,
                                     strategy = "random",
@@ -206,9 +217,9 @@ NSDM.Multiply <- function(nsdm_global,
     eval.lines.rep <- which(rowSums(!calib.lines.rep) == ncol(calib.lines.rep))
 
     for(xx in metric.eval) {
-      stat <-bm_FindOptimStat(metric.eval = xx,
-                              obs = myResp[-eval.lines.rep],
-                              fit = pred_df[-eval.lines.rep])
+      stat <- biomod2::bm_FindOptimStat(metric.eval = xx,
+                               obs = myResp[-eval.lines.rep],
+                               fit = pred_df[-eval.lines.rep])
       cross.validation <- rbind(cross.validation, stat)
     }
 
@@ -248,8 +259,8 @@ NSDM.Multiply <- function(nsdm_global,
     Threshold.TSS <- metric.means$cutoff[which(metric.means$metric.eval=="TSS")]
     Pred.bin.ROC <- terra::classify(res.average,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
     Pred.bin.TSS <- terra::classify(res.average,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
-    Pred.bin.ROC<-terra::rast(wrap(Pred.bin.ROC))
-    Pred.bin.TSS<-terra::rast(wrap(Pred.bin.TSS))
+    Pred.bin.ROC<-terra::rast(terra::wrap(Pred.bin.ROC))
+    Pred.bin.TSS<-terra::rast(terra::wrap(Pred.bin.TSS))
 
     if(projmodel =="Current") {
       sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
