@@ -116,20 +116,32 @@ mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 # Perform global scale SDMs using default parameters. 
 myGlobalModel <- NSDM.Global(mySelectedCovs)
 
+summary(myGlobalModel)
+
 ## Perform global scale SDMs with custom parameters.
-## This line shows an example how to customize modeling options using `bm_ModelingOptions` from the `biomod2` package 
+## This line shows an example how to customize modeling options using `bm_ModelingOptions`
+## from the `biomod2` package 
 # opt.b <- bm_ModelingOptions(data.type = 'binary', 
 #  				models = c("GAM", "GBM", "RF"),
 #				strategy = 'bigboss')
   
-# myGlobalModel <- NSDM.Global(mySelectedCovs,
-#				algorithms = c("GBM", "RF", "GLM"), # Statistical models used in the ensemble
-#				CV.nb.rep = 10, # Number of cross-validation replicates
-#				CV.perc = 0.8, # Percentage of data used for each replicate
-#				CustomModelOptions = opt.b,  # Optional custom options for statistical models
-#				metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
-#				save.output = TRUE, #  Save the output externally
-#				rm.biomod.folder = TRUE) # Remove the temporary biomod2 output folder
+# myGlobalModel <- NSDM.Global(
+#				# Selected covariates output used as input
+#				mySelectedCovs,
+#				# Statistical models used in the ensemble
+#				algorithms = c("GBM", "RF", "GLM"),
+#				# Number of cross-validation replicates
+#				CV.nb.rep = 10,
+#				# Percentage of data used for each replicate
+#				CV.perc = 0.8,
+#				# Optional custom options for statistical models
+#				CustomModelOptions = opt.b,
+#				# Threshold for selecting models for ensemble
+#				metric.select.thresh = 0.8,
+#				#  Save the output externally
+#				save.output = TRUE,
+#				# Remove the temporary biomod2 output folder
+#				rm.biomod.folder = TRUE)
 
 
 

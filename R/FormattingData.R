@@ -63,7 +63,7 @@
 #' new.env<-terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#' myInputData <- NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 #'				spp.data.global = Fagus.sylvatica.xy.global,
 #'				spp.data.regional = Fagus.sylvatica.xy.regional,
 #'				expl.var.global = expl.var.global,
@@ -77,17 +77,24 @@
 #'
 #' # Format the input data using default parameters.
 #' myFormattedData <- NSDM.FormattingData(myInputData, 
-#'					nPoints = 1000)
+#'                                        nPoints = 1000)
 #'
-#' summary(myFormatedData)
+#' summary(myFormattedData)
 #' 
 #' ## Format the input data specifying custom parameters.
-#' # myFormattedData <- NSDM.FormattingData(nsdm_input, 
-#' #				nPoints = 1000, # Number of background points to generate
-#' #				Min.Dist.Global = "resolution", # Minimum distance between points at the global scale, based on raster resolution
-#' #				Min.Dist.Regional = "resolution",# Minimum distance between points at the regional scale, based on raster resolution
-#' #				Background.method="random",  # Method used to generate background points, here set to 'random'
-#' #				save.output = TRUE)  	# save the formatted data externally
+#' # myFormattedData <- NSDM.FormattingData(
+#' #				# Input data object
+#' #				myInputData,
+#' #				# Number of background points to generate
+#' #				nPoints = 1000,
+#' #				# Minimum global point distance, based on raster resolution
+#' #				Min.Dist.Global = "resolution",
+#' #				# Minimum regional point distance, based on raster resolution
+#' #				Min.Dist.Regional = "resolution",
+#' #				# Method used to generate background points, here set to 'random'
+#' #				Background.method="random",
+#' #				# Save the formatted data externally
+#' #				save.output = TRUE)
 #' 
 #'
 #' @export
