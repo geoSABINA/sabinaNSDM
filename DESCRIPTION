@@ -23,6 +23,7 @@ Imports:
     gbm,
     ecospat (>= 4.0.0),
     fs (>= 1.6.3),
+    sf,
     terra (>= 1.7-55),
     sgsR (>= 1.4.4),
     covsel

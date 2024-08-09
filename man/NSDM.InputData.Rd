@@ -89,5 +89,7 @@ myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 			Absences.Global = NULL,
 			Absences.Regional = NULL)
 
+summary(myInputData)
+
 
 }

@@ -107,16 +107,24 @@ myFormattedData <- NSDM.FormattingData(
 # Select covariates using default parameters
 mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 
+summary(mySelectedCovs)
+
 ## Select covariates using custom parameters.
 # mySelectedCovs <- NSDM.SelectCovariates(
-#   nsdm_finput,
-#   maxncov.Global = 5,     # Maximum number of global covariates
-#   maxncov.Regional = 7,   # Maximum number of regional covariates
-#   corcut = 0.7,           # Maximum number of regional covariates
-#   algorithms = c("glm","gam","rf"),  # Algorithms to use for selection
-#   ClimaticVariablesBands = c(2,3,5), # Bands to exclude in the analysis
-#   save.output = TRUE      # Save the output externally
-# )
+#					# Formatted data output used as input
+#					myFormattedData,
+#					# Maximum number of global covariates
+#					maxncov.Global = 5,
+#					# Maximum number of regional covariates
+#					maxncov.Regional = 7,
+#					# Correlation threshold for collinearity
+#					corcut = 0.7,
+#					# Algorithms to use for selection
+#					algorithms = c("glm","gam","rf"),
+#					# Bands to exclude in the analysis
+#					ClimaticVariablesBands = c(2,3,5),
+#					# Save the output externally
+#					save.output = TRUE)
 
 
 }

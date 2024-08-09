@@ -91,11 +91,19 @@ myGlobalModel <- NSDM.Global(mySelectedCovs)
 myRegionalModel <- NSDM.Regional(mySelectedCovs)
 
 # Perform NSDM analysis using the multiply strategy
-myMultiplyModel <- NSDM.Multiply(myGlobalModel, 	# Output from the global scale SDM
-			    myRegionalModel, 	# Output from the regional scale SDM
-			    method = "Arithmetic", # Method for combining model outputs. Options include "Arithmetic" or "Geometric"
-			    rescale = FALSE, 	# Whether to rescale the model outputs before combining
-			    save.output = TRUE) # Save the combined model output externally
+myMultiplyModel <- NSDM.Multiply(
+			    # Output from the global scale SDM
+			    myGlobalModel, 	
+			    # Output from the regional scale SDM
+			    myRegionalModel, 	
+			    # Method for combining model outputs ("Arithmetic" or "Geometric")
+			    method = "Arithmetic", 
+			    # Whether to rescale the model outputs before combining
+			    rescale = FALSE,
+			    # Save the combined model output externally
+			    save.output = TRUE) 
+
+summary(myMultiplyModel)
 
 
 }
