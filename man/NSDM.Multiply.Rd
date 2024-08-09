@@ -70,13 +70,15 @@ myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 			spp.data.regional = Fagus.sylvatica.xy.regional,
 			expl.var.global = expl.var.global,
 			expl.var.regional = expl.var.regional,
-			new.env = new_env,
+			new.env = new.env,
 			new.env.names = c("Scenario1"),
 			Background.Global = NULL,
-			Background.Regional = NULL)
+			Background.Regional = NULL,
+			Absences.Global = NULL,
+			Absences.Regional = NULL)
 
 # Format the input data
-myFormatedData <- NSDM.FormatingData(myInputData,
+myFormattedData <- NSDM.FormattingData(myInputData,
 				nPoints=1000)
 
 # Select covariates
@@ -89,11 +91,19 @@ myGlobalModel <- NSDM.Global(mySelectedCovs)
 myRegionalModel <- NSDM.Regional(mySelectedCovs)
 
 # Perform NSDM analysis using the multiply strategy
-myMultiplyModel <- NSDM.Multiply(myGlobalModel, 	# Output from the global scale SDM
-			    myRegionalModel, 	# Output from the regional scale SDM
-			    method = "Arithmetic", # Method for combining model outputs. Options include "Arithmetic" or "Geometric"
-			    rescale = FALSE, 	# Whether to rescale the model outputs before combining
-			    save.output = TRUE) # Save the combined model output externally
+myMultiplyModel <- NSDM.Multiply(
+			    # Output from the global scale SDM
+			    myGlobalModel, 	
+			    # Output from the regional scale SDM
+			    myRegionalModel, 	
+			    # Method for combining model outputs ("Arithmetic" or "Geometric")
+			    method = "Arithmetic", 
+			    # Whether to rescale the model outputs before combining
+			    rescale = FALSE,
+			    # Save the combined model output externally
+			    save.output = TRUE) 
+
+summary(myMultiplyModel)
 
 
 }

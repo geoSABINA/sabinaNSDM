@@ -53,13 +53,15 @@
 #'				spp.data.regional = Fagus.sylvatica.xy.regional,
 #'				expl.var.global = expl.var.global,
 #'				expl.var.regional = expl.var.regional,
-#'				new.env = new_env,
+#'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#'				Background.Regional = NULL,
+#'				Absences.Global = NULL,
+#'				Absences.Regional = NULL)
 #'
 #' # Format the input data
-#' myFormatedData <- NSDM.FormatingData(myInputData,
+#' myFormattedData <- NSDM.FormattingData(myInputData,
 #'					nPoints=1000)
 #'
 #' # Select covariates
@@ -72,11 +74,17 @@
 #' myRegionalModel <- NSDM.Regional(mySelectedCovs)
 #' 
 #' # Perform NSDM analysis using the multiply strategy
-#' myMultiplyModel <- NSDM.Multiply(myGlobalModel, 	# Output from the global scale SDM
-#'				    myRegionalModel, 	# Output from the regional scale SDM
-#'				    method = "Arithmetic", # Method for combining model outputs. Options include "Arithmetic" or "Geometric"
-#'				    rescale = FALSE, 	# Whether to rescale the model outputs before combining
-#'				    save.output = TRUE) # Save the combined model output externally
+#' myMultiplyModel <- NSDM.Multiply(
+#'				    # Output from the global scale SDM
+#'				    myGlobalModel, 	
+#'				    # Output from the regional scale SDM
+#'				    myRegionalModel, 	
+#'				    # Method for combining model outputs ("Arithmetic" or "Geometric")
+#'				    method = "Arithmetic", 
+#'				    # Whether to rescale the model outputs before combining
+#'				    rescale = FALSE,
+#'				    # Save the combined model output externally
+#'				    save.output = TRUE) 
 #'
 #' summary(myMultiplyModel)
 #'
@@ -151,7 +159,8 @@ NSDM.Multiply <- function(nsdm_global,
       res.average <-  terra::mean(Stack.rasters)
     }
 
-    res.average<-terra::rast(terra::wrap(res.average))
+    res.average <- terra::rast(terra::wrap(res.average))
+
     if(projmodel =="Current") {
       sabina$current.projections$Pred <- setNames(res.average,
                                                   paste0(SpeciesName, ".Current"))
@@ -259,8 +268,8 @@ NSDM.Multiply <- function(nsdm_global,
     Threshold.TSS <- metric.means$cutoff[which(metric.means$metric.eval=="TSS")]
     Pred.bin.ROC <- terra::classify(res.average,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
     Pred.bin.TSS <- terra::classify(res.average,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
-    Pred.bin.ROC<-terra::rast(terra::wrap(Pred.bin.ROC))
-    Pred.bin.TSS<-terra::rast(terra::wrap(Pred.bin.TSS))
+    Pred.bin.ROC <- terra::rast(terra::wrap(Pred.bin.ROC))
+    Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
 
     if(projmodel =="Current") {
       sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))

@@ -65,19 +65,21 @@
 #' new.env<-terra::unwrap(new.env)
 #'
 #' # Prepare input data
-#' myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#' myInputData <- NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 #'				spp.data.global = Fagus.sylvatica.xy.global,
 #'				spp.data.regional = Fagus.sylvatica.xy.regional,
 #'				expl.var.global = expl.var.global,
 #'				expl.var.regional = expl.var.regional,
-#'				new.env = new_env,
+#'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#'				Background.Regional = NULL,
+#'				Absences.Global = NULL,
+#'				Absences.Regional = NULL)
 #'
 #' # Format the input data
-#' myFormatedData <- NSDM.FormatingData(myInputData,
-#'					nPoints=1000)
+#' myFormattedData <- NSDM.FormattingData(myInputData,
+#'                                        nPoints=1000)
 #'
 #' # Select covariates
 #' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
@@ -91,15 +93,25 @@
 #' summary(myCovariateModel)
 #' 
 #' ## Perform NSDM analysis using the covariate approach with custom settings.
-#' # myCovariateModel <- NSDM.Covariate(myGlobalModel,  	# Global model output used as input
-#' #					rm.corr=FALSE,  	# Do not remove correlated covariates
-#' #					algorithms = c("GBM", "RF", "GLM"), # Algorithms to use for modeling
-#' #					CV.nb.rep = 10,   	# Number of cross-validation replicates
-#' #					CV.perc = 0.8, 	# Percentage of data used in each cross-validation replicate
-#' #					CustomModelOptions = NULL, # Use default modeling options
-#' #					metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
-#' #					rm.biomod.folder = TRUE, # Remove the temporary biomod2 output folder
-#' #					save.output = TRUE)	# Save the output externally
+#' # myCovariateModel <- NSDM.Covariate(
+#' #					# Global model output used as input
+#' #					myGlobalModel,
+#' #					# Do not remove correlated covariates 	
+#' #					rm.corr=FALSE,
+#' #					# Algorithms to use for modeling
+#' #					algorithms = c("GBM", "RF", "GLM"),
+#' #					# Number of cross-validation replicates
+#' #					CV.nb.rep = 10,
+#' #					# Percentage of data used in each cross-validation replicate
+#' #					CV.perc = 0.8,
+#' #					# Use default modeling options
+#' #					CustomModelOptions = NULL,
+#' #					# Threshold for selecting models for ensemble
+#' #					metric.select.thresh = 0.8,
+#' #					# Remove the temporary biomod2 output folder
+#' #					rm.biomod.folder = TRUE,
+#' #					# Save the output externally
+#' #					save.output = TRUE)
 #'
 #'
 #' @export

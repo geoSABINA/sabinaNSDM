@@ -17,6 +17,10 @@
 #' An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at global level.
 #' @param Background.Regional (\emph{optional, default} \code{NULL}) \cr
 #' An optional \code{data.frame} with two columns, 'x' and 'y', representing background points at regional level.
+#' @param Absences.Global (\emph{optional, default} \code{NULL}) \cr
+#' An optional \code{data.frame} with two columns, 'x' and 'y', representing absence points at global level.
+#' @param Absences.Regional (\emph{optional, default} \code{NULL}) \cr
+#' An optional \code{data.frame} with two columns, 'x' and 'y', representing absence points at regional level.
 #'
 #' @return An object of class \code{nsdm.input} containing organized input data for \bold{NSDM}.
 #'
@@ -49,10 +53,12 @@
 #'				spp.data.regional = Fagus.sylvatica.xy.regional,
 #'				expl.var.global = expl.var.global,
 #'				expl.var.regional = expl.var.regional,
-#'				new.env = new_env,
+#'				new.env = new.env,
 #'				new.env.names = c("Scenario1"),
 #'				Background.Global = NULL,
-#'				Background.Regional = NULL)
+#'				Background.Regional = NULL,
+#'				Absences.Global = NULL,
+#'				Absences.Regional = NULL)
 #'
 #' summary(myInputData)
 #'

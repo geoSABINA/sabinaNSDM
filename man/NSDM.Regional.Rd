@@ -47,6 +47,8 @@ An object of class \code{nsdm.predict.g} containing model information, predictio
 \item \verb{$SpeciesData.XY.Regional} Species occurrences at the regional level at \code{data.frame} format after applying spatial thinning.
 \item \verb{$Background.XY.Global} Background data at the global level at \code{data.frame} format.
 \item \verb{$Background.XY.Regional} Background data at the regional level at \code{data.frame} format.
+\item \verb{$Absences.XY.Global} Absence data at the global level at \code{data.frame} format.
+\item \verb{$Absences.XY.Regional} Absence data at the regional level at \code{data.frame} format.
 \item \verb{$Scenarios} A \code{list} containing future scenarios in \code{\link[terra:rast]{PackedSpatRaster}} format.
 \item \verb{$Selected.Variables.Global} A \code{character} vector specifying the names of the selected covariates at the global scale.
 \item \verb{$IndVar.Global.Selected} Selected covariates at the global level in \code{\link[terra:rast]{PackedSpatRaster}} format.
@@ -97,13 +99,15 @@ myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 			spp.data.regional = Fagus.sylvatica.xy.regional,
 			expl.var.global = expl.var.global,
 			expl.var.regional = expl.var.regional,
-			new.env = new_env,
+			new.env = new.env,
 			new.env.names = c("Scenario1"),
 			Background.Global = NULL,
-			Background.Regional = NULL)
+			Background.Regional = NULL,
+			Absences.Global = NULL,
+			Absences.Regional = NULL)
 
 # Format the input data
-myFormatedData <- NSDM.FormatingData(myInputData,
+myFormattedData <- NSDM.FormattingData(myInputData,
 				nPoints=1000)
 # Select covariates
 mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
@@ -111,20 +115,33 @@ mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
 # Perform regional scale SDMs with default parameters.
 myRegionalModel <- NSDM.Regional(mySelectedCovs)
 
+summary(myRegionalModel)
+
+
 ## Perform regional scale SDMs with custom parameters.
-## This line shows an example how to customize modeling options using `bm_ModelingOptions` from the `biomod2` package 
+## This line shows an example how to customize modeling options using `bm_ModelingOptions`
+## `bm_ModelingOptions` from the `biomod2` package 
 # opt.b <- bm_ModelingOptions(data.type = 'binary', 
 #  				models = c("GAM", "GBM", "RF"),
 #				strategy = 'bigboss')
   
-# myRegionalModel <- NSDM.Regional(nsdm_selvars,
-#				     algorithms = c("GBM", "RF", "GLM"), # Statistical models used in the ensemble
-#				     CV.nb.rep = 10, # Number of cross-validation replicates
-#				     CV.perc = 0.8, # Percentage of data used for each replicate
-#				     CustomModelOptions = opt.b,  # Optional custom options for statistical models
-#				     metric.select.thresh = 0.8, # Threshold for selecting models for ensemble
-#				     save.output = TRUE, #  Save the output externally
-#				     rm.biomod.folder = TRUE) # Remove the temporary biomod2 output folder
+# myRegionalModel <- NSDM.Regional(
+#				     # Selected covariates output used as input
+#				     mySelectedCovs,
+#				     # Statistical models used in the ensemble
+#				     algorithms = c("GBM", "RF", "GLM"),
+#				     # Number of cross-validation replicates
+#				     CV.nb.rep = 10,
+#				     # Percentage of data used for each replicate
+#				     CV.perc = 0.8,
+#				     # Optional custom options for statistical models
+#				     CustomModelOptions = opt.b,
+#				     # Threshold for selecting models for ensemble
+#				     metric.select.thresh = 0.8,
+#				     #  Save the output externally
+#				     save.output = TRUE,
+#				     # Remove the temporary biomod2 output folder
+#				     rm.biomod.folder = TRUE)
 
 
 }
