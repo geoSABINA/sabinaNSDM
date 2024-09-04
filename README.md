@@ -53,7 +53,7 @@ remotes::install_github("geoSABINA/sabinaNSDM")
 ```
 
 
-## Summary of main SabinaNSDM functions
+## Summary of main sabinaNSDM functions
 
 
 | Overall Step            | Function          | Objective                                       |
