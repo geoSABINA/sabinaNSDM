@@ -12,7 +12,7 @@
 
 
 
-# sabinaNSDM: Spaitally-nested Hierarchical Species Distribution Models (NSDM)
+# sabinaNSDM: Spatially-nested Hierarchical Species Distribution Models (NSDM)
 
 
 
