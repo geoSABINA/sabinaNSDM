@@ -2,9 +2,13 @@ Package: sabinaNSDM
 Title: Spatially-nested hierarchical species distribution modeling
 Version: 1.0.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+    c(person("Rubén G.", "Mateo", role = c("aut", "cre"), email = "ruben.mateo@example.com"),
+      person("Jennifer", "Morales-Barbero", role = "aut", email = "j.moralesbarbero@gmail.com"),
+      person("Alejandra", "Zarzo-Arias", role = "aut", email = "alejandra.zarzo@gmail.com"),
+      person("Herlander", "Lima", role = "aut", email = "limaherlander@gmail.com"),
+      person("Virgilio", "Gómez-Rubio", role = "aut", email = "virgilio.Gomez@uclm.es"),
+      person("Teresa", "Goicolea", role = "aut", email = "t.goicolea@gmail.com"))
+Description: sabinaNSDM is an R package designed for the development of spatially-nested species distribution models (NSDMs), integrating global and regional scale data. It automates key steps such as data preparation, model calibration, and projection, providing a unified framework for ecologists and conservationists to make reliable predictions about species distributions across scales.
 License: MIT + file LICENSE
 LazyData: true
 Encoding: UTF-8
