@@ -3,7 +3,7 @@
 <!-- Esto es para comentarios -->
 
 
-[![DOI]( https://doi.org/10.1111/2041-210X.14417)
+[![DOI](https://doi.org/10.1111/2041-210X.14417)
 
 
 
@@ -35,7 +35,7 @@ The <strong>sabinaNSDM</strong> R package generates <strong>spatially-nested hie
 A research paper detailing the package details and functions is under review, but until it is published, please reference the package as following:
 
 <code> <i> Mateo, R. G., Morales-Barbero, J., Zarzo-Arias, A., Lima, H., Gómez-Rubio, V., & Goicolea, T. (2024). sabinaNSDM: An R package for spatially nested hierarchical species distribution modelling. Methods in Ecology and Evolution, 00, 1–8.  https://doi.org/10.1111/2041-210X.14417
-[![DOI]( https://doi.org/10.1111/2041-210X.14417)]( https://doi.org/10.1111/2041-210X.14417)
+[![DOI](https://zenodo.org/badge/DOI/10.1111/2041-210X.14417.svg)](https://doi.org/10.1111/2041-210X.14417)
 </code> </i>
 
 
