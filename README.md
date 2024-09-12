@@ -12,7 +12,7 @@
 
 
 
-# sabinaNSDM: Spaitally-nested Hierarchical Species Distribution Models (NSDM)
+# sabinaNSDM: Spatially-nested Hierarchical Species Distribution Models (NSDM)
 
 
 
@@ -53,7 +53,7 @@ remotes::install_github("geoSABINA/sabinaNSDM")
 ```
 
 
-## Summary of main SabinaNSDM functions
+## Summary of main sabinaNSDM functions
 
 
 | Overall Step            | Function          | Objective                                       |
