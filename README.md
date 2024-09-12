@@ -3,7 +3,7 @@
 <!-- Esto es para comentarios -->
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11096288.svg)](https://doi.org/10.5281/zenodo.11096288)
+[![DOI](https://besjournals.onlinelibrary.wiley.com/action/showCitFormats?doi=10.1111%2F2041-210X.14417)
 
 
 
