@@ -27,7 +27,7 @@
 
 The <strong>sabinaNSDM</strong> R package generates <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to address niche truncation and produce more reliable predictions than traditional non-hierarchical SDMs. <strong>sabinaNSDM</strong> combines two SDMs calibrated with species occurrences and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
 
-<strong>sabinaNSDM</strong> streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrences and absences (if available), covariate selection, single-scale modeling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). <strong>sabinaNSDM</strong> models use an ensemble modeling approach that combines multiple statistical techniques with the <strong>biomod2</strong> package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009), thinning of species occurrences and absences with the <strong>ecospat</strong> package (*Ecography*, <https://doi.org/10.1111/ecog.02671.x>, Di Cola et al. 2017), and covariate selection of the <strong>covsel</strong>  package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
+<strong>sabinaNSDM</strong> streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrences and absences (if available), covariate selection, single-scale modelling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). <strong>sabinaNSDM</strong> models use an ensemble modelling approach that combines multiple statistical techniques with the <strong>biomod2</strong> package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009), thinning of species occurrences and absences with the <strong>ecospat</strong> package (*Ecography*, <https://doi.org/10.1111/ecog.02671.x>, Di Cola et al. 2017), and covariate selection of the <strong>covsel</strong>  package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
 
 
 ### Citing sabinaNSDM package
@@ -45,7 +45,7 @@ Depends:  R (\> 4.3.0)
 
 
 You can install the released version of sabinaNSDM from
-[GitHub](https://github.com) with:
+[GitHub](https://github.com/geoSABINA/sabinaNSDM) with:
 
 ```{r echo=TRUE, eval=FALSE}
 library(remotes)
@@ -61,17 +61,22 @@ remotes::install_github("geoSABINA/sabinaNSDM")
 | Data preparation| NSDM.InputData    | Provides the package with the species occurrences and environmental covariates at both global and regional scales|
 |                 | NSDM.FormattingData| Background data generation and species occurrences (and absences if available) thinning|
 |                 | NSDM.SelectCovariates| Selects uncorrelated and the most relevant environmental covariates|
-|Single scale modeling | NSDM.Global| Calibrates, evaluates, and projects ensemble models at the global scale|
+|Single scale modelling | NSDM.Global| Calibrates, evaluates, and projects ensemble models at the global scale|
 |     | NSDM.Regional    | Calibrates, evaluates, and projects ensemble models at the regional scale    |
-|Nested modeling  | NSDM.Covariate    | Generate spatially-nested hierarchical species distribution models with the covariate approach. The covariate approach uses the output of the global model as an additional covariate for the regional scale model   |
+|Nested modelling  | NSDM.Covariate    | Generate spatially-nested hierarchical species distribution models with the covariate approach. The covariate approach uses the output of the global model as an additional covariate for the regional scale model   |
 |     | NSDM.Multiply   | Generate spatially-nested hierarchical species distribution models with the multiply approach. The multiply approach averages the global and regional models    |
+
+## Tutorials
+
+-   [Single species modelling](https://besjournals.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2F2041-210X.14417&file=mee314417-sup-0001-Supinfo1.pdf)
+-   [Multispecies modelling](https://besjournals.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2F2041-210X.14417&file=mee314417-sup-0002-Supinfo2.pdf)
 
 ## Example
 
-This is an example on how to use the <strong>sabinaNSDM</strong> package for conducting spatially-nested hierarchical species distribution modeling. 
+This is an example on how to use the <strong>sabinaNSDM</strong> package for conducting spatially-nested hierarchical species distribution modelling. 
 -   [Data preparation](#data_preparation)
--   [Single scale modeling](#single_scale_modeling)
--   [Nested modeling](#nested_modeling)
+-   [Single scale modelling](#single_scale_modelling)
+-   [Nested modelling](#nested_modelling)
 
 ### Data preparation <a name="data_preparation">
 
@@ -169,17 +174,17 @@ nsdm_selvars <- NSDM.SelectCovariates(nsdm_finput,
 ```
 
 
-### Single scale modeling <a name="single_scale_modeling">
+### Single scale modelling <a name="single_scale_modelling">
 
 *NSDM.Global()* function generates the global component of the NSDM.
 
 ```{r eval = FALSE}
 nsdm_global <- NSDM.Global(nsdm_selvars,
-                algorithms = c("GAM","GBM", "RF", "MAXNET","GLM"),# Statistical algorithms used for modeling
+                algorithms = c("GAM","GBM", "RF", "MAXNET","GLM"),# Statistical algorithms used for modelling
                 CV.nb.rep = 10, # number of cross-validation repetitions
                 CV.perc = 0.8, # percentage of the data will be used for training in each cross-validation fold
                 metric.select.thresh = 0.8, #  AUC threshold to include replicates in the final ensemble model
-                CustomModelOptions = NULL, # Allows users to apply custom modeling options. 
+                CustomModelOptions = NULL, # Allows users to apply custom modelling options. 
                 save.output = TRUE, 
                 rm.biomod.folder = TRUE) # Remove the temporary folders created by `biomod2` 
 
@@ -202,7 +207,7 @@ nsdm_regional <- NSDM.Regional(nsdm_selvars,
 
 
 
-### Nested modeling <a name="nested_modeling">
+### Nested modelling <a name="nested_modelling">
 
 *NSDM.Covariate()* function generates a NSDM with the covariate strategy. The covariate strategy incorporates the output of global models as an additional covariate in the regional model. 
 ```{r eval = FALSE}
