@@ -169,10 +169,12 @@ NSDM.FormattingData <- function(nsdm_input,
   } else {
     sabina$Absences.XY.Regional <- NULL
   }
-
   sabina$IndVar.Global <- format_global$IndVar
   sabina$IndVar.Regional <- format_regional$IndVar
   sabina$Scenarios <- nsdm_input$Scenarios
+  if(is.null(sabina$Scenarios)) {
+    sabina <- c(sabina,list(Scenarios = nsdm_input$Scenarios))
+  } 
   sabina$Summary <- main_summary
 
   attr(sabina, "class") <- "nsdm.finput"
