@@ -47,10 +47,12 @@ general_nsdm_model <- function(nsdm.obj,
 
   if(!is.null(nsdm.obj$Scenarios)) {
     Scenarios <- lapply(nsdm.obj$Scenarios, terra::unwrap)
-  } else if (length(Scenarios == 0)){
-    warning("No new scenarios for further projections!\n")
   } else {
-    Scenarios <-NULL
+    Scenarios <- NULL
+  }
+
+  if(is.null(Scenarios) || length(Scenarios) == 0) {
+    warning("No new scenarios for further projections!\n")
   }
 
   if(model.type == "Covariate"){

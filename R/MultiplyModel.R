@@ -132,6 +132,10 @@ NSDM.Multiply <- function(nsdm_global,
         Pred.regional <- terra::unwrap(nsdm_regional$new.projections$Pred.Scenario[[i-1]])
     }
 
+    if(is.null(nsdm_global$new.projections) || length(nsdm_global$new.projections$Pred.Scenario) == 0) {
+      warning("No new projections available!\n")
+    }
+
     # Rescale global prediction to a common range
     if(rescale==TRUE) {
       # Calculate minimum and maximum values of global prediction
