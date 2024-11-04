@@ -112,7 +112,7 @@ Define the species name
 ```{r eval = FALSE}
 SpeciesName <- "Fagus.sylvativa"
 ```
-Load species occurrence and environmental covariates data. Species occurrence *data.frame* must include only two columns: “x” and ”y” coordinates. No row names. The coordinate projection must match that used for the covariates
+Load species occurrence and environmental covariates data. Species occurrence *data.frame* must include only two columns: “x” and ”y” coordinates. No row names. The coordinate projection must match that used for the covariates.
 
 ```{r eval = FALSE}
  # Species occurrences
@@ -129,7 +129,7 @@ The covariates for each spatial scale (i.e., global and regional) should be prov
  expl.var.global <- terra::unwrap(expl.var.global)
  expl.var.regional <- terra::unwrap(expl.var.regional)
 ```
-Additionally, regional-scale *SpatRaster*  corresponding to the covariates used to project the models at different scenarios (i.e., new scenarios) can be provided
+Additionally, regional-scale *SpatRaster* or a *list of SpatRaster objects* corresponding to the covariates used to project the models at one or several different scenarios (i.e., new scenarios) can be provided.  
 
  ```{r eval = FALSE}
 # new scenarios
