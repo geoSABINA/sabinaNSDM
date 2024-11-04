@@ -1,9 +1,7 @@
 is.coord.df <- function(dat){
     coords <- c("x", "y")
     return(is.data.frame(dat) &&
-           ncol(dat) == 2 &&
-           all(coords %in% colnames(dat)))
-
+           identical(colnames(dat), c("x", "y")))
 }
 
 

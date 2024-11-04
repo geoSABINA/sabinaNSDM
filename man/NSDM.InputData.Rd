@@ -92,4 +92,26 @@ myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 summary(myInputData)
 
 
+## Example with multiple new scenarios
+## Replicate the new scenario to simulate a second scenario
+# scenario1 <- new.env
+# scenario2 <- new.env  # Replicate to create a second scenario
+
+## Combine scenarios into a list
+# new_scenarios <- list(scenario1, scenario2)
+# new_scenario_names <- c("Scenario1", "Scenario2")
+
+## Prepare input data with multiple scenarios
+# myInputData_multi <- NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#                                     spp.data.global = Fagus.sylvatica.xy.global,
+#                                     spp.data.regional = Fagus.sylvatica.xy.regional,
+#                                     expl.var.global = expl.var.global,
+#                                     expl.var.regional = expl.var.regional,
+#                                     new.env = new_scenarios,
+#                                     new.env.names = new_scenario_names,
+#                                     Background.Global = NULL,
+#                                     Background.Regional = NULL,
+#                                     Absences.Global = NULL,
+#                                     Absences.Regional = NULL)
+
 }
