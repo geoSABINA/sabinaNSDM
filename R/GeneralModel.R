@@ -322,11 +322,11 @@ general_nsdm_model <- function(nsdm.obj,
 
     #Ensemble
     file_path <- paste0(projection_path, SpeciesName, ".Current.tif")
-    terra::writeRaster(Pred, file_path, overwrite=TRUE)
+    terra::writeRaster(Pred[[1]], file_path, overwrite=TRUE)
     fs::file_delete(paste0(proj_curr_prefix, "_ensemble.tif"))
 
     file_path <- paste0(projection_path, SpeciesName, ".EMcv.tif")
-    terra::writeRaster(Pred, file_path, overwrite=TRUE)
+    terra::writeRaster(Pred[[2]], file_path, overwrite=TRUE)
 
     # Pred
     file_path <- paste0(projection_path, SpeciesName, ".Current.bin.ROC.tif")
