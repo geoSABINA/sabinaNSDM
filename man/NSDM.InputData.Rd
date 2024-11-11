@@ -91,7 +91,6 @@ myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 
 summary(myInputData)
 
-
 ## Example with multiple new scenarios
 ## Replicate the new scenario to simulate a second scenario
 # scenario1 <- new.env
