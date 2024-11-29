@@ -161,7 +161,7 @@ general_nsdm_model <- function(nsdm.obj,
   myBiomodEM.ROC <- biomod2::BIOMOD_EnsembleModeling(bm.mod = myBiomodModelOut,
                                                      models.chosen = 'all',
                                                      em.by = 'all',
-                                                     em.algo = c("EMmean"),
+                                                     em.algo = c("EMmean", "EMcv"),
                                                      metric.select = c('ROC'),
                                                      metric.select.thresh = metric.select.thresh,
                                                      var.import = 0,
@@ -194,9 +194,13 @@ general_nsdm_model <- function(nsdm.obj,
   # Load the model stored by biomod2 and save it in geotif format
   sp.name<-myBiomodData@sp.name
   Pred <- terra::unwrap(myBiomodEMProj@proj.out@val)
-  Pred<-terra::rast(terra::wrap(Pred))
+  Pred <- terra::rast(terra::wrap(Pred))
 
-  sabina$current.projections$Pred <- setNames(Pred, paste0(SpeciesName, ".Current"))
+  sabina$current.projections$Pred <- setNames(Pred[[1]], paste0(SpeciesName, ".Current"))
+
+  # Uncertainty (coefficient of variation of the ensemble model projections).
+  sabina$current.projections$EMcv <- setNames(Pred[[2]], paste0(SpeciesName, ".EMcv"))
+
 
   # Binary models
   proj_curr_prefix <- paste0(sp.name,"/proj_Current/proj_Current_",sp.name)
@@ -318,8 +322,11 @@ general_nsdm_model <- function(nsdm.obj,
 
     #Ensemble
     file_path <- paste0(projection_path, SpeciesName, ".Current.tif")
-    terra::writeRaster(Pred, file_path, overwrite=TRUE)
+    terra::writeRaster(Pred[[1]], file_path, overwrite=TRUE)
     fs::file_delete(paste0(proj_curr_prefix, "_ensemble.tif"))
+
+    file_path <- paste0(projection_path, SpeciesName, ".EMcv.tif")
+    terra::writeRaster(Pred[[2]], file_path, overwrite=TRUE)
 
     # Pred
     file_path <- paste0(projection_path, SpeciesName, ".Current.bin.ROC.tif")
@@ -361,6 +368,7 @@ general_nsdm_model <- function(nsdm.obj,
     message("Results saved in the following local folder/s:")
     message(paste(
     " - Current and new projections: ", projection_path, "\n",
+    "- Ensemble model CV: ", projection_path, "\n",
     "- Replicates statistics: ", values_path, "\n",
     "- Consensus model statistics: ", values_path, "\n",
     "- Covariate importance: ", values_path, "\n"
