@@ -261,8 +261,12 @@ general_nsdm_model <- function(nsdm.obj,
       Pred.Scenario <- terra::unwrap(myBiomodEMProjScenario@proj.out@val)
       Pred.Scenario <- terra::rast(terra::wrap(Pred.Scenario))
 
-      sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario,
+      sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario[[1]],
                                                             paste0(SpeciesName,".",Scenario.name))
+
+      # Uncertainty new scenarios (coefficient of variation of the ensemble model projections).
+      sabina$new.projections$EMcv.Scenario[[i]] <- setNames(Pred.Scenario[[2]],
+                                                            paste0(SpeciesName, ".", Scenario.name, ".EMcv"))
 
       # Binarized models
       scenario_prefix <- paste0(sp.name,"/proj_",Scenario.name,"/proj_", Scenario.name,"_",sp.name)
@@ -350,19 +354,25 @@ general_nsdm_model <- function(nsdm.obj,
 
     # New scenarios
     if(!is.null(Scenarios)){
+      for(i in seq_along(Scenarios)) {
+        Scenario.name <- names(Scenarios)[i]
+        scenario_prefix <- paste0(sp.name,"/proj_",Scenario.name,"/proj_", Scenario.name,"_",sp.name)
 
-      file_path <- paste0(projection_path, SpeciesName,".",Scenario.name,".tif")
-      terra::writeRaster(Pred.Scenario, file_path, overwrite = TRUE)
-      fs::file_delete(paste0(scenario_prefix,"_ensemble.tif"))
+        file_path <- paste0(projection_path, SpeciesName,".",Scenario.name,".tif")
+        terra::writeRaster(terra::unwrap(sabina$new.projections$Pred.Scenario[[i]]), file_path, overwrite = TRUE)
+        fs::file_delete(paste0(scenario_prefix,"_ensemble.tif"))
 
-      file_path <- paste0(projection_path,SpeciesName,".",Scenario.name,".bin.ROC.tif")
-      terra::writeRaster(Pred.bin.ROC.Scenario, file_path, overwrite = TRUE)
-      fs::file_delete(paste0(scenario_prefix,"_ensemble_ROCbin.tif"))
+        file_path <- paste0(projection_path, SpeciesName, ".", Scenario.name, ".EMcv.tif")
+        terra::writeRaster(terra::unwrap(sabina$new.projections$EMcv.Scenario[[i]]), file_path, overwrite = TRUE)
 
-      file_path <- paste0(projection_path,SpeciesName,".",Scenario.name,".bin.TSS.tif")
-      terra::writeRaster(Pred.bin.TSS.Scenario, file_path, overwrite = TRUE)
-      fs::file_delete(paste0(scenario_prefix, "_ensemble_TSSbin.tif"))
+        file_path <- paste0(projection_path,SpeciesName,".",Scenario.name,".bin.ROC.tif")
+        terra::writeRaster(terra::unwrap(sabina$new.projections$Pred.bin.ROC.Scenario[[i]]), file_path, overwrite = TRUE)
+        fs::file_delete(paste0(scenario_prefix,"_ensemble_ROCbin.tif"))
 
+        file_path <- paste0(projection_path,SpeciesName,".",Scenario.name,".bin.TSS.tif")
+        terra::writeRaster(terra::unwrap(sabina$new.projections$Pred.bin.TSS.Scenario[[i]]), file_path, overwrite = TRUE)
+        fs::file_delete(paste0(scenario_prefix, "_ensemble_TSSbin.tif"))
+      }
     }
 
     message("Results saved in the following local folder/s:")

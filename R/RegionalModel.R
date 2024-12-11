@@ -38,11 +38,19 @@
 #' - `$IndVar.Global.Selected.reg` Selected covariates at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
 #' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
-#' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current continuous (suitability) projection; \code{EMcv}, the coefficient of variation (CV) of ensemble model projections, representing uncertainty (sd/mean of probabilities across selected models) and complementing the mean probability with an uncertainty measure; \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
+#' - `$current.projections` A \code{list} containing: 
+#'   - \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current continuous (suitability) projection.
+#'   - \code{EMcv}, the coefficient of variation (CV) of ensemble model projections, representing uncertainty (sd/mean of probabilities across selected models) and complementing the mean probability with an uncertainty measure.
+#'   - \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold.
+#'   - \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
 #' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
 #' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA).
 #' - `$myModelsVarImport` Variable importance measures for individual models.
-#' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the TSS statistic as a threshold.
+#' - `$new.projections` A \code{list} containing:
+#'   - \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format.
+#'   - \code{EMcv.Scenario}, the coefficient of variation (CV) of ensemble model projections for each new scenario, representing uncertainty (sd/mean of probabilities across selected models) and complementing the mean probability with an uncertainty measure.
+#'   - \code{Pred.bin.ROC.Scenario}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the AUC statistic as a threshold.
+#'   - \code{Pred.bin.TSS.Scenario}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the TSS statistic as a threshold.
 #' - `Summary` Summary information about the modeling process.
 #'
 #'
