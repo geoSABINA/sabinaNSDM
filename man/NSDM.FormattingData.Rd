@@ -92,7 +92,8 @@ myInputData <- NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 
 # Format the input data using default parameters.
 myFormattedData <- NSDM.FormattingData(myInputData, 
-                                       nPoints = 1000)
+                                       nPoints = 1000,
+                                       save.output=FALSE)
 
 summary(myFormattedData)
 

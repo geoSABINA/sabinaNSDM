@@ -77,7 +77,8 @@
 #'
 #' # Format the input data using default parameters.
 #' myFormattedData <- NSDM.FormattingData(myInputData, 
-#'                                        nPoints = 1000)
+#'                                        nPoints = 1000,
+#'                                        save.output=FALSE)
 #'
 #' summary(myFormattedData)
 #' 
@@ -217,30 +218,30 @@ NSDM.FormattingData <- function(nsdm_input,
 
 background_stratified <- function(expl.var, nPoints) {
   if(nrow(expl.var)*ncol(expl.var) > 20000) {
-    points<-terra::xyFromCell(expl.var[[1]],which(complete.cases(terra::values(expl.var[[1]]))))
+    points<-terra::xyFromCell(expl.var[[1]],which(stats::complete.cases(terra::values(expl.var[[1]]))))
     indices <- sample(1:nrow(points), 20000, replace = FALSE)
     points<-points[indices,]
     df<-terra::extract(expl.var,points)
   } else {
   df <- as.data.frame(expl.var)
   }
-  df <- na.omit(df)
+  df <- stats::na.omit(df)
   if(nrow(df) < nPoints) {
     stop(paste("The requested number of background nPoints exceeds the number of available cells.
     Maximum number of background points:",nrow(df)))
   }
-  pca <- princomp(df)
+  pca <- stats::princomp(df)
   rm(df)
-  PC1 <- predict(expl.var, pca, index = 1)
-  PC2 <- predict(expl.var, pca, index = 2)
+  PC1 <- terra::predict(expl.var, pca, index = 1)
+  PC2 <- terra::predict(expl.var, pca, index = 2)
 
   gc()
   # Reclassify raster into 4 classes based on quartiles
-  quartiles1 <- terra::global(PC1, fun = quantile, na.rm = TRUE)
+  quartiles1 <- terra::global(PC1, fun = stats::quantile, na.rm = TRUE)
   cat1 <- cut(terra::values(PC1), breaks = quartiles1, labels = c(1, 2, 3, 4), include.lowest = TRUE)
   PC1_cat <- terra::setValues(PC1, cat1)
   rm(PC1)
-  quartiles2 <- terra::global(PC2, fun = quantile, na.rm = TRUE)
+  quartiles2 <- terra::global(PC2, fun = stats::quantile, na.rm = TRUE)
   cat2 <- cut(terra::values(PC2), breaks = quartiles2, labels = c(1, 2, 3, 4), include.lowest = TRUE)
   PC2_cat <- terra::setValues(PC2, cat2)
   rm(PC2)
@@ -301,7 +302,7 @@ gen_background_pts <- function(nsdm_input, scale,
     }
 
     if(save.output){
-      write.csv(Background.XY,
+      utils::write.csv(Background.XY,
                 paste0("Results/", scale, "/AbsencesXY/", SpeciesName, "_Background.csv"))
     }
   }
@@ -323,7 +324,7 @@ gen_background_pts <- function(nsdm_input, scale,
   if(Min.Dist == "resolution") {
     Min.Dist <- terra::res(Mask)[1]
   }
-  invisible(capture.output({
+  invisible(utils::capture.output({
     tryCatch({
       XY.final <- ecospat::ecospat.occ.desaggregation(XY,
                                                      min.dist = Min.Dist,
@@ -342,7 +343,7 @@ gen_background_pts <- function(nsdm_input, scale,
 
   # Save filtered occurrences data for each species
   if(save.output){
-    write.csv(XY.final, paste0("Results/", scale,
+    utils::write.csv(XY.final, paste0("Results/", scale,
                                "/SpeciesXY/", SpeciesName, ".csv"))
   }
 
@@ -351,7 +352,7 @@ gen_background_pts <- function(nsdm_input, scale,
     if(Min.Dist == "resolution") {
       Min.Dist <- terra::res(Mask)[1]
     }
-    invisible(capture.output({
+    invisible(utils::capture.output({
       tryCatch({
         Absences.XY.final <- ecospat::ecospat.occ.desaggregation(Absences.XY, 
                                                                  min.dist = Min.Dist, 
@@ -370,7 +371,7 @@ gen_background_pts <- function(nsdm_input, scale,
 
     # Save filtered absences data for each species
     if(save.output){
-    write.csv(Absences.XY.final, paste0("Results/", scale,
+    utils::write.csv(Absences.XY.final, paste0("Results/", scale,
                                         "/AbsencesXY/", SpeciesName, "_TrueAbsences.csv"))
     }
   }

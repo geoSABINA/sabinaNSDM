@@ -8,7 +8,7 @@ is.coord.df <- function(dat){
 clean_data <- function(mask, data){
     XY <- terra::extract(mask, data)
     XY <- cbind(XY, data)
-    XY <- na.omit(XY)[, -c(1:2)]
+    XY <- stats::na.omit(XY)[, -c(1:2)]
     XY <- unique(XY)
 
     return(XY)

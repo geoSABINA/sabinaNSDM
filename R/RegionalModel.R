@@ -96,15 +96,39 @@
 #'
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(myInputData,
-#'					nPoints=1000)
-#' # Select covariates
-#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#'                                        nPoints = 1000,
+#'                                        save.output = FALSE)
+#'
+#' # Select covariates using default parameters
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+#'                                         save.output = FALSE)
 #'
 #' # Perform regional scale SDMs with default parameters.
-#' myRegionalModel <- NSDM.Regional(mySelectedCovs)
+#' myRegionalModel <- NSDM.Regional(mySelectedCovs,
+#'                                  save.output = FALSE)
 #'
 #' summary(myRegionalModel)
 #'
+#' ## Explore some of the outputs 
+#' ## Selected variables at regional scale 
+#' # myRegionalModel$Selected.Variables.Regional 
+#' 
+#' ## Number of replicates 
+#' # myRegionalModel$nbestreplicates 
+#' 
+#' ## Statistics of the different replicates  
+#' # myRegionalModel$myEMeval.Ensemble 
+#' 
+#' ## Plot the global model 
+#' # plot(terra::unwrap(myRegionalModel$current.projections$Pred))
+#' 
+#' ## Plot the binary maps 
+#' # plot(terra::unwrap(myRegionalModel$current.projections$Pred.bin.ROC)) 
+#' # plot(terra::unwrap(myRegionalModel$current.projections$Pred.bin.TSS))
+#' 
+#' ## Plot new projection scenarios 
+#' # plot(terra::unwrap(myRegionalModel$new.projections$Pred.Scenario[[1]])) 
+#' 
 #' 
 #' ## Perform regional scale SDMs with custom parameters.
 #' ## This line shows an example how to customize modeling options using `bm_ModelingOptions`

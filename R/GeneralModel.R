@@ -141,7 +141,7 @@ general_nsdm_model <- function(nsdm.obj,
 
   # Replicates with ROC > metric.select.thresh
   df <- myBiomodModelOut@models.evaluation
-  df_slot <- slot(df, "val")
+  df_slot <- methods::slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
   nreplicates<-sum(df_slot$validation >= metric.select.thresh)
   if(nreplicates == 0) {
@@ -196,10 +196,10 @@ general_nsdm_model <- function(nsdm.obj,
   Pred <- terra::unwrap(myBiomodEMProj@proj.out@val)
   Pred <- terra::rast(terra::wrap(Pred))
 
-  sabina$current.projections$Pred <- setNames(Pred[[1]], paste0(SpeciesName, ".Current"))
+  sabina$current.projections$Pred <- stats::setNames(Pred[[1]], paste0(SpeciesName, ".Current"))
 
   # Uncertainty (coefficient of variation of the ensemble model projections).
-  sabina$current.projections$EMcv <- setNames(Pred[[2]], paste0(SpeciesName, ".EMcv"))
+  sabina$current.projections$EMcv <- stats::setNames(Pred[[2]], paste0(SpeciesName, ".EMcv"))
 
 
   # Binary models
@@ -209,9 +209,9 @@ general_nsdm_model <- function(nsdm.obj,
   Pred.bin.ROC <- terra::rast(terra::wrap(Pred.bin.ROC))
   Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
 
-  sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC,
+  sabina$current.projections$Pred.bin.ROC <- stats::setNames(Pred.bin.ROC,
                                                       paste0(SpeciesName, ".Current.bin.ROC"))
-  sabina$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS,
+  sabina$current.projections$Pred.bin.TSS <- stats::setNames(Pred.bin.TSS,
                                                       paste0(SpeciesName, ".Current.bin.TSS"))
 
   # Values of the evaluation statistics for each replica
@@ -261,11 +261,11 @@ general_nsdm_model <- function(nsdm.obj,
       Pred.Scenario <- terra::unwrap(myBiomodEMProjScenario@proj.out@val)
       Pred.Scenario <- terra::rast(terra::wrap(Pred.Scenario))
 
-      sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario[[1]],
+      sabina$new.projections$Pred.Scenario[[i]] <- stats::setNames(Pred.Scenario[[1]],
                                                             paste0(SpeciesName,".",Scenario.name))
 
       # Uncertainty new scenarios (coefficient of variation of the ensemble model projections).
-      sabina$new.projections$EMcv.Scenario[[i]] <- setNames(Pred.Scenario[[2]],
+      sabina$new.projections$EMcv.Scenario[[i]] <- stats::setNames(Pred.Scenario[[2]],
                                                             paste0(SpeciesName, ".", Scenario.name, ".EMcv"))
 
       # Binarized models
@@ -275,9 +275,9 @@ general_nsdm_model <- function(nsdm.obj,
       Pred.bin.ROC.Scenario<-terra::rast(terra::wrap(Pred.bin.ROC.Scenario))
       Pred.bin.TSS.Scenario<-terra::rast(terra::wrap(Pred.bin.TSS.Scenario))
 
-      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC.Scenario,
+      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- stats::setNames(Pred.bin.ROC.Scenario,
                                                                     paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
-      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS.Scenario,
+      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- stats::setNames(Pred.bin.TSS.Scenario,
                                                                     paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
     }
@@ -321,7 +321,7 @@ general_nsdm_model <- function(nsdm.obj,
     fs::dir_create(projection_path)
 
     # Variables
-    write.csv(names(myExpl),
+    utils::write.csv(names(myExpl),
             paste0(values_path, SpeciesName, ".variables.csv"))
 
     #Ensemble
@@ -342,15 +342,15 @@ general_nsdm_model <- function(nsdm.obj,
     fs::file_delete(paste0(proj_curr_prefix, "_ensemble_TSSbin.tif"))
 
     # Evaluation replicates
-    write.csv(myEMeval.replicates,file=paste0(values_path,SpeciesName,"_replica.csv"))
-    write.csv(nreplicates,file=paste0(values_path,SpeciesName,"_nbestreplicates.csv"))
+    utils::write.csv(myEMeval.replicates,file=paste0(values_path,SpeciesName,"_replica.csv"))
+    utils::write.csv(nreplicates,file=paste0(values_path,SpeciesName,"_nbestreplicates.csv"))
 
     # Evaluation consensus
-    write.csv(myEMeval.Ensemble,file=paste0(values_path,SpeciesName,"_ensemble.csv"))
+    utils::write.csv(myEMeval.Ensemble,file=paste0(values_path,SpeciesName,"_ensemble.csv"))
 
     # Variabale Importance
     file_path <- paste0(values_path,SpeciesName,"_indvar.csv")
-    write.csv(myModelsVarImport, file = file_path, row.names = T)
+    utils::write.csv(myModelsVarImport, file = file_path, row.names = T)
 
     # New scenarios
     if(!is.null(Scenarios)){

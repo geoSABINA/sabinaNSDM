@@ -1,13 +1,14 @@
-#' Data Fagus.sylvatica.xy.global
+#' @name Fagus.sylvatica.xy.global
+#' @aliases Fagus.sylvatica.xy.global
+#' @title Global Occurrences of Fagus sylvatica
+#' @description A dataset containing the geographic coordinates of occurrence points for \emph{Fagus sylvatica} at a global scale.
 #'
-#' A dataset containing the coordinates (x, y) of the occurrence points of the species (\emph{Fagus sylvatica} at global level.
-#'
-#' @format ## `Fagus.sylvatica.xy.global`
-#' A \code{data.frame} with 7,205 rows and 2 columns:
+#' @format A \code{data.frame} with 7,205 rows and 2 columns:
 #' \describe{
-#'   \item{x}{Longitude of the occurrence point}
-#'   \item{y}{Latitude of the occurrence point}
+#'   \item{\code{Longitude}}{Longitude of occurrence points.}
+#'   \item{\code{Latitude}}{Latitude of occurrence points.}
 #' }
 #'
-#' @source <https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1111/ecog.07328>
+#' @source \doi{10.1111/ecog.07328}
+#' @usage data(Fagus.sylvatica.xy.global)
 "Fagus.sylvatica.xy.global"

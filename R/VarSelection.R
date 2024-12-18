@@ -83,13 +83,20 @@
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(
 #'   myInputData,
-#'   nPoints = 1000
-#' )
+#'   nPoints = 1000,
+#'   save.output = FALSE)
 #'
 #' # Select covariates using default parameters
-#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+#'                                         save.output = FALSE)
 #'
 #' summary(mySelectedCovs)
+#' 
+#' # Explore some outputs
+#' # Selected variables at global scale
+#' mySelectedCovs$Selected.Variables.Global
+#' # Selected variables at regional scale
+#' mySelectedCovs$Selected.Variables.Regional
 #' 
 #' ## Select covariates using custom parameters.
 #' # mySelectedCovs <- NSDM.SelectCovariates(
@@ -241,7 +248,7 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
                                           pa = myResp,
                                           algorithms = algorithms,
                                           maxncov = maxncov,
-                                          nthreads = detectCores() / 2)
+                                          nthreads = parallel::detectCores() / 2)
     Selected.Variables <- labels(Covdata.embed$covdata)[[2]]
   }
 
@@ -249,7 +256,7 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
 
   # Save selected covariates for each species
   if(save.output){
-    write.csv(Selected.Variables, paste0("Results/", scale, "/Values/", SpeciesName, ".variables.csv"))
+    utils::write.csv(Selected.Variables, paste0("Results/", scale, "/Values/", SpeciesName, ".variables.csv"))
   }
 
   # Subset the regional independent variables for regional projections

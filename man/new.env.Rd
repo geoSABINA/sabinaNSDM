@@ -3,29 +3,26 @@
 \docType{data}
 \name{new.env}
 \alias{new.env}
-\title{Data new.env}
+\title{Future Environmental Scenarios (2071–2100)}
 \format{
-\subsection{\code{new.env}}{
-
-A \code{SpatRaster} object with the following layers:
+A \code{\link[terra:rast]{SpatRaster}} object with seven layers:
 \describe{
-\item{bio1}{Annual Mean Temperature}
-\item{bio2}{Mean Diurnal Range (Mean of monthly (max temp - min temp))}
-\item{bio3}{Isothermality (BIO2/BIO7) (×100)}
-\item{bio4}{Temperature Seasonality (standard deviation ×100)}
-\item{bio12}{Annual Precipitation}
-\item{sand}{Sand content}
-\item{radiation}{Annual solar radiation}
-}
+\item{\code{bio1}}{Annual Mean Temperature (°C).}
+\item{\code{bio2}}{Mean Diurnal Range (Mean of monthly (max temp - min temp), °C).}
+\item{\code{bio3}}{Isothermality (BIO2/BIO7) × 100.}
+\item{\code{bio4}}{Temperature Seasonality (standard deviation × 100).}
+\item{\code{bio12}}{Annual Precipitation (mm).}
+\item{\code{sand}}{Sand content (\%).}
+\item{\code{radiation}}{Annual Solar Radiation (kJ/m²).}
 }
 }
 \source{
-\url{https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1111/ecog.07328}
+\doi{10.1111/ecog.07328}
 }
 \usage{
-new.env
+data(new.env)
 }
 \description{
-A dataset containing multiple environmental covariates predicted in new scenarios for projecting models to different spatial or temporal scales. Specifically, these covariates correspond to the 2071–2100 period under the Global Climatic Model IPSL_CM6A_LR and the socio-economic and emissions pathway SSP126.
+This dataset contains environmental covariates predicted under the Global Climate Model IPSL_CM6A_LR and the SSP126 socio-economic and emissions pathway for the 2071–2100 period.
 }
 \keyword{datasets}

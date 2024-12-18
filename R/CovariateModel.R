@@ -87,18 +87,26 @@
 #'
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(myInputData,
-#'                                        nPoints=1000)
+#'                                        nPoints = 1000,
+#'                                        save.output = FALSE)
 #'
-#' # Select covariates
-#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#' # Select covariates using default parameters
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+#'                                         save.output = FALSE)
 #'
 #' # Perform global scale SDMs
-#' myGlobalModel <- NSDM.Global(mySelectedCovs)
+#' myGlobalModel <- NSDM.Global(mySelectedCovs,
+#'                              save.output = FALSE)
 #'
 #' # Perform NSDM analysis using the covariate approach with default settings.
-#' myCovariateModel <- NSDM.Covariate(myGlobalModel)
+#' myCovariateModel <- NSDM.Covariate(myGlobalModel,
+#'                                    save.output = FALSE)
 #'
 #' summary(myCovariateModel)
+#'
+#' ## Explore some of the outputs 
+#' ## Plot the covariate model 
+#' # plot(terra::rast(myCovariateModel$current.projections$Pred))
 #' 
 #' ## Perform NSDM analysis using the covariate approach with custom settings.
 #' # myCovariateModel <- NSDM.Covariate(

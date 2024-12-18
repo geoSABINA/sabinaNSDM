@@ -98,15 +98,39 @@
 #'
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(myInputData,
-#'					nPoints=1000)
+#'                                        nPoints = 1000,
+#'                                        save.output = FALSE)
 #'
-#' # Select covariates
-#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#' # Select covariates using default parameters
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+#'                                         save.output = FALSE)
 #'
 #' # Perform global scale SDMs using default parameters. 
-#' myGlobalModel <- NSDM.Global(mySelectedCovs)
+#' myGlobalModel <- NSDM.Global(mySelectedCovs,
+#'                              save.output = FALSE)
 #'
 #' summary(myGlobalModel)
+#'
+#' ## Explore some of the outputs 
+#' ## Selected variables at global scale 
+#' # myGlobalModel$Selected.Variables.Global 
+#' 
+#' ## Number of replicates 
+#' # myGlobalModel$nbestreplicates 
+#' 
+#' ## Statistics of the different replicates  
+#' # myGlobalModel$myEMeval.Ensemble 
+#' 
+#' ## Plot the global model 
+#' # plot(terra::unwrap(myGlobalModel$current.projections$Pred))
+#' 
+#' ## Plot the binary maps 
+#' # plot(terra::unwrap(myGlobalModel$current.projections$Pred.bin.ROC)) 
+#' # plot(terra::unwrap(myGlobalModel$current.projections$Pred.bin.TSS))
+#' 
+#' ## Plot new projection scenarios 
+#' # plot(terra::unwrap(myGlobalModel$new.projections$Pred.Scenario[[1]])) 
+#' 
 #' 
 #' ## Perform global scale SDMs with custom parameters.
 #' ## This line shows an example how to customize modeling options using `bm_ModelingOptions`
