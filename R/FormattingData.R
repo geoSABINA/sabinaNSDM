@@ -324,19 +324,35 @@ gen_background_pts <- function(nsdm_input, scale,
   if(Min.Dist == "resolution") {
     Min.Dist <- terra::res(Mask)[1]
   }
-  invisible(utils::capture.output({
-    tryCatch({
-      XY.final <- ecospat::ecospat.occ.desaggregation(XY,
-                                                     min.dist = Min.Dist,
-                                                     by = NULL)
-    }, error = function(e) {
-      XY <- unique(XY)
-      XY <- round(XY, digits = 4)
-      XY.final <- ecospat::ecospat.occ.desaggregation(XY,
-                                                     min.dist = Min.Dist,
-                                                     by = NULL)
-    })
-  }))
+
+  # Convert distance to km for GeoThinneR
+  #IsLonLat <- tryCatch(terra::is.lonlat(Mask), error = function(e) FALSE)
+  #Min.Dist.km <- if(IsLonLat) as.numeric(Min.Dist) * 111.32 else as.numeric(Min.Dist)/1000  #@@@JMB Podemos asumir esto?
+  # Convert Min.Dist (Mask CRS units) to local geodesic kilometers
+  Min.Dist.km <- km_equivalent_from_mask(Mask, XY, Min.Dist)
+
+  XY$id <- seq_len(nrow(XY)) # row id
+
+  XY_2 <- terra::vect(XY, geom = c("x","y"), crs = terra::crs(Mask))
+  XY_2 <- terra::project(XY_2, "EPSG:4326")
+  XY_2 <- terra::crds(XY_2, df = TRUE)
+  XY_2$id <- XY$id
+
+  XY.thin <- GeoThinneR::thin_points(
+    data = XY_2,
+    lon_col = "x",
+    lat_col = "y",
+    method = "distance",
+    thin_dist = Min.Dist.km,
+    trials = 10,
+    all_trials = FALSE,
+    seed = 123,
+    verbose = FALSE
+  )
+  kept_ids <- GeoThinneR::largest(XY.thin)$id
+  XY.final <- XY[match(kept_ids, XY$id), , drop = FALSE]
+  XY.final$id <- NULL
+  XY$id <- NULL
   message(paste0(scale, " species data (",SpeciesName,"): from ",
                  nrow(SpeciesData.XY), " to ", nrow(XY.final),
                  " species occurrences after cleaning and thinning.\n"))
@@ -352,19 +368,35 @@ gen_background_pts <- function(nsdm_input, scale,
     if(Min.Dist == "resolution") {
       Min.Dist <- terra::res(Mask)[1]
     }
-    invisible(utils::capture.output({
-      tryCatch({
-        Absences.XY.final <- ecospat::ecospat.occ.desaggregation(Absences.XY, 
-                                                                 min.dist = Min.Dist, 
-                                                                 by = NULL)
-      }, error = function(e) {
-        Absences.XY <- unique(Absences.XY)
-        Absences.XY <- round(Absences.XY, digits = 4)
-        Absences.XY.final <- ecospat::ecospat.occ.desaggregation(Absences.XY,
-                                                                 min.dist = Min.Dist,
-                                                                 by = NULL)
-      })
-    }))
+
+    ## Convert distance to km for GeoThinneR (absences)
+    #IsLonLat <- tryCatch(terra::is.lonlat(Mask), error = function(e) FALSE)
+    #Min.Dist.km <- if(IsLonLat) as.numeric(Min.Dist) * 111.32 else as.numeric(Min.Dist)/1000
+    # Convert Min.Dist (Mask CRS units) to local geodesic kilometers
+    Min.Dist.km <- km_equivalent_from_mask(Mask, Absences.XY, Min.Dist)   
+    
+    Absences.XY$id <- seq_len(nrow(Absences.XY))
+
+    Abs_2 <- terra::vect(Absences.XY, geom = c("x","y"), crs = terra::crs(Mask))
+    Abs_2 <- terra::project(Abs_2, "EPSG:4326")
+    Abs_2 <- terra::crds(Abs_2, df = TRUE)
+    Abs_2$id <- Absences.XY$id
+
+    Absences.XY.thin <- GeoThinneR::thin_points(
+      data = Abs_2,
+      lon_col = "x",
+      lat_col = "y",
+      method = "distance",
+      thin_dist = Min.Dist.km,
+      trials = 10,
+      all_trials = FALSE,
+      seed = 123,
+      verbose = FALSE
+    )
+    kept_ids_abs <- GeoThinneR::largest(Absences.XY.thin)$id
+    Absences.XY.final <- Absences.XY[match(kept_ids_abs, Absences.XY$id), , drop = FALSE]
+    Absences.XY.final$id <- NULL
+    Absences.XY$id <- NULL
     message(paste0(scale, " absence data (",SpeciesName,"): from ",
                    nrow(Absences.XY), " to ", nrow(Absences.XY.final),
                    " absence points after cleaning and thinning.\n"))

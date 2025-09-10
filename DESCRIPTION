@@ -29,7 +29,8 @@ Imports:
     sf,
     terra (>= 1.7-55),
     sgsR (>= 1.4.4),
-    covsel
+    covsel,
+    GeoThinneR (>= 2.0.0)
 Remotes: 
    N-SDM/covsel
 Suggests:

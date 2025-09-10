@@ -123,10 +123,18 @@ general_nsdm_model <- function(nsdm.obj,
 
   # Calibrate and evaluate individual models with specified statistical algorithms
   # Train and evaluate individual models using BIOMOD_Modeling
+  if(!exists("ModelsTable", inherits = TRUE)) {
+    try(utils::data("ModelsTable", package = "biomod2"), silent = TRUE)
+  }
+  if(!exists("OptionsBigboss", inherits = TRUE)) {
+    try(utils::data("OptionsBigboss", package = "biomod2"), silent = TRUE)
+  }
   myBiomodModelOut <- biomod2::BIOMOD_Modeling(bm.format = myBiomodData,
                                                modeling.id = "AllModels",
                                                models = models,
-                                               OPT.user = CustomModelOptions, # Use the specified or default modeling options
+                                               OPT.strategy = if(is.null(CustomModelOptions)) "default" else "user.defined",
+                                               OPT.user = if(is.null(CustomModelOptions)) NULL else CustomModelOptions,
+                                               #OPT.user = CustomModelOptions, # Use the specified or default modeling options
                                                CV.strategy = "random",
                                                CV.nb.rep = CV.nb.rep,
                                                CV.perc = CV.perc,

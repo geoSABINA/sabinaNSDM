@@ -14,6 +14,33 @@ clean_data <- function(mask, data){
     return(XY)
 }
 
+km_equivalent_from_mask <- function(Mask, XY, Min.Dist) {
+  if (as.numeric(Min.Dist) <= 0) return(0)
+
+  # Representative anchor in Mask CRS
+  anchor <- data.frame(
+    x = stats::median(XY$x, na.rm = TRUE),
+    y = stats::median(XY$y, na.rm = TRUE)
+  )
+  p0 <- terra::vect(anchor, geom = c("x","y"), crs = terra::crs(Mask))
+  p1x <- terra::vect(data.frame(x = anchor$x + as.numeric(Min.Dist), y = anchor$y),
+                     geom = c("x","y"), crs = terra::crs(Mask))
+  p1y <- terra::vect(data.frame(x = anchor$x, y = anchor$y + as.numeric(Min.Dist)),
+                     geom = c("x","y"), crs = terra::crs(Mask))
+
+  # Project to lon/lat for geodesic distances
+  p0_ll  <- terra::project(p0,  "EPSG:4326")
+  p1x_ll <- terra::project(p1x, "EPSG:4326")
+  p1y_ll <- terra::project(p1y, "EPSG:4326")
+
+  # Geodesic distances (meters) -> km
+  dx_km <- as.numeric(sf::st_distance(sf::st_as_sf(p0_ll), sf::st_as_sf(p1x_ll)))/1000
+  dy_km <- as.numeric(sf::st_distance(sf::st_as_sf(p0_ll), sf::st_as_sf(p1y_ll)))/1000
+
+  # Area-preserving equivalent circle radius
+  sqrt(dx_km * dy_km)
+}
+
 # Format the response (presence/background) or (presence/true absences) and covariates data for BIOMOD2
 biomod_format <- function(sp_data, background_data, trueabsences_data, indvar){
 
