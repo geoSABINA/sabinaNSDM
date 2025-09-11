@@ -122,7 +122,7 @@ NSDM.FormattingData <- function(nsdm_input,
   sabina$args$nPoints <- nPoints
   sabina$args$Min.Dist.Global <- Min.Dist.Global
   sabina$args$Min.Dist.Regional <- Min.Dist.Regional
-  sabina$args$Backround.method <- ifelse(!is.null(nsdm_input$Background.Global.0), "manually added", Background.method)
+  sabina$args$Background.method <- ifelse(!is.null(nsdm_input$Background.Global.0), "manually added", Background.method)
 
   # Create directories
   if(save.output){
@@ -272,6 +272,10 @@ gen_background_pts <- function(nsdm_input, scale,
 
   lowcase_scale <- tolower(scale)
   IndVar <- terra::unwrap(nsdm_input[[paste0("IndVar.", scale)]])
+
+  Background.XY <- NULL
+  Absences.XY <- NULL
+  Absences.XY.final <- NULL
 
   # Generate random background points for model calibration
   # Covariates (environmental layers)
