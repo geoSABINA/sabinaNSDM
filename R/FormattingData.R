@@ -288,8 +288,7 @@ gen_background_pts <- function(nsdm_input, scale,
   absences_scale <- nsdm_input[[paste0("Absences.", scale)]]
   # Generate random background points for model calibration
   if(is.null(absences_scale)) {
-    if(is.null(background_scale) &&
-         Background.method == "random") {
+    if(is.null(background_scale) && Background.method == "random") {
       Valid.Cells <- which(!is.na(terra::values(Mask)))
       if(length(Valid.Cells) < nPoints) {
         stop(paste("The requested number of background nPoints exceeds the number of available cells.
@@ -433,8 +432,8 @@ gen_background_pts <- function(nsdm_input, scale,
 
   return(list(
           SpeciesData.XY = XY.final,
-          Background.XY = if(!is.null(Background.XY)) Background.XY else NULL,
-          Absences.XY = if(!is.null(absences_scale)) Absences.XY.final else NULL,
+          Background.XY = Background.XY,
+          Absences.XY = Absences.XY.final,
           IndVar = terra::wrap(IndVar),
           Summary = scale_summary
   ))
