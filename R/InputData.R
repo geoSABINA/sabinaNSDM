@@ -218,6 +218,10 @@ NSDM.InputData <- function(SpeciesName,
     Background.Regional.0 = Background.Regional,
     Absences.Global = Absences.Global,
     Absences.Regional = Absences.Regional,
+    AbsenceMode = c(
+      Global = if(!is.null(Absences.Global)) "trueAbs" else "background",
+      Regional = if(!is.null(Absences.Regional)) "trueAbs" else "background"
+    ),
     Summary = summary
   )
 

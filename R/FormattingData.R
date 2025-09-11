@@ -123,6 +123,7 @@ NSDM.FormattingData <- function(nsdm_input,
   sabina$args$Min.Dist.Global <- Min.Dist.Global
   sabina$args$Min.Dist.Regional <- Min.Dist.Regional
   sabina$args$Background.method <- ifelse(!is.null(nsdm_input$Background.Global.0), "manually added", Background.method)
+  sabina$AbsenceMode <- nsdm_input$AbsenceMode
 
   # Create directories
   if(save.output){

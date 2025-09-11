@@ -16,6 +16,10 @@
 #' A \code{\link{BIOMOD.models.options}} object returned by the \code{\link{bm_ModelingOptions}} to tune models options. If \code{NULL} (the default), biomod2's default parameters are used.
 #' @param metric.select.thresh (\emph{optional, default} \code{0.8}) \cr
 #' A \code{numeric} between \code{0} and \code{1} corresponding to the minimum scores of AUC below which single models will be excluded from the ensemble model building.
+#' @param spatialCV (\emph{optional, default} \code{NULL}) \cr
+#' Enables spatial cross-validation using \pkg{blockCV}. Set \code{NULL} to keep standard random CV (controlled by \code{CV.nb.rep} and \code{CV.perc}). To activate spatial CV, provide a list of the form \code{list(k = <int>, size = <num>|NULL)}:
+#'   \code{k} = number of spatial folds (required);
+#'   \code{size} = block size in the predictors’ CRS units (optional; degrees if lon/lat, meters if projected). If \code{size} is \code{NULL}, an automatic estimate is attempted; if it fails, an error will request a value.
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
 #' A \code{logical} value defining whether the outputs should be saved at local.
 #' @param rm.biomod.folder (\emph{optional, default} \code{TRUE}) \cr
@@ -56,6 +60,11 @@
 #'
 #' @details
 #' This function uses the (\emph{biomod2} package to generate, evaluate, and project species distribution models at the \bold{regional} scale for \bold{NSDM} analysis.
+#'
+#' When \code{spatialCV} is provided, spatial folds are built with \code{blockCV::cv_spatial} with random selection and 100 iteration. The \code{size} is interpreted in the predictors’ CRS units: degrees if lon/lat, meters if projected. 
+#' If \code{size = NULL}, the function attempts an automatic estimate via \code{blockCV::cv_spatial_autocor}; if this fails, an error requests a user-defined \code{size}. Basic checks ensure each TEST fold contains both presences and absences; otherwise, increase \code{size} or reduce \code{k}.
+#' When spatial CV is active, \code{CV.nb.rep} and \code{CV.perc} are ignored and the effective number of replicates equals \code{k}.
+#'
 #' If `save.output=TRUE`, modelling results are stored out of R in the \emph{Results/} folder created in the current working directory:
 #' - the \emph{Results/Regional/Projections/} folder, containing the continuous and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
 #' - the \emph{Results/Regional/Values/} folder, containing replicates statistics, the consensus model statistics, the covariate importance, and the \code{nbestreplicates}, named with the species name and \file{.__replica.csv}, \file{._ensemble.csv}, \file{._indvar.csv} and \file{._nbestreplicates.csv} respectively.
@@ -163,6 +172,7 @@ NSDM.Regional <- function(nsdm_selvars,
                           CV.perc=0.8,
                           CustomModelOptions=NULL,
                           metric.select.thresh = 0.8,
+                          spatialCV = NULL,
                           save.output=TRUE,
                           rm.biomod.folder=TRUE){
   if(!inherits(nsdm_selvars, "nsdm.vinput")){

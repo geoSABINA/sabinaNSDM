@@ -144,6 +144,7 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   sabina$args$maxncov.Regional <- maxncov.Regional
   sabina$args$corcut <- corcut
   sabina$args$algorithms <- algorithms
+  sabina$AbsenceMode <- nsdm_finput$AbsenceMode
 
   SpeciesName <- nsdm_finput$Species.Name
 
