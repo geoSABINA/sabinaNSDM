@@ -97,15 +97,49 @@ NSDM.InputData <- function(SpeciesName,
                            Absences.Global = NULL,
                            Absences.Regional = NULL) {
 
-  if(!(is.coord.df(spp.data.global)) ||
-       !(is.coord.df(spp.data.regional))) {
-    stop(paste0("spp.data.global and spp.data.regional for ", SpeciesName, " must be data.frames with 'x' and 'y' columns."))
+
+  if(!is.coord.df(spp.data.regional)) {
+    stop(paste0("spp.data.regional for ", SpeciesName, " must be a data.frame with 'x' and 'y' columns."))
+  }
+  if(!inherits(expl.var.regional, "SpatRaster")) {
+    stop("expl.var.regional must be a SpatRaster object.")
+  }
+  if(!is.null(Background.Regional) && !is.coord.df(Background.Regional)) {
+    stop("Background.Regional must be a data.frame with 'x' and 'y' columns.")
+  }
+  if(!is.null(Absences.Regional) && !is.coord.df(Absences.Regional)) {
+    stop("Absences.Regional must be a data.frame with 'x' and 'y' columns.")
+  }
+  if(!is.null(Absences.Regional) && !is.null(Background.Regional)) {
+    stop("Background and Absences cannot both be incorporated at the regional level.")
   }
 
-  if(!inherits(expl.var.global, "SpatRaster") || !inherits(expl.var.regional, "SpatRaster")) {
-    stop("expl.var.global and expl.var.regional must be SpatRaster objects.")
+  has_global <- !is.null(spp.data.global) && !is.null(expl.var.global)
+  if(has_global) {
+    if(!is.coord.df(spp.data.global)) {
+      stop(paste0("spp.data.global for ", SpeciesName, " must be a data.frame with 'x' and 'y' columns."))
+    }
+    if(!inherits(expl.var.global, "SpatRaster")) {
+      stop("expl.var.global must be a SpatRaster object.")
+    }
+    if(!is.null(Background.Global) && !is.coord.df(Background.Global)) {
+      stop("Background.Global must be a data.frame with 'x' and 'y' columns.")
+    }
+    if(!is.null(Absences.Global) && !is.null(Background.Global)) {
+      stop("Background and Absences cannot both be incorporated at the global level.")
+    }
+    if(!is.null(Absences.Global) && !is.coord.df(Absences.Global)) {
+      stop("Absences.Global must be a data.frame with 'x' and 'y' columns.")
+    }
+    # Match variables?
+    # Global vars in regional?
+    match_vars2 <- names(expl.var.global) %in% names(expl.var.regional)
+    if(!all(match_vars2)) {
+      stop("All variables present in expl.var.global must also be present in expl.var.regional.")
+    }
   }
 
+  # new.env
   if(!is.null(new.env)) {
     if(inherits(new.env, "SpatRaster")) {
       new.env <- list(new.env)
@@ -113,46 +147,13 @@ NSDM.InputData <- function(SpeciesName,
     if(!(is.list(new.env) && all(sapply(new.env, function(x) class(x) == "SpatRaster")))) {
       stop("new.env must be either a SpatRaster object or a list of SpatRaster objects.")
     }
-  }
-
-  if(!is.null(Absences.Global) && !is.null(Background.Global)) {
-    stop("Background and Absences cannot both be incorporated at the global level.")
-  }
-
-  if(!is.null(Absences.Regional) && !is.null(Background.Regional)) {
-    stop("Background and Absences cannot both be incorporated at the regional level.")
-  }
-
-  if(!is.null(Background.Global) && !is.null(Background.Regional)) {
-    if(!(is.coord.df(Background.Global)) ||
-       !(is.coord.df(Background.Regional))) {
-      stop("Background.Global and Background.Regional must be data.frames with 'x' and 'y' columns.")
-    }
-  }
-
-  if(!is.null(Absences.Global) && !is.coord.df(Absences.Global)) {
-    stop("Absences.Global must be a data.frame with 'x' and 'y' columns.")
-  }
-
-  if(!is.null(Absences.Regional) && !is.coord.df(Absences.Regional)) {
-    stop("Absences.Regional must be a data.frame with 'x' and 'y' columns.")
-  }
-
-  # Match variables?
-  # Global vars in regional?
-  match_vars2 <- names(expl.var.global) %in% names(expl.var.regional)
-  if(!all(match_vars2)) {
-    stop("All variables present in expl.var.global must also be present in expl.var.regional.")
-  }
-  # new.env and regional
-  if(!is.null(new.env)) {
+    # match with regional covariates
     match_vars <- sapply(new.env, function(x) {
       all(names(expl.var.regional) %in% names(x))
     })
     if(!all(match_vars)) {
       stop("Not all new scenarios have the same environmental covariates as expl.var.regional.")
     }
-
     # Name and Rename new.env scenarios
     if(is.null(names(new.env)) && is.null(new.env.names)) {
       source_names <- lapply(new.env, function(x) {
@@ -176,7 +177,9 @@ NSDM.InputData <- function(SpeciesName,
   }
 
   # Wrap objects if necessary
-  expl.var.global <- terra::wrap(expl.var.global)
+  if(has_global) {
+    expl.var.global <- terra::wrap(expl.var.global)
+  }
   expl.var.regional <- terra::wrap(expl.var.regional)
 
   if(!is.null(new.env)) {
@@ -185,7 +188,8 @@ NSDM.InputData <- function(SpeciesName,
 
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
-                                   nrow(spp.data.global),
+                                   ifelse(is.null(spp.data.global),
+                                          "NA", nrow(spp.data.global)),
                                    ifelse(is.null(Background.Global),
                                           "NA", nrow(Background.Global)),
                                    ifelse(is.null(Absences.Global), 
@@ -199,27 +203,27 @@ NSDM.InputData <- function(SpeciesName,
 
   rownames(summary) <- c("Species name",
                          "Original number of species occurrences at global level",
-			 "Number of background points at global level",
-			 "Number of true absence points at global level",
+                         "Number of background points at global level",
+                         "Number of true absence points at global level",
                          "Original number of species occurrences at regional level",
-			 "Number of background points at regional level",
-			 "Number of true absence points at regional level",
+                         "Number of background points at regional level",
+                         "Number of true absence points at regional level",
                          "Number of new scenarios")
 
   #
   sabina <- list(
     Species.Name = SpeciesName,
-    SpeciesData.XY.Global.0 = spp.data.global,
+    SpeciesData.XY.Global.0 = if(has_global) spp.data.global else NULL,
     SpeciesData.XY.Regional.0 = spp.data.regional,
-    IndVar.Global = expl.var.global,
+    IndVar.Global = if(has_global) expl.var.global else NULL,
     IndVar.Regional = expl.var.regional,
     Scenarios = new.env,
-    Background.Global.0 = Background.Global,
+    Background.Global.0 = if(has_global) Background.Global else NULL,
     Background.Regional.0 = Background.Regional,
-    Absences.Global = Absences.Global,
+    Absences.Global = if(has_global) Absences.Global else NULL,
     Absences.Regional = Absences.Regional,
     AbsenceMode = c(
-      Global = if(!is.null(Absences.Global)) "trueAbs" else "background",
+      Global = if(has_global) { if(!is.null(Absences.Global)) "trueAbs" else "background" } else NULL,
       Regional = if(!is.null(Absences.Regional)) "trueAbs" else "background"
     ),
     Summary = summary

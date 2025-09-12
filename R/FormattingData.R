@@ -106,6 +106,9 @@ NSDM.FormattingData <- function(nsdm_input,
                                 Background.method="random",
                                 save.output=TRUE) {
 
+  has_global <- !is.null(nsdm_input$IndVar.Global) &&
+                !is.null(nsdm_input$SpeciesData.XY.Global.0)
+
   if(!inherits(nsdm_input, "nsdm.input")){
       stop("nsdm_input must be an object of nsdm.input class. Consider running NSDM.InputData() function")
   }
@@ -135,24 +138,36 @@ NSDM.FormattingData <- function(nsdm_input,
 		"Results/Regional/AbsencesXY/"), recurse = TRUE)
   }
 
-  format_global <- gen_background_pts(nsdm_input, "Global",
-                                      Background.method, nPoints, Min.Dist.Global,
-                                      save.output)
+  if(has_global) {
+    format_global <- gen_background_pts(nsdm_input, "Global",
+                                        Background.method, nPoints, Min.Dist.Global,
+                                        save.output)
+  }
   format_regional <- gen_background_pts(nsdm_input, "Regional",
                                         Background.method, nPoints, Min.Dist.Regional,
                                         save.output)
 
-  main_summary <- rbind(format_global$Summary,
-                        format_regional$Summary[-1, , drop = FALSE])
+  if(has_global) {
+    main_summary <- rbind(format_global$Summary,
+                          format_regional$Summary[-1, , drop = FALSE])
+  } else {
+     main_summary <- rbind(data.frame(Values = nsdm_input$Species.Name,
+                                      row.names = "Species name"),
+                           format_regional$Summary[-1, , drop = FALSE])
+  }
 
   summary_new <- data.frame(Values = c(length(nsdm_input$Scenarios)))
   rownames(summary_new) <- c("Number of new scenarios")
   main_summary <- rbind(main_summary, summary_new)
 
-  sabina$SpeciesData.XY.Global <- format_global$SpeciesData.XY
+  sabina$SpeciesData.XY.Global <- if(has_global) format_global$SpeciesData.XY else NULL
   sabina$SpeciesData.XY.Regional <- format_regional$SpeciesData.XY
-  if(!is.null(format_global$Background.XY)) {
-    sabina$Background.XY.Global <- format_global$Background.XY
+  if(has_global) {
+    if(!is.null(format_global$Background.XY)) {
+      sabina$Background.XY.Global <- format_global$Background.XY
+    } else {
+      sabina$Background.XY.Global <- NULL
+    }
   } else {
     sabina$Background.XY.Global <- NULL
   }
@@ -161,8 +176,12 @@ NSDM.FormattingData <- function(nsdm_input,
   } else {
     sabina$Background.XY.Regional <- NULL
   }
-  if(!is.null(format_global$Absences.XY)) {
-    sabina$Absences.XY.Global <- format_global$Absences.XY
+  if(has_global) {
+    if(!is.null(format_global$Absences.XY)) {
+      sabina$Absences.XY.Global <- format_global$Absences.XY
+    } else {
+      sabina$Absences.XY.Global <- NULL
+    }
   } else {
     sabina$Absences.XY.Global <- NULL
   }
@@ -171,7 +190,7 @@ NSDM.FormattingData <- function(nsdm_input,
   } else {
     sabina$Absences.XY.Regional <- NULL
   }
-  sabina$IndVar.Global <- format_global$IndVar
+  sabina$IndVar.Global <- if(has_global) format_global$IndVar else NULL
   sabina$IndVar.Regional <- format_regional$IndVar
   sabina$Scenarios <- nsdm_input$Scenarios
   if(is.null(sabina$Scenarios)) {
@@ -185,29 +204,21 @@ NSDM.FormattingData <- function(nsdm_input,
   # save.out messages
   if(save.output) {
     message("Results saved in the following local folder/s:")
+    if(isTRUE(has_global) && exists("format_global") && !is.null(format_global)) {
+      message(paste0(
+        " - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
+        if(!is.null(format_global$Background.XY))
+          paste0(" - Global background points: /Results/Global/AbsencesXY/", SpeciesName, "_Background.csv\n") else "",
+        if(!is.null(format_global$Absences.XY))
+          paste0(" - Global true absence points: /Results/Global/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n") else ""
+      ))
+    }
     message(paste0(
-      " - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
-      if(!is.null(format_global$Background.XY)) {
-        paste0(" - Global background points: /Results/Global/AbsencesXY/", SpeciesName, "_Background.csv\n")
-      } else {
-        ""
-      },
-      if(!is.null(format_global$Absences.XY)) {
-        paste0(" - Global true absence points: /Results/Global/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n")
-      } else {
-        ""
-      },
       " - Regional species occurrences: /Results/Regional/SpeciesXY/", SpeciesName, ".csv\n",
-      if(!is.null(format_regional$Background.XY)) {
-        paste0(" - Regional background points: /Results/Regional/AbsencesXY/", SpeciesName, "_Background.csv\n")
-      } else {
-        ""
-      },
-      if(!is.null(format_regional$Absences.XY)) {
-        paste0(" - Regional true absence points: /Results/Regional/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n")
-      } else {
-        ""
-      }
+      if(!is.null(format_regional$Background.XY))
+        paste0(" - Regional background points: /Results/Regional/AbsencesXY/", SpeciesName, "_Background.csv\n") else "",
+      if(!is.null(format_regional$Absences.XY)) 
+        paste0(" - Regional true absence points: /Results/Regional/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n") else ""
     ))
   }
 
