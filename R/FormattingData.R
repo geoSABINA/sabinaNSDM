@@ -9,9 +9,9 @@
 #' @param nPoints (\emph{optional, default} \code{10000}) \cr
 #' An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points are not provided at \code{\link{NSDM.InputData}}.
 #' @param Min.Dist.Global (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between species occurrences at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the global scale provided in \code{nsdm_input}.
+#' A \code{numeric} corresponding to the minimum distance between species occurrences at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the global scale provided in \code{nsdm_input}. The distance must be in the predictors’ CRS units.
 #' @param Min.Dist.Regional (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between species occurrences at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}.
+#' A \code{numeric} corresponding to the minimum distance between species occurrences at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}. The distance must be in the predictors’ CRS units.
 #' @param Background.method  (\emph{optional, default} \code{'random'}) \cr
 #' If no absence or background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}. The "random" (the default) option generates random background points considering the extension of the input environmental covariates at the global and the regional scales provided in \code{nsdm_input}. The "stratified" method is based on a PCA analysis from all environmental covariates, where the two principal component values are divided into quartiles, and multiplied to generate a total stratified variable of 16 categories (stratum). Then, the background points are generated randomly according to the area occupied by each stratum.
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
@@ -338,36 +338,23 @@ gen_background_pts <- function(nsdm_input, scale,
   # Spatial thinning of occurrence data to remove duplicates and apply minimum distance criteria
   if(Min.Dist == "resolution") {
     Min.Dist <- terra::res(Mask)[1]
+    rast_thin<-Mask
+  }else{
+    # Make a new empty raster with same extent, crs, origin
+    rast_thin <- rast(terra::ext(Mask), crs = crs(Mask))
+    origin(rast_thin) <- origin(Mask)
+    res(rast_thin) <- Min.Dist
   }
 
-  # Convert distance to km for GeoThinneR
-  #IsLonLat <- tryCatch(terra::is.lonlat(Mask), error = function(e) FALSE)
-  #Min.Dist.km <- if(IsLonLat) as.numeric(Min.Dist) * 111.32 else as.numeric(Min.Dist)/1000  #@@@JMB Podemos asumir esto?
-  # Convert Min.Dist (Mask CRS units) to local geodesic kilometers
-  Min.Dist.km <- km_equivalent_from_mask(Mask, XY, Min.Dist)
+  # Assign cell IDs based on the thinning raster
+  XY$cell <- terra::cellFromXY(rast_thin, XY)
+  # Identify duplicates based on cell ID
+  dups_idx <- duplicated(XY$cell)
+  
+  # Filter out the duplicates, keeping the geometry
+  XY<-XY[,c("x","y")]
+  XY.final <- XY[!dups_idx, ]
 
-  XY$id <- seq_len(nrow(XY)) # row id
-
-  XY_2 <- terra::vect(XY, geom = c("x","y"), crs = terra::crs(Mask))
-  XY_2 <- terra::project(XY_2, "EPSG:4326")
-  XY_2 <- terra::crds(XY_2, df = TRUE)
-  XY_2$id <- XY$id
-
-  XY.thin <- GeoThinneR::thin_points(
-    data = XY_2,
-    lon_col = "x",
-    lat_col = "y",
-    method = "distance",
-    thin_dist = Min.Dist.km,
-    trials = 10,
-    all_trials = FALSE,
-    seed = 123,
-    verbose = FALSE
-  )
-  kept_ids <- GeoThinneR::largest(XY.thin)$id
-  XY.final <- XY[match(kept_ids, XY$id), , drop = FALSE]
-  XY.final$id <- NULL
-  XY$id <- NULL
   message(paste0(scale, " species data (",SpeciesName,"): from ",
                  nrow(SpeciesData.XY), " to ", nrow(XY.final),
                  " species occurrences after cleaning and thinning.\n"))
@@ -382,36 +369,23 @@ gen_background_pts <- function(nsdm_input, scale,
   if(!is.null(absences_scale)) {
     if(Min.Dist == "resolution") {
       Min.Dist <- terra::res(Mask)[1]
+      rast_thin<-Mask
+    }else{
+      # Make a new empty raster with same extent, crs, origin
+      rast_thin <- rast(terra::ext(Mask), crs = crs(Mask))
+      origin(rast_thin) <- origin(Mask)
+      res(rast_thin) <- Min.Dist
     }
-
-    ## Convert distance to km for GeoThinneR (absences)
-    #IsLonLat <- tryCatch(terra::is.lonlat(Mask), error = function(e) FALSE)
-    #Min.Dist.km <- if(IsLonLat) as.numeric(Min.Dist) * 111.32 else as.numeric(Min.Dist)/1000
-    # Convert Min.Dist (Mask CRS units) to local geodesic kilometers
-    Min.Dist.km <- km_equivalent_from_mask(Mask, Absences.XY, Min.Dist)   
     
-    Absences.XY$id <- seq_len(nrow(Absences.XY))
-
-    Abs_2 <- terra::vect(Absences.XY, geom = c("x","y"), crs = terra::crs(Mask))
-    Abs_2 <- terra::project(Abs_2, "EPSG:4326")
-    Abs_2 <- terra::crds(Abs_2, df = TRUE)
-    Abs_2$id <- Absences.XY$id
-
-    Absences.XY.thin <- GeoThinneR::thin_points(
-      data = Abs_2,
-      lon_col = "x",
-      lat_col = "y",
-      method = "distance",
-      thin_dist = Min.Dist.km,
-      trials = 10,
-      all_trials = FALSE,
-      seed = 123,
-      verbose = FALSE
-    )
-    kept_ids_abs <- GeoThinneR::largest(Absences.XY.thin)$id
-    Absences.XY.final <- Absences.XY[match(kept_ids_abs, Absences.XY$id), , drop = FALSE]
-    Absences.XY.final$id <- NULL
-    Absences.XY$id <- NULL
+    # Assign cell IDs based on the thinning raster
+    Absences.XY$cell <- terra::cellFromXY(rast_thin, Absences.XY)
+    # Identify duplicates based on cell ID
+    dups_idx <- duplicated(Absences.XY$cell)
+    
+    # Filter out the duplicates, keeping the geometry
+    Absences.XY<-Absences.XY[,c("x","y")]
+    Absences.XY.final <- Absences.XY[!dups_idx, ]
+    
     message(paste0(scale, " absence data (",SpeciesName,"): from ",
                    nrow(Absences.XY), " to ", nrow(Absences.XY.final),
                    " absence points after cleaning and thinning.\n"))
