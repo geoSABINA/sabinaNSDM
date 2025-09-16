@@ -98,6 +98,7 @@ NSDM.InputData <- function(SpeciesName,
                            Absences.Regional = NULL) {
 
 
+  colnames(spp.data.regional) <- tolower(colnames(spp.data.regional))
   if(!is.coord.df(spp.data.regional)) {
     stop(paste0("spp.data.regional for ", SpeciesName, " must be a data.frame with 'x' and 'y' columns."))
   }
@@ -116,6 +117,7 @@ NSDM.InputData <- function(SpeciesName,
 
   has_global <- !is.null(spp.data.global) && !is.null(expl.var.global)
   if(has_global) {
+    colnames(spp.data.global) <- tolower(colnames(spp.data.global))
     if(!is.coord.df(spp.data.global)) {
       stop(paste0("spp.data.global for ", SpeciesName, " must be a data.frame with 'x' and 'y' columns."))
     }
