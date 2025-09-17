@@ -83,15 +83,24 @@
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(
 #'   myInputData,
-#'   nPoints = 1000
-#' )
+#'   nPoints = 1000,
+#'   save.output = FALSE)
 #'
 #' # Select covariates using default parameters
-#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+#'                                         save.output = FALSE)
 #'
 #' summary(mySelectedCovs)
 #' 
-#' ## Select covariates using custom parameters.
+#' # Explore some outputs
+#' # Selected variables at global scale
+#' mySelectedCovs$Selected.Variables.Global
+#' # Selected variables at regional scale
+#' mySelectedCovs$Selected.Variables.Regional
+#' 
+#'
+#' ## ------------------------------------------------------------------
+#' ## Example: select covariates using custom parameters.
 #' # mySelectedCovs <- NSDM.SelectCovariates(
 #' #					# Formatted data output used as input
 #' #					myFormattedData,
@@ -131,19 +140,25 @@ NSDM.SelectCovariates <- function(nsdm_finput,
     stop("Please select a valid algorithm (\"glm\", \"gam\", or \"rf\")")
   }
 
+  has_global <- !is.null(nsdm_finput$IndVar.Global) &&
+                !is.null(nsdm_finput$SpeciesData.XY.Global)
+
   sabina<-nsdm_finput[!(names(nsdm_finput) %in% "Summary")]
   sabina$args <- list()
   sabina$args$maxncov.Global <- maxncov.Global
   sabina$args$maxncov.Regional <- maxncov.Regional
   sabina$args$corcut <- corcut
   sabina$args$algorithms <- algorithms
+  sabina$AbsenceMode <- nsdm_finput$AbsenceMode
 
   SpeciesName <- nsdm_finput$Species.Name
 
-  selected_global <- select_cov(nsdm_finput, scale = "Global",
-                                ClimaticVariablesBands,
-                                maxncov.Global, corcut, algorithms,
-                                save.output)
+  selected_global <- if(has_global) { 
+    select_cov(nsdm_finput, scale = "Global",
+               ClimaticVariablesBands,
+               maxncov.Global, corcut, algorithms,
+               save.output)
+  } else NULL
 
   selected_regional <- select_cov(nsdm_finput, scale = "Regional",
                                   ClimaticVariablesBands,
@@ -151,8 +166,10 @@ NSDM.SelectCovariates <- function(nsdm_finput,
                                   save.output,
                                   selected_global$Selected.Variables)
 
-  main_summary <- rbind(selected_global$Summary,
-                        selected_regional$Summary)
+  main_summary <- rbind(
+      data.frame(Values = nsdm_finput$Species.Name, row.names = "Species name"),
+      if(has_global) selected_global$Summary else NULL,
+      selected_regional$Summary)
 
   sabina$Selected.Variables.Global <- selected_global$Selected.Variables
   sabina$IndVar.Global.Selected <- selected_global$IndVar.Selected
@@ -169,10 +186,10 @@ NSDM.SelectCovariates <- function(nsdm_finput,
   # save.out messages
   if(save.output){
     message("Results saved in the following locations:")
-    message(paste0(
-       " - Selected covariates at the global level: Results/Global/Values/", SpeciesName, ".variables.csv\n",
-       " - Selected covariates at the regional level: Results/Regional/Values/", SpeciesName, ".variables.csv\n"
-      ))
+    if(has_global) {    
+      message(paste0(" - Selected covariates at the global level: Results/Global/Values/", SpeciesName, ".variables.csv\n"))
+    }
+    message(paste0(" - Selected covariates at the regional level: Results/Regional/Values/", SpeciesName, ".variables.csv\n"))
   }
 
   return(sabina)
@@ -187,16 +204,15 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
     stop("scale must be either Global or Regional")
   }
 
-  if(scale == "Regional" && is.null(Selected.Variables.Global)){
-      stop("Regional scale variable selecion requires running select_cov on Global scale ",
-           "and provide Selected.Variables.Global as argument.")
-  }
-
   IndVar <- terra::unwrap(nsdm_finput[[paste0("IndVar.", scale)]])
 
   if(scale == "Regional"){
     # Subset the global covariates for regional projections
-    IndVar.Global.Selected.reg <- IndVar[[Selected.Variables.Global]]
+    if(!is.null(Selected.Variables.Global)) {
+      IndVar.Global.Selected.reg <- IndVar[[Selected.Variables.Global]]
+    } else {
+      IndVar.Global.Selected.reg <- NULL
+    }
 
     # Exclude climatic bands specified by the user.
     Number.bands <- terra::nlyr(IndVar)
@@ -241,7 +257,7 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
                                           pa = myResp,
                                           algorithms = algorithms,
                                           maxncov = maxncov,
-                                          nthreads = detectCores() / 2)
+                                          nthreads = parallel::detectCores() / 2)
     Selected.Variables <- labels(Covdata.embed$covdata)[[2]]
   }
 
@@ -249,7 +265,7 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
 
   # Save selected covariates for each species
   if(save.output){
-    write.csv(Selected.Variables, paste0("Results/", scale, "/Values/", SpeciesName, ".variables.csv"))
+    utils::write.csv(Selected.Variables, paste0("Results/", scale, "/Values/", SpeciesName, ".variables.csv"))
   }
 
   # Subset the regional independent variables for regional projections
@@ -274,7 +290,7 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
   select_list <- list(IndVar.Selected = terra::wrap(IndVar.Selected),
                       Selected.Variables = Selected.Variables,
                       Summary = summary)
-  if(scale == "Regional"){
+  if(scale == "Regional" && !is.null(IndVar.Global.Selected.reg)){
       select_list$IndVar.Global.Selected.reg <- terra::wrap(IndVar.Global.Selected.reg)
   }
 

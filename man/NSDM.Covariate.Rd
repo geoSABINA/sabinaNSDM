@@ -12,6 +12,7 @@ NSDM.Covariate(
   CV.perc = 0.8,
   CustomModelOptions = NULL,
   metric.select.thresh = 0.8,
+  spatialCV = NULL,
   rm.biomod.folder = TRUE,
   save.output = TRUE
 )
@@ -37,6 +38,11 @@ A \code{\link{BIOMOD.models.options}} object returned by the \code{\link{bm_Mode
 \item{metric.select.thresh}{(\emph{optional, default} \code{0.8}) \cr
 A \code{numeric} between \code{0} and \code{1} corresponding to the minimum scores of AUC below which single models will be excluded from the ensemble model building.}
 
+\item{spatialCV}{(\emph{optional, default} \code{NULL}) \cr
+Enables spatial cross-validation using \pkg{blockCV}. Set \code{NULL} to keep standard random CV (controlled by \code{CV.nb.rep} and \code{CV.perc}). To activate spatial CV, provide a list of the form \code{list(k = <int>, size = <num>|NULL)}:
+\code{k} = number of spatial folds (required);
+\code{size} = block size in the predictors’ CRS units (optional; degrees if lon/lat, meters if projected). If \code{size} is \code{NULL}, an automatic estimate is attempted; if it fails, an error will request a value.}
+
 \item{rm.biomod.folder}{(\emph{optional, default} \code{TRUE}) \cr
 A \code{logical} value indicating whether the intermediate biomod2's folders should be removed after processing.}
 
@@ -47,7 +53,7 @@ A \code{logical} value defining whether the outputs should be saved at local.}
 An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
 \itemize{
 \item \verb{$SpeciesName} Name of the species.
-\item \verb{$args} A \code{list} containing the arguments used during modeling, including: \code{algorithms}, \code{CV.nb.rep}, \code{CV.perc} and \code{metric.select.thresh}.
+\item \verb{$args} A \code{list} containing the arguments used during modelling, including: \code{algorithms}, \code{rm.corr}, \code{CV.nb.rep}, \code{CV.perc}, \code{metric.select.thresh}, \code{spatialCV.k} and \code{spatialCV.size}.
 \item \verb{$Selected.Variables.Covariate} A \code{character} vector specifying the names of the selected covariates at the regional scale used for the covariate model.
 \item \verb{$nbestreplicates} A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
 \item \verb{$current.projections} A \code{list} containing:
@@ -75,6 +81,11 @@ This function calibrates, evaluates, and projects a \bold{NSDM} with the \bold{c
 }
 \details{
 This function generates a \bold{NSDM} with the \bold{covariate} strategy. It uses the (\emph{biomod2} package to generate, evaluate, and project species distribution models at the regional scale incorporating the global model prediction as an additional environmental covariate.
+
+When \code{spatialCV} is provided, spatial folds are built with \code{blockCV::cv_spatial} with random selection and 100 iteration. The \code{size} is interpreted in the predictors’ CRS units: degrees if lon/lat, meters if projected.
+If \code{size = NULL}, the function attempts an automatic estimate via \code{blockCV::cv_spatial_autocor}; if this fails, an error requests a user-defined \code{size}. Basic checks ensure each TEST fold contains both presences and absences; otherwise, increase \code{size} or reduce \code{k}.
+When spatial CV is active, \code{CV.nb.rep} and \code{CV.perc} are ignored and the effective number of replicates equals \code{k}.
+
 If \code{save.output=TRUE}, modeling results are stored out of R in the \emph{Results/} folder created in the current working directory:
 \itemize{
 \item the \emph{Results/Covariate/Projections/} folder, containing the continuous (suitability) and binary current and new projections. Current projections are named with the species name followed by \file{.Current.tif}, \file{.bin.ROC.tif} and \file{.bin.TSS.tif}. New projections are named with the species name followed by the scenario name, and \file{.bin.ROC.tif}, \file{.bin.TSS.tif} when binary.
@@ -113,20 +124,29 @@ myInputData <- NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 
 # Format the input data
 myFormattedData <- NSDM.FormattingData(myInputData,
-                                       nPoints=1000)
+                                       nPoints = 1000,
+                                       save.output = FALSE)
 
-# Select covariates
-mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+# Select covariates using default parameters
+mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+                                        save.output = FALSE)
 
 # Perform global scale SDMs
-myGlobalModel <- NSDM.Global(mySelectedCovs)
+myGlobalModel <- NSDM.Global(mySelectedCovs,
+                             save.output = FALSE)
 
 # Perform NSDM analysis using the covariate approach with default settings.
-myCovariateModel <- NSDM.Covariate(myGlobalModel)
+myCovariateModel <- NSDM.Covariate(myGlobalModel,
+                                   save.output = FALSE)
 
 summary(myCovariateModel)
 
-## Perform NSDM analysis using the covariate approach with custom settings.
+## Explore some of the outputs 
+## Plot the covariate model 
+# plot(terra::rast(myCovariateModel$current.projections$Pred))
+
+## ------------------------------------------------------------------
+## Example: perform NSDM analysis using the covariate approach with custom settings.
 # myCovariateModel <- NSDM.Covariate(
 #					# Global model output used as input
 #					myGlobalModel,
@@ -147,6 +167,27 @@ summary(myCovariateModel)
 #					# Save the output externally
 #					save.output = TRUE)
 
+
+
+## ------------------------------------------------------------------
+# ## Example: perform NSDM with spatialCV (random CV params are ignored)
+
+# myCovariateModel <- NSDM.Covariate(
+#					# Global model output used as input
+#					myGlobalModel,
+#					# Do not remove correlated covariates 	
+#					rm.corr=FALSE,
+#					# Algorithms to use for modeling
+#					algorithms = c("GBM", "RF", "GLM"),
+#					# Threshold for selecting models for ensemble
+#					metric.select.thresh = 0.8,
+#				        # Spatial cross-validation 
+# 				        # (k folds, size units depend on CRS)
+#                                    spatialCV = list(k = 5, size = 0.25),
+#				        # Save the output externally
+#				        save.output = TRUE,
+#				        # Remove the temporary biomod2 output folder
+#				        rm.biomod.folder = TRUE)
 
 }
 \seealso{

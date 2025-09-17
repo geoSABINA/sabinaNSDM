@@ -3,29 +3,26 @@
 \docType{data}
 \name{expl.var.regional}
 \alias{expl.var.regional}
-\title{Data expl.var.regional}
+\title{Regional Environmental Covariates}
 \format{
-\subsection{\code{expl.var.regional}}{
-
-A \code{SpatRaster} object with the following layers:
+A \code{\link[terra:rast]{SpatRaster}} object with seven layers:
 \describe{
-\item{bio1}{Annual Mean Temperature}
-\item{bio2}{Mean Diurnal Range (Mean of monthly (max temp - min temp))}
-\item{bio3}{Isothermality (BIO2/BIO7) (×100)}
-\item{bio4}{Temperature Seasonality (standard deviation ×100)}
-\item{bio12}{Annual Precipitation}
-\item{sand}{Sand content}
-\item{radiation}{Annual solar radiation}
-}
+\item{\code{bio1}}{Annual Mean Temperature (°C).}
+\item{\code{bio2}}{Mean Diurnal Range (Mean of monthly (max temp - min temp), °C).}
+\item{\code{bio3}}{Isothermality (BIO2/BIO7) × 100.}
+\item{\code{bio4}}{Temperature Seasonality (standard deviation × 100).}
+\item{\code{bio12}}{Annual Precipitation (mm).}
+\item{\code{sand}}{Sand content (\%).}
+\item{\code{radiation}}{Annual Solar Radiation (kJ/m²).}
 }
 }
 \source{
-\url{https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1111/ecog.07328}
+\doi{10.1111/ecog.07328}
 }
 \usage{
-expl.var.regional
+data(expl.var.regional)
 }
 \description{
-A dataset containing multiple environmental covariates at a regional level.
+This dataset contains environmental covariates, primarily climatic and edaphic variables, at a regional scale.
 }
 \keyword{datasets}

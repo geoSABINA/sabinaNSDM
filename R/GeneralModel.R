@@ -5,6 +5,7 @@ general_nsdm_model <- function(nsdm.obj,
                                CV.perc=0.8,
                                CustomModelOptions=NULL,
                                metric.select.thresh = 0.8,
+                               spatialCV = NULL,
                                rm.corr = TRUE,
                                save.output=TRUE,
                                rm.biomod.folder=TRUE){
@@ -38,6 +39,8 @@ general_nsdm_model <- function(nsdm.obj,
   sabina$args$CV.nb.rep <- CV.nb.rep
   sabina$args$CV.perc <- CV.perc
   sabina$args$metric.select.thresh <- metric.select.thresh
+  sabina$AbsenceMode <- nsdm.obj$AbsenceMode
+
 
   current.projections <- list()
   new.projections <- list()
@@ -123,13 +126,150 @@ general_nsdm_model <- function(nsdm.obj,
 
   # Calibrate and evaluate individual models with specified statistical algorithms
   # Train and evaluate individual models using BIOMOD_Modeling
+  if(!exists("ModelsTable", inherits = TRUE)) {
+    try(utils::data("ModelsTable", package = "biomod2"), silent = TRUE)
+  }
+  if(!exists("OptionsBigboss", inherits = TRUE)) {
+    try(utils::data("OptionsBigboss", package = "biomod2"), silent = TRUE)
+  }
+
+  # Spatial CV (optional) (k required, size optional)
+  # Defaults for non-spatial CV
+  CV.strategy.arg <- "random"
+  CV.user.table.arg <- NULL
+  CV.nb.rep.arg <- CV.nb.rep
+  CV.perc.arg <- CV.perc
+
+  if(!is.null(spatialCV)) {
+    # k
+    if(is.null(spatialCV$k)) {
+      stop("When 'spatialCV' is provided, 'spatialCV$k' (number of folds) must be specified.")
+    }
+    k.user <- as.integer(spatialCV$k)
+    if(is.na(k.user) || k.user < 2) {
+      stop("'spatialCV$k' must be >= 2")
+    }
+
+    # size
+    size.user <- if(!is.null(spatialCV$size)) as.numeric(spatialCV$size) else NULL
+
+    CV.rast <- if(model.type == "Global"){
+      terra::unwrap(nsdm.obj$IndVar.Global.Selected)
+    } else {
+      terra::unwrap(nsdm.obj$IndVar.Regional.Selected)
+    }
+
+    occ <- replace(myResp, is.na(myResp), 0)
+    pa.df <- data.frame(x = myResp.xy[,1], y = myResp.xy[,2], pa = occ)
+    pa.sf <- sf::st_as_sf(pa.df, coords = c("x","y"), crs = terra::crs(CV.rast))
+    rm(occ)
+    IsLonLat <- terra::is.lonlat(CV.rast)
+    lat0 <- stats::median(myResp.xy[, 2], na.rm = TRUE)
+    m_per_deg <- 111325 * cos(lat0 * pi/180)
+
+    # Block size in meters for blockCV
+    size.m <- NA_real_
+    if(is.null(size.user)) {
+      # Auto-estimate meters via spatial autocorrelation (response)
+      size.m <- tryCatch({
+        if(IsLonLat) {
+          ac <- blockCV::cv_spatial_autocor(x = pa.sf, column = "pa", deg_to_metre = m_per_deg, plot = FALSE, progress = FALSE)
+        } else {
+          ac <- blockCV::cv_spatial_autocor(x = pa.sf, column = "pa", plot = FALSE, progress = FALSE)
+        }
+        as.numeric(ac$range)
+      }, error = function(e) NA_real_)
+      if(!is.finite(size.m) || size.m <= 0) {
+        stop("Spatial CV: could not auto-estimate block size. Please set spatialCV$size (in predictor CRS units).")
+      } else {
+        message(paste0("Spatial CV: auto-estimated block size ≈ ", round(size.m,0), " m."))
+      }
+    } else {
+      # User provided size (convert to meters if lon/lat)
+      size.m <- if(IsLonLat) as.numeric(size.user) * m_per_deg else as.numeric(size.user)
+    }
+
+    # spatial folds
+    cv_args <- list(
+      x = pa.sf, column = "pa", r = CV.rast,
+      k = k.user, size = size.m,
+      selection = "random", iteration = 100,
+      biomod2 = TRUE, progress = FALSE,
+      plot = FALSE, report = FALSE
+    )
+    if(IsLonLat) cv_args$deg_to_metre <- m_per_deg
+    scv <- do.call(blockCV::cv_spatial, cv_args)
+    spatial.cv.table <- scv$biomod_table
+    if(model.type == "Covariate") {
+      abs_mode <- nsdm_global$AbsenceMode[["Regional"]]
+    } else {
+      abs_mode <- nsdm.obj$AbsenceMode[[model.type]]
+    }
+    if(identical(abs_mode, "trueAbs")) {
+      # True absences
+      colnames(spatial.cv.table) <- paste0("_RUN", seq_len(ncol(spatial.cv.table)))
+    } else {
+      # Pseudo-absences/background
+      colnames(spatial.cv.table) <- paste0("_PA1_RUN", seq_len(ncol(spatial.cv.table)))
+    }
+
+    test.mask <- !spatial.cv.table
+    y.bin <- as.integer(pa.sf$pa)
+    if(nrow(test.mask) != length(y.bin)) {
+      stop("Spatial CV: mismatch between folds table and response length.")
+    }
+    pres.test <- colSums(test.mask & (y.bin == 1L))
+    abs.test <- colSums(test.mask & (y.bin == 0L))
+    n.test <- colSums(test.mask)
+
+    if(any(n.test == 0)) {
+      stop("\nSome spatial CV TEST folds are empty. Increase 'size' or decrease 'k'.\n")
+    }
+    if(any(pres.test == 0 | abs.test == 0)) {
+      stop("\nSome spatial CV TEST folds contain only one class. Please, consider increasing 'size' or decreasing 'k'.\n")
+    }
+
+    # CV args
+    CV.strategy.arg <- "user.defined"
+    CV.user.table.arg <- spatial.cv.table
+    CV.nb.rep.arg <- ncol(spatial.cv.table)
+    CV.perc.arg <- NULL
+
+    warning("\nSpatial CV is active: 'CV.nb.rep' and 'CV.perc' are ignored.\n")
+  }
+
+  UseSpatialCV <- identical(CV.strategy.arg, "user.defined")
+  sabina$args$CV.strategy <- if(UseSpatialCV) CV.strategy.arg else "random"
+  if(UseSpatialCV) {
+    sabina$args$spatialCV.k = k.user
+    size_native <- if(is.null(size.user)) {
+      if(IsLonLat) size.m / m_per_deg else size.m
+    } else {
+      as.numeric(size.user)
+    }
+    sabina$args$spatialCV.size <- if(!IsLonLat) {
+      sprintf("%.6g m", size_native)
+    } else {
+      sprintf("%.6g deg (≈ %.0f m)", size_native, round(size.m))
+    }
+    # Remove random-CV args (inactive)
+    sabina$args$CV.nb.rep <- NULL
+    sabina$args$CV.perc <- NULL
+  } else {
+    sabina$args$CV.nb.rep <- CV.nb.rep
+    sabina$args$CV.perc <- CV.perc
+  }
+
   myBiomodModelOut <- biomod2::BIOMOD_Modeling(bm.format = myBiomodData,
                                                modeling.id = "AllModels",
                                                models = models,
-                                               OPT.user = CustomModelOptions, # Use the specified or default modeling options
-                                               CV.strategy = "random",
-                                               CV.nb.rep = CV.nb.rep,
-                                               CV.perc = CV.perc,
+                                               OPT.strategy = if(is.null(CustomModelOptions)) "default" else "user.defined",
+                                               OPT.user = if(is.null(CustomModelOptions)) NULL else CustomModelOptions,
+                                               #OPT.user = CustomModelOptions, # Use the specified or default modeling options
+                                               CV.strategy = CV.strategy.arg,
+                                               CV.nb.rep = CV.nb.rep.arg,
+                                               CV.perc = CV.perc.arg,
+                                               CV.user.table = CV.user.table.arg,
                                                weights = NULL,
                                                var.import = 3,
                                                metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"),
@@ -141,7 +281,7 @@ general_nsdm_model <- function(nsdm.obj,
 
   # Replicates with ROC > metric.select.thresh
   df <- myBiomodModelOut@models.evaluation
-  df_slot <- slot(df, "val")
+  df_slot <- methods::slot(df, "val")
   df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
   nreplicates<-sum(df_slot$validation >= metric.select.thresh)
   if(nreplicates == 0) {
@@ -196,10 +336,10 @@ general_nsdm_model <- function(nsdm.obj,
   Pred <- terra::unwrap(myBiomodEMProj@proj.out@val)
   Pred <- terra::rast(terra::wrap(Pred))
 
-  sabina$current.projections$Pred <- setNames(Pred[[1]], paste0(SpeciesName, ".Current"))
+  sabina$current.projections$Pred <- stats::setNames(Pred[[1]], paste0(SpeciesName, ".Current"))
 
   # Uncertainty (coefficient of variation of the ensemble model projections).
-  sabina$current.projections$EMcv <- setNames(Pred[[2]], paste0(SpeciesName, ".EMcv"))
+  sabina$current.projections$EMcv <- stats::setNames(Pred[[2]], paste0(SpeciesName, ".EMcv"))
 
 
   # Binary models
@@ -209,9 +349,9 @@ general_nsdm_model <- function(nsdm.obj,
   Pred.bin.ROC <- terra::rast(terra::wrap(Pred.bin.ROC))
   Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
 
-  sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC,
+  sabina$current.projections$Pred.bin.ROC <- stats::setNames(Pred.bin.ROC,
                                                       paste0(SpeciesName, ".Current.bin.ROC"))
-  sabina$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS,
+  sabina$current.projections$Pred.bin.TSS <- stats::setNames(Pred.bin.TSS,
                                                       paste0(SpeciesName, ".Current.bin.TSS"))
 
   # Values of the evaluation statistics for each replica
@@ -261,11 +401,11 @@ general_nsdm_model <- function(nsdm.obj,
       Pred.Scenario <- terra::unwrap(myBiomodEMProjScenario@proj.out@val)
       Pred.Scenario <- terra::rast(terra::wrap(Pred.Scenario))
 
-      sabina$new.projections$Pred.Scenario[[i]] <- setNames(Pred.Scenario[[1]],
+      sabina$new.projections$Pred.Scenario[[i]] <- stats::setNames(Pred.Scenario[[1]],
                                                             paste0(SpeciesName,".",Scenario.name))
 
       # Uncertainty new scenarios (coefficient of variation of the ensemble model projections).
-      sabina$new.projections$EMcv.Scenario[[i]] <- setNames(Pred.Scenario[[2]],
+      sabina$new.projections$EMcv.Scenario[[i]] <- stats::setNames(Pred.Scenario[[2]],
                                                             paste0(SpeciesName, ".", Scenario.name, ".EMcv"))
 
       # Binarized models
@@ -275,9 +415,9 @@ general_nsdm_model <- function(nsdm.obj,
       Pred.bin.ROC.Scenario<-terra::rast(terra::wrap(Pred.bin.ROC.Scenario))
       Pred.bin.TSS.Scenario<-terra::rast(terra::wrap(Pred.bin.TSS.Scenario))
 
-      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC.Scenario,
+      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- stats::setNames(Pred.bin.ROC.Scenario,
                                                                     paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
-      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS.Scenario,
+      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- stats::setNames(Pred.bin.TSS.Scenario,
                                                                     paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
     }
@@ -321,7 +461,7 @@ general_nsdm_model <- function(nsdm.obj,
     fs::dir_create(projection_path)
 
     # Variables
-    write.csv(names(myExpl),
+    utils::write.csv(names(myExpl),
             paste0(values_path, SpeciesName, ".variables.csv"))
 
     #Ensemble
@@ -342,15 +482,15 @@ general_nsdm_model <- function(nsdm.obj,
     fs::file_delete(paste0(proj_curr_prefix, "_ensemble_TSSbin.tif"))
 
     # Evaluation replicates
-    write.csv(myEMeval.replicates,file=paste0(values_path,SpeciesName,"_replica.csv"))
-    write.csv(nreplicates,file=paste0(values_path,SpeciesName,"_nbestreplicates.csv"))
+    utils::write.csv(myEMeval.replicates,file=paste0(values_path,SpeciesName,"_replica.csv"))
+    utils::write.csv(nreplicates,file=paste0(values_path,SpeciesName,"_nbestreplicates.csv"))
 
     # Evaluation consensus
-    write.csv(myEMeval.Ensemble,file=paste0(values_path,SpeciesName,"_ensemble.csv"))
+    utils::write.csv(myEMeval.Ensemble,file=paste0(values_path,SpeciesName,"_ensemble.csv"))
 
     # Variabale Importance
     file_path <- paste0(values_path,SpeciesName,"_indvar.csv")
-    write.csv(myModelsVarImport, file = file_path, row.names = T)
+    utils::write.csv(myModelsVarImport, file = file_path, row.names = T)
 
     # New scenarios
     if(!is.null(Scenarios)){
@@ -404,3 +544,4 @@ general_nsdm_model <- function(nsdm.obj,
   return(sabina)
 
 }
+

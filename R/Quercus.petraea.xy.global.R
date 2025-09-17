@@ -1,13 +1,14 @@
-#' Data Quercus.petraea.xy.global
+#' @name Quercus.petraea.xy.global
+#' @aliases Quercus.petraea.xy.global
+#' @title Global Occurrences of Quercus petraea
+#' @description A dataset containing the coordinates (x, y) of the occurrence points of the species (\emph{Quercus petraea} at global level.
 #'
-#' A dataset containing the coordinates (x, y) of the occurrence points of the species (\emph{Quercus petraea} at global level.
-#'
-#' @format ## `Quercus.petraea.xy.global`
-#' A \code{data.frame} with 4,364 rows and 2 columns:
+#' @format A \code{data.frame} with 4,364 rows and 2 columns:
 #' \describe{
-#'   \item{x}{Longitude of the occurrence point}
-#'   \item{y}{Latitude of the occurrence point}
+#'   \item{\code{Longitude}}{Longitude of species occurrence points.}
+#'   \item{\code{Latitude}}{Latitude of species occurrence points.}
 #' }
 #'
-#' @source <https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1111/ecog.07328>
+#' @source \doi{10.1111/ecog.07328}
+#' @usage data(Quercus.petraea.xy.global)
 "Quercus.petraea.xy.global"

@@ -101,15 +101,24 @@ myInputData <- NSDM.InputData(
 # Format the input data
 myFormattedData <- NSDM.FormattingData(
   myInputData,
-  nPoints = 1000
-)
+  nPoints = 1000,
+  save.output = FALSE)
 
 # Select covariates using default parameters
-mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+                                        save.output = FALSE)
 
 summary(mySelectedCovs)
 
-## Select covariates using custom parameters.
+# Explore some outputs
+# Selected variables at global scale
+mySelectedCovs$Selected.Variables.Global
+# Selected variables at regional scale
+mySelectedCovs$Selected.Variables.Regional
+
+
+## ------------------------------------------------------------------
+## Example: select covariates using custom parameters.
 # mySelectedCovs <- NSDM.SelectCovariates(
 #					# Formatted data output used as input
 #					myFormattedData,

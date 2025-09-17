@@ -1,13 +1,14 @@
-#' Data Quercus.petraea.xy.regional
+#' @name Quercus.petraea.xy.regional
+#' @aliases Quercus.petraea.xy.regional
+#' @title Regional Occurrences of Quercus petraea
+#' @description A dataset containing the coordinates (x, y) of the occurrence points of the species (\emph{Quercus petraea} at regional level.
 #'
-#' A dataset containing the coordinates (x, y) of the occurrence points of the species (\emph{Quercus petraea} at regional level.
-#'
-#' @format ## `Quercus.petraea.xy.regional`
-#' A \code{data.frame} with 775 rows and 2 columns:
+#' @format A \code{data.frame} with 775 rows and 2 columns:
 #' \describe{
-#'   \item{x}{Longitude of the occurrence point}
-#'   \item{y}{Latitude of the occurrence point}
+#'   \item{\code{Longitude}}{Longitude of species occurrence points.}
+#'   \item{\code{Latitude}}{Latitude of species occurrence points.}
 #' }
 #'
-#' @source <https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1111/ecog.07328>
+#' @source \doi{10.1111/ecog.07328}
+#' @usage data(Quercus.petraea.xy.regional)
 "Quercus.petraea.xy.regional"

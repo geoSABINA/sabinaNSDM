@@ -20,10 +20,10 @@ NSDM.FormattingData(
 An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points are not provided at \code{\link{NSDM.InputData}}.}
 
 \item{Min.Dist.Global}{(\emph{optional, default} \code{'resolution'}) \cr
-A \code{numeric} corresponding to the minimum distance between species occurrences at the global level. If \code{Min.Dist.Global="resolution"}, the minimum distance is calculated based on the resolution of the input environmental covariates at the global scale provided in \code{nsdm_input}.}
+A \code{numeric} corresponding to the minimum distance between species occurrences at the global level. If \code{Min.Dist.Global="resolution"}, the minimum distance is calculated based on the resolution of the input environmental covariates at the global scale provided in \code{nsdm_input}. The distance must be in the predictors’ CRS units.}
 
 \item{Min.Dist.Regional}{(\emph{optional, default} \code{'resolution'}) \cr
-A \code{numeric} corresponding to the minimum distance between species occurrences at the regional level. If \code{Min.Dist.Regional="resolution"}, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}.}
+A \code{numeric} corresponding to the minimum distance between species occurrences at the regional level. If \code{Min.Dist.Regional="resolution"}, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}. The distance must be in the predictors’ CRS units.}
 
 \item{Background.method}{(\emph{optional, default} \code{'random'}) \cr
 If no absence or background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}. The "random" (the default) option generates random background points considering the extension of the input environmental covariates at the global and the regional scales provided in \code{nsdm_input}. The "stratified" method is based on a PCA analysis from all environmental covariates, where the two principal component values are divided into quartiles, and multiplied to generate a total stratified variable of 16 categories (stratum). Then, the background points are generated randomly according to the area occupied by each stratum.}
@@ -92,11 +92,14 @@ myInputData <- NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 
 # Format the input data using default parameters.
 myFormattedData <- NSDM.FormattingData(myInputData, 
-                                       nPoints = 1000)
+                                       nPoints = 1000,
+                                       save.output=FALSE)
 
 summary(myFormattedData)
 
-## Format the input data specifying custom parameters.
+
+## ------------------------------------------------------------------
+## Example: format the input data specifying custom parameters.
 # myFormattedData <- NSDM.FormattingData(
 #				# Input data object
 #				myInputData,

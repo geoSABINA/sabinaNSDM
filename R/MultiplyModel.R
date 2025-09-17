@@ -62,16 +62,20 @@
 #'
 #' # Format the input data
 #' myFormattedData <- NSDM.FormattingData(myInputData,
-#'					nPoints=1000)
+#'                                        nPoints = 1000,
+#'                                        save.output = FALSE)
 #'
-#' # Select covariates
-#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+#' # Select covariates using default parameters
+#' mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+#'                                         save.output = FALSE)
 #'
 #' # Perform global scale SDMs
-#' myGlobalModel <- NSDM.Global(mySelectedCovs)
+#' myGlobalModel <- NSDM.Global(mySelectedCovs,
+#'                              save.output = FALSE)
 #'
 #' # Perform regional scale SDMs
-#' myRegionalModel <- NSDM.Regional(mySelectedCovs)
+#' myRegionalModel <- NSDM.Regional(mySelectedCovs,
+#'                                  save.output = FALSE)
 #' 
 #' # Perform NSDM analysis using the multiply strategy
 #' myMultiplyModel <- NSDM.Multiply(
@@ -84,10 +88,13 @@
 #'				    # Whether to rescale the model outputs before combining
 #'				    rescale = FALSE,
 #'				    # Save the combined model output externally
-#'				    save.output = TRUE) 
+#'				    save.output = FALSE) 
 #'
 #' summary(myMultiplyModel)
 #'
+#' ## Explore some of the outputs 
+#' ## Plot the multiply model 
+#' # plot(terra::rast(myMultiplyModel$current.projections$Pred))
 #'
 #' @seealso \code{\link{NSDM.InputData}}, \code{\link{NSDM.FormattingData}}, \code{\link{NSDM.SelectCovariates}}, \code{\link{NSDM.Global}}, \code{\link{NSDM.Regional}}
 #'
@@ -166,10 +173,10 @@ NSDM.Multiply <- function(nsdm_global,
     res.average <- terra::rast(terra::wrap(res.average))
 
     if(projmodel =="Current") {
-      sabina$current.projections$Pred <- setNames(res.average,
+      sabina$current.projections$Pred <- stats::setNames(res.average,
                                                   paste0(SpeciesName, ".Current"))
     } else {
-      sabina$new.projections$Pred.Scenario[[i-1]]<- setNames(res.average,
+      sabina$new.projections$Pred.Scenario[[i-1]]<- stats::setNames(res.average,
                                                              paste0(SpeciesName,".", projmodel))
     }
 
@@ -250,13 +257,13 @@ NSDM.Multiply <- function(nsdm_global,
   myEMeval.replicates<-cross.validation
 
   cross.validation<-cross.validation[which(cross.validation$metric.eval %in% c("ROC","TSS","KAPPA")),]
-  metric.means <- aggregate(. ~ metric.eval, data = cross.validation, FUN = mean)
+  metric.means <- stats::aggregate(. ~ metric.eval, data = cross.validation, FUN = mean)
   sabina$myEMeval.means<-metric.means
 
   # Save some results
    if(save.output){
      fs::dir_create("Results/Multiply/Values/")
-     write.csv(metric.means,file=paste0("Results/Multiply/Values/",SpeciesName,"_ensemble.csv"))
+     utils::write.csv(metric.means,file=paste0("Results/Multiply/Values/",SpeciesName,"_ensemble.csv"))
    }
 
   # Binary models
@@ -276,8 +283,8 @@ NSDM.Multiply <- function(nsdm_global,
     Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
 
     if(projmodel =="Current") {
-      sabina$current.projections$Pred.bin.ROC <- setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
-      sabina$current.projections$Pred.bin.TSS <- setNames(Pred.bin.TSS, paste0(SpeciesName,".Current.bin.TSS"))
+      sabina$current.projections$Pred.bin.ROC <- stats::setNames(Pred.bin.ROC, paste0(SpeciesName, ".Current.bin.ROC"))
+      sabina$current.projections$Pred.bin.TSS <- stats::setNames(Pred.bin.TSS, paste0(SpeciesName,".Current.bin.TSS"))
 
       if(save.output){
         file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".Current.bin.ROC.tif")
@@ -288,8 +295,8 @@ NSDM.Multiply <- function(nsdm_global,
 
     } else {
       Scenario.name<-projmodel
-      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- setNames(Pred.bin.ROC, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
-      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- setNames(Pred.bin.TSS, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
+      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- stats::setNames(Pred.bin.ROC, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
+      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- stats::setNames(Pred.bin.TSS, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
       if(save.output){
         file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif")

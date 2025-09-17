@@ -3,24 +3,21 @@
 \docType{data}
 \name{Fagus.sylvatica.xy.global}
 \alias{Fagus.sylvatica.xy.global}
-\title{Data Fagus.sylvatica.xy.global}
+\title{Global Occurrences of Fagus sylvatica}
 \format{
-\subsection{\code{Fagus.sylvatica.xy.global}}{
-
 A \code{data.frame} with 7,205 rows and 2 columns:
 \describe{
-\item{x}{Longitude of the occurrence point}
-\item{y}{Latitude of the occurrence point}
-}
+\item{\code{Longitude}}{Longitude of occurrence points.}
+\item{\code{Latitude}}{Latitude of occurrence points.}
 }
 }
 \source{
-\url{https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1111/ecog.07328}
+\doi{10.1111/ecog.07328}
 }
 \usage{
-Fagus.sylvatica.xy.global
+data(Fagus.sylvatica.xy.global)
 }
 \description{
-A dataset containing the coordinates (x, y) of the occurrence points of the species (\emph{Fagus sylvatica} at global level.
+A dataset containing the geographic coordinates of occurrence points for \emph{Fagus sylvatica} at a global scale.
 }
 \keyword{datasets}

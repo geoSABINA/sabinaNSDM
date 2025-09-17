@@ -79,16 +79,20 @@ myInputData<-NSDM.InputData(SpeciesName = "Fagus.sylvatica",
 
 # Format the input data
 myFormattedData <- NSDM.FormattingData(myInputData,
-				nPoints=1000)
+                                       nPoints = 1000,
+                                       save.output = FALSE)
 
-# Select covariates
-mySelectedCovs <- NSDM.SelectCovariates(myFormattedData)
+# Select covariates using default parameters
+mySelectedCovs <- NSDM.SelectCovariates(myFormattedData,
+                                        save.output = FALSE)
 
 # Perform global scale SDMs
-myGlobalModel <- NSDM.Global(mySelectedCovs)
+myGlobalModel <- NSDM.Global(mySelectedCovs,
+                             save.output = FALSE)
 
 # Perform regional scale SDMs
-myRegionalModel <- NSDM.Regional(mySelectedCovs)
+myRegionalModel <- NSDM.Regional(mySelectedCovs,
+                                 save.output = FALSE)
 
 # Perform NSDM analysis using the multiply strategy
 myMultiplyModel <- NSDM.Multiply(
@@ -101,10 +105,13 @@ myMultiplyModel <- NSDM.Multiply(
 			    # Whether to rescale the model outputs before combining
 			    rescale = FALSE,
 			    # Save the combined model output externally
-			    save.output = TRUE) 
+			    save.output = FALSE) 
 
 summary(myMultiplyModel)
 
+## Explore some of the outputs 
+## Plot the multiply model 
+# plot(terra::rast(myMultiplyModel$current.projections$Pred))
 
 }
 \seealso{

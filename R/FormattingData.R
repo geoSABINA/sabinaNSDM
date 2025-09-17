@@ -9,9 +9,9 @@
 #' @param nPoints (\emph{optional, default} \code{10000}) \cr
 #' An \code{integer} corresponding to the number of background points used to generate background data if absence/pseudo-absences/background points are not provided at \code{\link{NSDM.InputData}}.
 #' @param Min.Dist.Global (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between species occurrences at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the global scale provided in \code{nsdm_input}.
+#' A \code{numeric} corresponding to the minimum distance between species occurrences at the global level. If `Min.Dist.Global="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the global scale provided in \code{nsdm_input}. The distance must be in the predictors’ CRS units.
 #' @param Min.Dist.Regional (\emph{optional, default} \code{'resolution'}) \cr
-#' A \code{numeric} corresponding to the minimum distance between species occurrences at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}.
+#' A \code{numeric} corresponding to the minimum distance between species occurrences at the regional level. If `Min.Dist.Regional="resolution"`, the minimum distance is calculated based on the resolution of the input environmental covariates at the regional scale provided in \code{nsdm_input}. The distance must be in the predictors’ CRS units.
 #' @param Background.method  (\emph{optional, default} \code{'random'}) \cr
 #' If no absence or background data is provided in the \code{\link{NSDM.InputData}} function, the generation method can be either \code{'random'} or \code{'stratified'}. The "random" (the default) option generates random background points considering the extension of the input environmental covariates at the global and the regional scales provided in \code{nsdm_input}. The "stratified" method is based on a PCA analysis from all environmental covariates, where the two principal component values are divided into quartiles, and multiplied to generate a total stratified variable of 16 categories (stratum). Then, the background points are generated randomly according to the area occupied by each stratum.
 #' @param save.output (\emph{optional, default} \code{TRUE}) \cr
@@ -77,11 +77,14 @@
 #'
 #' # Format the input data using default parameters.
 #' myFormattedData <- NSDM.FormattingData(myInputData, 
-#'                                        nPoints = 1000)
+#'                                        nPoints = 1000,
+#'                                        save.output=FALSE)
 #'
 #' summary(myFormattedData)
 #' 
-#' ## Format the input data specifying custom parameters.
+#' 
+#' ## ------------------------------------------------------------------
+#' ## Example: format the input data specifying custom parameters.
 #' # myFormattedData <- NSDM.FormattingData(
 #' #				# Input data object
 #' #				myInputData,
@@ -105,6 +108,9 @@ NSDM.FormattingData <- function(nsdm_input,
                                 Background.method="random",
                                 save.output=TRUE) {
 
+  has_global <- !is.null(nsdm_input$IndVar.Global) &&
+                !is.null(nsdm_input$SpeciesData.XY.Global.0)
+
   if(!inherits(nsdm_input, "nsdm.input")){
       stop("nsdm_input must be an object of nsdm.input class. Consider running NSDM.InputData() function")
   }
@@ -121,7 +127,8 @@ NSDM.FormattingData <- function(nsdm_input,
   sabina$args$nPoints <- nPoints
   sabina$args$Min.Dist.Global <- Min.Dist.Global
   sabina$args$Min.Dist.Regional <- Min.Dist.Regional
-  sabina$args$Backround.method <- ifelse(!is.null(nsdm_input$Background.Global.0), "manually added", Background.method)
+  sabina$args$Background.method <- ifelse(!is.null(nsdm_input$Background.Global.0), "manually added", Background.method)
+  sabina$AbsenceMode <- nsdm_input$AbsenceMode
 
   # Create directories
   if(save.output){
@@ -133,24 +140,36 @@ NSDM.FormattingData <- function(nsdm_input,
 		"Results/Regional/AbsencesXY/"), recurse = TRUE)
   }
 
-  format_global <- gen_background_pts(nsdm_input, "Global",
-                                      Background.method, nPoints, Min.Dist.Global,
-                                      save.output)
+  if(has_global) {
+    format_global <- gen_background_pts(nsdm_input, "Global",
+                                        Background.method, nPoints, Min.Dist.Global,
+                                        save.output)
+  }
   format_regional <- gen_background_pts(nsdm_input, "Regional",
                                         Background.method, nPoints, Min.Dist.Regional,
                                         save.output)
 
-  main_summary <- rbind(format_global$Summary,
-                        format_regional$Summary[-1, , drop = FALSE])
+  if(has_global) {
+    main_summary <- rbind(format_global$Summary,
+                          format_regional$Summary[-1, , drop = FALSE])
+  } else {
+     main_summary <- rbind(data.frame(Values = nsdm_input$Species.Name,
+                                      row.names = "Species name"),
+                           format_regional$Summary[-1, , drop = FALSE])
+  }
 
   summary_new <- data.frame(Values = c(length(nsdm_input$Scenarios)))
   rownames(summary_new) <- c("Number of new scenarios")
   main_summary <- rbind(main_summary, summary_new)
 
-  sabina$SpeciesData.XY.Global <- format_global$SpeciesData.XY
+  sabina$SpeciesData.XY.Global <- if(has_global) format_global$SpeciesData.XY else NULL
   sabina$SpeciesData.XY.Regional <- format_regional$SpeciesData.XY
-  if(!is.null(format_global$Background.XY)) {
-    sabina$Background.XY.Global <- format_global$Background.XY
+  if(has_global) {
+    if(!is.null(format_global$Background.XY)) {
+      sabina$Background.XY.Global <- format_global$Background.XY
+    } else {
+      sabina$Background.XY.Global <- NULL
+    }
   } else {
     sabina$Background.XY.Global <- NULL
   }
@@ -159,8 +178,12 @@ NSDM.FormattingData <- function(nsdm_input,
   } else {
     sabina$Background.XY.Regional <- NULL
   }
-  if(!is.null(format_global$Absences.XY)) {
-    sabina$Absences.XY.Global <- format_global$Absences.XY
+  if(has_global) {
+    if(!is.null(format_global$Absences.XY)) {
+      sabina$Absences.XY.Global <- format_global$Absences.XY
+    } else {
+      sabina$Absences.XY.Global <- NULL
+    }
   } else {
     sabina$Absences.XY.Global <- NULL
   }
@@ -169,7 +192,7 @@ NSDM.FormattingData <- function(nsdm_input,
   } else {
     sabina$Absences.XY.Regional <- NULL
   }
-  sabina$IndVar.Global <- format_global$IndVar
+  sabina$IndVar.Global <- if(has_global) format_global$IndVar else NULL
   sabina$IndVar.Regional <- format_regional$IndVar
   sabina$Scenarios <- nsdm_input$Scenarios
   if(is.null(sabina$Scenarios)) {
@@ -183,29 +206,21 @@ NSDM.FormattingData <- function(nsdm_input,
   # save.out messages
   if(save.output) {
     message("Results saved in the following local folder/s:")
+    if(isTRUE(has_global) && exists("format_global") && !is.null(format_global)) {
+      message(paste0(
+        " - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
+        if(!is.null(format_global$Background.XY))
+          paste0(" - Global background points: /Results/Global/AbsencesXY/", SpeciesName, "_Background.csv\n") else "",
+        if(!is.null(format_global$Absences.XY))
+          paste0(" - Global true absence points: /Results/Global/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n") else ""
+      ))
+    }
     message(paste0(
-      " - Global species occurrences: /Results/Global/SpeciesXY/", SpeciesName, ".csv\n",
-      if(!is.null(format_global$Background.XY)) {
-        paste0(" - Global background points: /Results/Global/AbsencesXY/", SpeciesName, "_Background.csv\n")
-      } else {
-        ""
-      },
-      if(!is.null(format_global$Absences.XY)) {
-        paste0(" - Global true absence points: /Results/Global/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n")
-      } else {
-        ""
-      },
       " - Regional species occurrences: /Results/Regional/SpeciesXY/", SpeciesName, ".csv\n",
-      if(!is.null(format_regional$Background.XY)) {
-        paste0(" - Regional background points: /Results/Regional/AbsencesXY/", SpeciesName, "_Background.csv\n")
-      } else {
-        ""
-      },
-      if(!is.null(format_regional$Absences.XY)) {
-        paste0(" - Regional true absence points: /Results/Regional/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n")
-      } else {
-        ""
-      }
+      if(!is.null(format_regional$Background.XY))
+        paste0(" - Regional background points: /Results/Regional/AbsencesXY/", SpeciesName, "_Background.csv\n") else "",
+      if(!is.null(format_regional$Absences.XY)) 
+        paste0(" - Regional true absence points: /Results/Regional/AbsencesXY/", SpeciesName, "_TrueAbsences.csv\n") else ""
     ))
   }
 
@@ -217,30 +232,30 @@ NSDM.FormattingData <- function(nsdm_input,
 
 background_stratified <- function(expl.var, nPoints) {
   if(nrow(expl.var)*ncol(expl.var) > 20000) {
-    points<-terra::xyFromCell(expl.var[[1]],which(complete.cases(terra::values(expl.var[[1]]))))
+    points<-terra::xyFromCell(expl.var[[1]],which(stats::complete.cases(terra::values(expl.var[[1]]))))
     indices <- sample(1:nrow(points), 20000, replace = FALSE)
     points<-points[indices,]
     df<-terra::extract(expl.var,points)
   } else {
   df <- as.data.frame(expl.var)
   }
-  df <- na.omit(df)
+  df <- stats::na.omit(df)
   if(nrow(df) < nPoints) {
     stop(paste("The requested number of background nPoints exceeds the number of available cells.
     Maximum number of background points:",nrow(df)))
   }
-  pca <- princomp(df)
+  pca <- stats::princomp(df)
   rm(df)
-  PC1 <- predict(expl.var, pca, index = 1)
-  PC2 <- predict(expl.var, pca, index = 2)
+  PC1 <- terra::predict(expl.var, pca, index = 1)
+  PC2 <- terra::predict(expl.var, pca, index = 2)
 
   gc()
   # Reclassify raster into 4 classes based on quartiles
-  quartiles1 <- terra::global(PC1, fun = quantile, na.rm = TRUE)
+  quartiles1 <- terra::global(PC1, fun = stats::quantile, na.rm = TRUE)
   cat1 <- cut(terra::values(PC1), breaks = quartiles1, labels = c(1, 2, 3, 4), include.lowest = TRUE)
   PC1_cat <- terra::setValues(PC1, cat1)
   rm(PC1)
-  quartiles2 <- terra::global(PC2, fun = quantile, na.rm = TRUE)
+  quartiles2 <- terra::global(PC2, fun = stats::quantile, na.rm = TRUE)
   cat2 <- cut(terra::values(PC2), breaks = quartiles2, labels = c(1, 2, 3, 4), include.lowest = TRUE)
   PC2_cat <- terra::setValues(PC2, cat2)
   rm(PC2)
@@ -272,6 +287,10 @@ gen_background_pts <- function(nsdm_input, scale,
   lowcase_scale <- tolower(scale)
   IndVar <- terra::unwrap(nsdm_input[[paste0("IndVar.", scale)]])
 
+  Background.XY <- NULL
+  Absences.XY <- NULL
+  Absences.XY.final <- NULL
+
   # Generate random background points for model calibration
   # Covariates (environmental layers)
   IndVar <- IndVar[[names(IndVar)]]
@@ -282,8 +301,7 @@ gen_background_pts <- function(nsdm_input, scale,
   absences_scale <- nsdm_input[[paste0("Absences.", scale)]]
   # Generate random background points for model calibration
   if(is.null(absences_scale)) {
-    if(is.null(background_scale) &&
-         Background.method == "random") {
+    if(is.null(background_scale) && Background.method == "random") {
       Valid.Cells <- which(!is.na(terra::values(Mask)))
       if(length(Valid.Cells) < nPoints) {
         stop(paste("The requested number of background nPoints exceeds the number of available cells.
@@ -301,7 +319,7 @@ gen_background_pts <- function(nsdm_input, scale,
     }
 
     if(save.output){
-      write.csv(Background.XY,
+      utils::write.csv(Background.XY,
                 paste0("Results/", scale, "/AbsencesXY/", SpeciesName, "_Background.csv"))
     }
   }
@@ -322,27 +340,30 @@ gen_background_pts <- function(nsdm_input, scale,
   # Spatial thinning of occurrence data to remove duplicates and apply minimum distance criteria
   if(Min.Dist == "resolution") {
     Min.Dist <- terra::res(Mask)[1]
+    rast_thin<-Mask
+  }else{
+    # Make a new empty raster with same extent, crs, origin
+    rast_thin <- rast(terra::ext(Mask), crs = crs(Mask))
+    origin(rast_thin) <- origin(Mask)
+    res(rast_thin) <- Min.Dist
   }
-  invisible(capture.output({
-    tryCatch({
-      XY.final <- ecospat::ecospat.occ.desaggregation(XY,
-                                                     min.dist = Min.Dist,
-                                                     by = NULL)
-    }, error = function(e) {
-      XY <- unique(XY)
-      XY <- round(XY, digits = 4)
-      XY.final <- ecospat::ecospat.occ.desaggregation(XY,
-                                                     min.dist = Min.Dist,
-                                                     by = NULL)
-    })
-  }))
+
+  # Assign cell IDs based on the thinning raster
+  XY$cell <- terra::cellFromXY(rast_thin, XY)
+  # Identify duplicates based on cell ID
+  dups_idx <- duplicated(XY$cell)
+  
+  # Filter out the duplicates, keeping the geometry
+  XY<-XY[,c("x","y")]
+  XY.final <- XY[!dups_idx, ]
+
   message(paste0(scale, " species data (",SpeciesName,"): from ",
                  nrow(SpeciesData.XY), " to ", nrow(XY.final),
                  " species occurrences after cleaning and thinning.\n"))
 
   # Save filtered occurrences data for each species
   if(save.output){
-    write.csv(XY.final, paste0("Results/", scale,
+    utils::write.csv(XY.final, paste0("Results/", scale,
                                "/SpeciesXY/", SpeciesName, ".csv"))
   }
 
@@ -350,27 +371,30 @@ gen_background_pts <- function(nsdm_input, scale,
   if(!is.null(absences_scale)) {
     if(Min.Dist == "resolution") {
       Min.Dist <- terra::res(Mask)[1]
+      rast_thin<-Mask
+    }else{
+      # Make a new empty raster with same extent, crs, origin
+      rast_thin <- rast(terra::ext(Mask), crs = crs(Mask))
+      origin(rast_thin) <- origin(Mask)
+      res(rast_thin) <- Min.Dist
     }
-    invisible(capture.output({
-      tryCatch({
-        Absences.XY.final <- ecospat::ecospat.occ.desaggregation(Absences.XY, 
-                                                                 min.dist = Min.Dist, 
-                                                                 by = NULL)
-      }, error = function(e) {
-        Absences.XY <- unique(Absences.XY)
-        Absences.XY <- round(Absences.XY, digits = 4)
-        Absences.XY.final <- ecospat::ecospat.occ.desaggregation(Absences.XY,
-                                                                 min.dist = Min.Dist,
-                                                                 by = NULL)
-      })
-    }))
+    
+    # Assign cell IDs based on the thinning raster
+    Absences.XY$cell <- terra::cellFromXY(rast_thin, Absences.XY)
+    # Identify duplicates based on cell ID
+    dups_idx <- duplicated(Absences.XY$cell)
+    
+    # Filter out the duplicates, keeping the geometry
+    Absences.XY<-Absences.XY[,c("x","y")]
+    Absences.XY.final <- Absences.XY[!dups_idx, ]
+    
     message(paste0(scale, " absence data (",SpeciesName,"): from ",
                    nrow(Absences.XY), " to ", nrow(Absences.XY.final),
                    " absence points after cleaning and thinning.\n"))
 
     # Save filtered absences data for each species
     if(save.output){
-    write.csv(Absences.XY.final, paste0("Results/", scale,
+    utils::write.csv(Absences.XY.final, paste0("Results/", scale,
                                         "/AbsencesXY/", SpeciesName, "_TrueAbsences.csv"))
     }
   }
@@ -395,8 +419,8 @@ gen_background_pts <- function(nsdm_input, scale,
 
   return(list(
           SpeciesData.XY = XY.final,
-          Background.XY = if(!is.null(Background.XY)) Background.XY else NULL,
-          Absences.XY = if(!is.null(absences_scale)) Absences.XY.final else NULL,
+          Background.XY = Background.XY,
+          Absences.XY = Absences.XY.final,
           IndVar = terra::wrap(IndVar),
           Summary = scale_summary
   ))
