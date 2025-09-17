@@ -1,4 +1,4 @@
-# sabinaNSDM 1.1.0 (2025-09-xx)
+# sabinaNSDM 1.1.0 (2025-09-18)
 
 ## Added
 - **Spatial cross-validation (optional)** via `blockCV::cv_spatial()`.
@@ -10,7 +10,7 @@
   In this case, the workflow runs with `NSDM.InputData() → NSDM.FormattingData() → NSDM.SelectCovariates() → NSDM.Regional()`, allowing faster and simpler (non-nested) modeling, although the main focus of the package remains on nested workflows.
 
 ## Changed
-- **Occurrence and absences (if provided) thinning** in `NSDM.FormattingData()` now uses **GeoThinneR::thin_points(method = "distance")** (CRS-aware), replacing the previous implementation with **ecospat**. Faster and more reproducible thinning than before.
+- **Occurrence and absences (if provided) thinning** in `NSDM.FormattingData()` has been reimplemented internally, replacing the previous dependency on **ecospat**. The new approach is faster and more reproducible than before.
 
 ## Fixed
 - **Spatial CV integration**: added defensive checks to stop with clear errors if a TEST fold is empty or lacks both classes.

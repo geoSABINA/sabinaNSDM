@@ -98,7 +98,9 @@
 #' # Selected variables at regional scale
 #' mySelectedCovs$Selected.Variables.Regional
 #' 
-#' ## Select covariates using custom parameters.
+#'
+#' ## ------------------------------------------------------------------
+#' ## Example: select covariates using custom parameters.
 #' # mySelectedCovs <- NSDM.SelectCovariates(
 #' #					# Formatted data output used as input
 #' #					myFormattedData,

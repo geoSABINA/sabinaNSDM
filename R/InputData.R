@@ -62,7 +62,9 @@
 #'
 #' summary(myInputData)
 #'
-#' ## Example with multiple new scenarios
+#'
+#' ## ------------------------------------------------------------------
+#' ## Example: multiple new scenarios
 #' ## Replicate the new scenario to simulate a second scenario
 #' # scenario1 <- new.env
 #' # scenario2 <- new.env  # Replicate to create a second scenario
@@ -83,6 +85,21 @@
 #' #                                     Background.Regional = NULL,
 #' #                                     Absences.Global = NULL,
 #' #                                     Absences.Regional = NULL)
+#'
+#'
+#' ## ------------------------------------------------------------------
+#' ## Example: running a single model (non-nested workflow)
+#' ## Provide only regional data (leave global = NULL)
+#'
+#' # myInputData_ref<- NSDM.InputData(SpeciesName = "Fagus.sylvatica",
+#' #                                  spp.data.global = NULL,
+#' #                                  spp.data.regional = Fagus.sylvatica.xy.regional,
+#' #                                  expl.var.global = NULL,
+#' #                                  expl.var.regional = expl.var.regional,
+#' #                                  Background.Global = NULL,
+#' #                                  Background.Regional = NULL,
+#' #                                  Absences.Global = NULL,
+#' #                                  Absences.Regional = NULL)
 #'
 #' @export
 NSDM.InputData <- function(SpeciesName,

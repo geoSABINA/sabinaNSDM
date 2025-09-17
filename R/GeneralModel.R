@@ -164,7 +164,8 @@ general_nsdm_model <- function(nsdm.obj,
     pa.sf <- sf::st_as_sf(pa.df, coords = c("x","y"), crs = terra::crs(CV.rast))
     rm(occ)
     IsLonLat <- terra::is.lonlat(CV.rast)
-    m_per_deg <- 111320
+    lat0 <- stats::median(myResp.xy[, 2], na.rm = TRUE)
+    m_per_deg <- 111325 * cos(lat0 * pi/180)
 
     # Block size in meters for blockCV
     size.m <- NA_real_
@@ -189,19 +190,15 @@ general_nsdm_model <- function(nsdm.obj,
     }
 
     # spatial folds
-    scv <- blockCV::cv_spatial(
-      x = pa.sf,
-      column = "pa",
-      r = CV.rast,
-      k = k.user,
-      size = size.m,
-      selection = "random",
-      iteration = 100,
-      biomod2 = TRUE,
-      progress = FALSE,
-      plot=FALSE,
-      report = FALSE
+    cv_args <- list(
+      x = pa.sf, column = "pa", r = CV.rast,
+      k = k.user, size = size.m,
+      selection = "random", iteration = 100,
+      biomod2 = TRUE, progress = FALSE,
+      plot = FALSE, report = FALSE
     )
+    if(IsLonLat) cv_args$deg_to_metre <- m_per_deg
+    scv <- do.call(blockCV::cv_spatial, cv_args)
     spatial.cv.table <- scv$biomod_table
     if(model.type == "Covariate") {
       abs_mode <- nsdm_global$AbsenceMode[["Regional"]]
@@ -245,12 +242,20 @@ general_nsdm_model <- function(nsdm.obj,
   sabina$args$CV.strategy <- if(UseSpatialCV) CV.strategy.arg else "random"
   if(UseSpatialCV) {
     sabina$args$spatialCV.k = k.user
-    sabina$args$spatialCV.size = if(exists("size.user")) size.user else size.m
+    size_native <- if(is.null(size.user)) {
+      if(IsLonLat) size.m / m_per_deg else size.m
+    } else {
+      as.numeric(size.user)
+    }
+    sabina$args$spatialCV.size <- if(!IsLonLat) {
+      sprintf("%.6g m", size_native)
+    } else {
+      sprintf("%.6g deg (≈ %.0f m)", size_native, round(size.m))
+    }
     # Remove random-CV args (inactive)
     sabina$args$CV.nb.rep <- NULL
     sabina$args$CV.perc <- NULL
   } else {
-    # Only random-CV args
     sabina$args$CV.nb.rep <- CV.nb.rep
     sabina$args$CV.perc <- CV.perc
   }
@@ -539,3 +544,4 @@ general_nsdm_model <- function(nsdm.obj,
   return(sabina)
 
 }
+

@@ -53,7 +53,7 @@ A \code{logical} value defining whether the outputs should be saved at local.}
 An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
 \itemize{
 \item \verb{$SpeciesName} Name of the species.
-\item \verb{$args} A \code{list} containing the arguments used during modeling, including: \code{algorithms}, \code{CV.nb.rep}, \code{CV.perc} and \code{metric.select.thresh}.
+\item \verb{$args} A \code{list} containing the arguments used during modelling, including: \code{algorithms}, \code{rm.corr}, \code{CV.nb.rep}, \code{CV.perc}, \code{metric.select.thresh}, \code{spatialCV.k} and \code{spatialCV.size}.
 \item \verb{$Selected.Variables.Covariate} A \code{character} vector specifying the names of the selected covariates at the regional scale used for the covariate model.
 \item \verb{$nbestreplicates} A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
 \item \verb{$current.projections} A \code{list} containing:
@@ -145,7 +145,8 @@ summary(myCovariateModel)
 ## Plot the covariate model 
 # plot(terra::rast(myCovariateModel$current.projections$Pred))
 
-## Perform NSDM analysis using the covariate approach with custom settings.
+## ------------------------------------------------------------------
+## Example: perform NSDM analysis using the covariate approach with custom settings.
 # myCovariateModel <- NSDM.Covariate(
 #					# Global model output used as input
 #					myGlobalModel,
@@ -166,6 +167,27 @@ summary(myCovariateModel)
 #					# Save the output externally
 #					save.output = TRUE)
 
+
+
+## ------------------------------------------------------------------
+# ## Example: perform NSDM with spatialCV (random CV params are ignored)
+
+# myCovariateModel <- NSDM.Covariate(
+#					# Global model output used as input
+#					myGlobalModel,
+#					# Do not remove correlated covariates 	
+#					rm.corr=FALSE,
+#					# Algorithms to use for modeling
+#					algorithms = c("GBM", "RF", "GLM"),
+#					# Threshold for selecting models for ensemble
+#					metric.select.thresh = 0.8,
+#				        # Spatial cross-validation 
+# 				        # (k folds, size units depend on CRS)
+#                                    spatialCV = list(k = 5, size = 0.25),
+#				        # Save the output externally
+#				        save.output = TRUE,
+#				        # Remove the temporary biomod2 output folder
+#				        rm.biomod.folder = TRUE)
 
 }
 \seealso{

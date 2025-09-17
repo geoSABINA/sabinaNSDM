@@ -82,7 +82,9 @@
 #'
 #' summary(myFormattedData)
 #' 
-#' ## Format the input data specifying custom parameters.
+#' 
+#' ## ------------------------------------------------------------------
+#' ## Example: format the input data specifying custom parameters.
 #' # myFormattedData <- NSDM.FormattingData(
 #' #				# Input data object
 #' #				myInputData,

@@ -30,7 +30,7 @@
 #'
 #' @return An object of class \code{nsdm.predict.g} containing model information, predictions and evaluation statistics:
 #' - `$SpeciesName` Name of the species.
-#' - `$args` A \code{list} containing the arguments used during modeling, including: `algorithms`, `CV.nb.rep`, `CV.perc` and `metric.select.thresh`.
+#' - `$args` A \code{list} containing the arguments used during modelling, including: `algorithms`, `rm.corr`, `CV.nb.rep`, `CV.perc`, `metric.select.thresh`, `spatialCV.k` and `spatialCV.size`.
 #' - `$Selected.Variables.Covariate` A \code{character} vector specifying the names of the selected covariates at the regional scale used for the covariate model.
 #' - `$nbestreplicates` A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
 #' - `$current.projections` A \code{list} containing: 
@@ -117,7 +117,8 @@
 #' ## Plot the covariate model 
 #' # plot(terra::rast(myCovariateModel$current.projections$Pred))
 #' 
-#' ## Perform NSDM analysis using the covariate approach with custom settings.
+#' ## ------------------------------------------------------------------
+#' ## Example: perform NSDM analysis using the covariate approach with custom settings.
 #' # myCovariateModel <- NSDM.Covariate(
 #' #					# Global model output used as input
 #' #					myGlobalModel,
@@ -138,6 +139,27 @@
 #' #					# Save the output externally
 #' #					save.output = TRUE)
 #'
+#' 
+#'
+#' ## ------------------------------------------------------------------
+#' # ## Example: perform NSDM with spatialCV (random CV params are ignored)
+#'
+#' # myCovariateModel <- NSDM.Covariate(
+#' #					# Global model output used as input
+#' #					myGlobalModel,
+#' #					# Do not remove correlated covariates 	
+#' #					rm.corr=FALSE,
+#' #					# Algorithms to use for modeling
+#' #					algorithms = c("GBM", "RF", "GLM"),
+#' #					# Threshold for selecting models for ensemble
+#' #					metric.select.thresh = 0.8,
+#' #				        # Spatial cross-validation 
+#' # 				        # (k folds, size units depend on CRS)
+#' #                                    spatialCV = list(k = 5, size = 0.25),
+#' #				        # Save the output externally
+#' #				        save.output = TRUE,
+#' #				        # Remove the temporary biomod2 output folder
+#' #				        rm.biomod.folder = TRUE)
 #'
 #' @export
 NSDM.Covariate <- function(nsdm_global,

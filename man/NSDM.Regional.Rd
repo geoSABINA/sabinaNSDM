@@ -61,7 +61,7 @@ An object of class \code{nsdm.predict.g} containing model information, predictio
 \item \verb{$Selected.Variables.Regional} A \code{character} vector specifying the names of the selected covariates at the regional scale.
 \item \verb{$IndVar.Regional.Selected} Selected covariates at the regional level in \code{\link[terra:rast]{PackedSpatRaster}} format.
 \item \verb{$IndVar.Global.Selected.reg} Selected covariates at the global level for regional projections in \code{\link[terra:rast]{PackedSpatRaster}} format.
-\item \verb{$args} A \code{list} containing the arguments used during modelling, including: \code{algorithms}, \code{CV.nb.rep}, \code{CV.perc} and \code{metric.select.thresh}.
+\item \verb{$args} A \code{list} containing the arguments used during modelling, including: \code{algorithms}, \code{CV.nb.rep}, \code{CV.perc}, \code{metric.select.thresh}, \code{spatialCV.k} and \code{spatialCV.size}.
 \item \verb{$nbestreplicates} A \code{data.frame} containing  the number of replicates meeting or exceeding the specified \code{metric.select.thresh} for each algorithm used in the modeling.
 \item \verb{$current.projections} A \code{list} containing:
 \itemize{
@@ -165,7 +165,8 @@ summary(myRegionalModel)
 # plot(terra::unwrap(myRegionalModel$new.projections$Pred.Scenario[[1]])) 
 
 
-## Perform regional scale SDMs with custom parameters.
+## ------------------------------------------------------------------
+## Example: perform regional scale SDMs with custom parameters.
 ## This line shows an example how to customize modeling options using `bm_ModelingOptions`
 ## `bm_ModelingOptions` from the `biomod2` package 
 # opt.b <- bm_ModelingOptions(data.type = 'binary', 
@@ -190,6 +191,23 @@ summary(myRegionalModel)
 #				     # Remove the temporary biomod2 output folder
 #				     rm.biomod.folder = TRUE)
 
+
+## ------------------------------------------------------------------
+# ## Example: perform NSDM with spatialCV (random CV params are ignored)
+# myRegionalModel <- NSDM.Regional(
+#				     # Selected covariates output used as input
+#				     mySelectedCovs,
+#				     # Statistical models used in the ensemble
+#				     algorithms = c("GBM", "RF", "GLM"),
+#				     # Threshold for selecting models for ensemble
+#				     metric.select.thresh = 0.8,
+#				     # Spatial cross-validation 
+#				     # (k folds, size units depend on CRS)
+#                                 spatialCV = list(k = 5, size = 0.25),
+#				     # Save the output externally
+#				     save.output = TRUE,
+#				     # Remove the temporary biomod2 output folder
+#				     rm.biomod.folder = TRUE)
 
 }
 \seealso{
