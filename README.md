@@ -245,7 +245,7 @@ Provide your data only in the regional argument of NSDM.InputData() (set the glo
 4. [How do I run models in parallel for multiple species?](https://besjournals.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2F2041-210X.14417&file=mee314417-sup-0002-Supinfo2.pdf)
 5. <strong>Is there a minimum number of species occurrences required?</strong>
    No, it depends on the user. However, at least 15 occurrences are strongly recommended to ensure more robust and stable model fitting.
-6.<strong> What is the format of input data?</strong>
+6. <strong> What is the format of input data?</strong>
    Species occurrences should be provided as a data.frame with exactly two columns: x and y, representing the species presence coordinates. Do not include row names. The coordinate projection must match that of the environmental covariates.Environmental variables for each spatial scale (i.e., global and regional) should be provided as SpatRaster objects, with each band corresponding to a different covariate. The regional-scale SpatRaster must include all covariates present in the global-scale file, and may additionally include covariates that are only available at the regional level.
 Additionally, a regional-scale SpatRaster or a list of SpatRaster objects corresponding to the covariates used to project the models under one or more alternative scenarios (e.g., future climate projections) can be provided.
 7. <strong>How are background points generated?</strong>
