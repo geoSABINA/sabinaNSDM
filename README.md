@@ -29,6 +29,7 @@ The <strong>sabinaNSDM</strong> R package generates <strong>spatially-nested hie
 
 <strong>sabinaNSDM</strong> streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrences and absences (if available), covariate selection, single-scale modelling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). <strong>sabinaNSDM</strong> models use an ensemble modelling approach that combines multiple statistical techniques with the <strong>biomod2</strong> package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009), thinning of species occurrences and absences with the <strong>ecospat</strong> package (*Ecography*, <https://doi.org/10.1111/ecog.02671.x>, Di Cola et al. 2017), and covariate selection of the <strong>covsel</strong>  package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
 
+More information about the package on our website: [🇬🇧 English](https://geosabina.com/sabinansdm-2/) | [🇪🇸 Español](https://geosabina.com/sabinansdm/)
 
 ### Citing sabinaNSDM package <a name="citation">
 
