@@ -343,9 +343,9 @@ gen_background_pts <- function(nsdm_input, scale,
     rast_thin<-Mask
   }else{
     # Make a new empty raster with same extent, crs, origin
-    rast_thin <- rast(terra::ext(Mask), crs = crs(Mask))
-    origin(rast_thin) <- origin(Mask)
-    res(rast_thin) <- Min.Dist
+    rast_thin <- terra::rast(terra::ext(Mask), crs = terra::crs(Mask))
+    terra::origin(rast_thin) <- terra::origin(Mask)
+    terra::res(rast_thin) <- Min.Dist
   }
 
   # Assign cell IDs based on the thinning raster
@@ -374,9 +374,9 @@ gen_background_pts <- function(nsdm_input, scale,
       rast_thin<-Mask
     }else{
       # Make a new empty raster with same extent, crs, origin
-      rast_thin <- rast(terra::ext(Mask), crs = crs(Mask))
-      origin(rast_thin) <- origin(Mask)
-      res(rast_thin) <- Min.Dist
+      rast_thin <- terra::rast(terra::ext(Mask), crs = terra::crs(Mask))
+      terra::origin(rast_thin) <- terra::origin(Mask)
+      terra::res(rast_thin) <- Min.Dist
     }
     
     # Assign cell IDs based on the thinning raster

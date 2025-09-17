@@ -182,7 +182,7 @@ general_nsdm_model <- function(nsdm.obj,
       if(!is.finite(size.m) || size.m <= 0) {
         stop("Spatial CV: could not auto-estimate block size. Please set spatialCV$size (in predictor CRS units).")
       } else {
-        message(paste0("Spatial CV: auto-estimated block size ≈ ", round(size.m,0), " m."))
+        message(paste0("Spatial CV: auto-estimated block size ~ ", round(size.m,0), " m."))
       }
     } else {
       # User provided size (convert to meters if lon/lat)
@@ -201,7 +201,7 @@ general_nsdm_model <- function(nsdm.obj,
     scv <- do.call(blockCV::cv_spatial, cv_args)
     spatial.cv.table <- scv$biomod_table
     if(model.type == "Covariate") {
-      abs_mode <- nsdm_global$AbsenceMode[["Regional"]]
+      abs_mode <- nsdm.obj$AbsenceMode[["Regional"]]
     } else {
       abs_mode <- nsdm.obj$AbsenceMode[[model.type]]
     }
@@ -250,7 +250,7 @@ general_nsdm_model <- function(nsdm.obj,
     sabina$args$spatialCV.size <- if(!IsLonLat) {
       sprintf("%.6g m", size_native)
     } else {
-      sprintf("%.6g deg (≈ %.0f m)", size_native, round(size.m))
+      sprintf("%.6g deg (~ %.0f m)", size_native, round(size.m))
     }
     # Remove random-CV args (inactive)
     sabina$args$CV.nb.rep <- NULL
