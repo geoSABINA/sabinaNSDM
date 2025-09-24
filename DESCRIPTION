@@ -1,7 +1,6 @@
 Package: sabinaNSDM
 Title: Spatially-nested hierarchical species distribution modeling
 Version: 1.1.0
-
 Authors@R: 
     c(person("Rubén G.", "Mateo", role = c("aut", "cre"), email = "ruben.mateo@example.com"),
       person("Jennifer", "Morales-Barbero", role = "aut", email = "j.moralesbarbero@gmail.com"),
