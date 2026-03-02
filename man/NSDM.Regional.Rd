@@ -70,8 +70,8 @@ An object of class \code{nsdm.predict.g} containing model information, predictio
 \item \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold.
 \item \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
 }
-\item \verb{$myEMeval.replicates} Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
-\item \verb{$myEMeval.Ensemble} Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA).
+\item \verb{$myEMeval.replicates} Evaluation statistics for each replicate model according to different evaluation metrics (AUCroc, TSS, KAPPA, ACCURACY, SR, and BOYCE).
+\item \verb{$myEMeval.Ensemble} Evaluation statistics for the ensemble model according to different evaluation metrics (AUCroc, TSS, KAPPA).
 \item \verb{$myModelsVarImport} Variable importance measures for individual models.
 \item \verb{$new.projections} A \code{list} containing:
 \itemize{

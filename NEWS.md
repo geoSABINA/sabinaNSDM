@@ -1,3 +1,10 @@
+# sabinaNSDM 1.1.1 (2026-03-02)
+
+## Fixed
+- **biomod2 compatibility**: updated internal metric naming from `ROC` to `AUCroc` to maintain compatibility with the latest versions of **biomod2** (v4.3-4.5).
+
+---
+
 # sabinaNSDM 1.1.0 (2025-09-18)
 
 ## Added

@@ -47,8 +47,8 @@
 #'   - \code{EMcv}, the coefficient of variation (CV) of ensemble model projections, representing uncertainty (sd/mean of probabilities across selected models) and complementing the mean probability with an uncertainty measure.
 #'   - \code{Pred.bin.ROC}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold.
 #'   - \code{Pred.bin.TSS}, a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
-#' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE).
-#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (ROC, TSS, KAPPA).
+#' - `$myEMeval.replicates` Evaluation statistics for each replicate model according to different evaluation metrics (AUCroc, TSS, KAPPA, ACCURACY, SR, and BOYCE).
+#' - `$myEMeval.Ensemble` Evaluation statistics for the ensemble model according to different evaluation metrics (AUCroc, TSS, KAPPA).
 #' - `$myModelsVarImport` Variable importance measures for individual models.
 #' - `$new.projections` A \code{list} containing:
 #'   - \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format.

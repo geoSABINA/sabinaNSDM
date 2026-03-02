@@ -228,7 +228,7 @@ NSDM.Multiply <- function(nsdm_global,
                                     user.table = NULL,
                                     do.full.models = FALSE)
 
-  metric.eval<- c("ROC","TSS","KAPPA","ACCURACY", "SR", "BOYCE")
+  metric.eval<- c("AUCroc","TSS","KAPPA","ACCURACY", "SR", "BOYCE")
   stat.validation <- data.frame()
   cross.validation <- data.frame()
 
@@ -256,7 +256,7 @@ NSDM.Multiply <- function(nsdm_global,
   cross.validation$validation <- stat.validation$best.stat
   myEMeval.replicates<-cross.validation
 
-  cross.validation<-cross.validation[which(cross.validation$metric.eval %in% c("ROC","TSS","KAPPA")),]
+  cross.validation<-cross.validation[which(cross.validation$metric.eval %in% c("AUCroc","TSS","KAPPA")),]
   metric.means <- stats::aggregate(. ~ metric.eval, data = cross.validation, FUN = mean)
   sabina$myEMeval.means<-metric.means
 
@@ -275,7 +275,7 @@ NSDM.Multiply <- function(nsdm_global,
     } else {
       continuous<-sabina$new.projections$Pred.Scenario[[i-1]]
     }
-    Threshold.ROC <- metric.means$cutoff[which(metric.means$metric.eval=="ROC")]
+    Threshold.ROC <- metric.means$cutoff[which(metric.means$metric.eval=="AUCroc")]
     Threshold.TSS <- metric.means$cutoff[which(metric.means$metric.eval=="TSS")]
     Pred.bin.ROC <- terra::classify(res.average,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
     Pred.bin.TSS <- terra::classify(res.average,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
@@ -311,7 +311,7 @@ NSDM.Multiply <- function(nsdm_global,
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
                                    method,
-                                   round(metric.means$validation[metric.means$metric.eval == "ROC"], 3),
+                                   round(metric.means$validation[metric.means$metric.eval == "AUCroc"], 3),
                                    round(metric.means$validation[metric.means$metric.eval == "TSS"], 3),
                                    round(metric.means$validation[metric.means$metric.eval == "KAPPA"], 3)))
 

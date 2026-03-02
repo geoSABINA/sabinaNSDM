@@ -1,6 +1,7 @@
 Package: sabinaNSDM
 Title: Spatially-nested hierarchical species distribution modeling
-Version: 1.1.0
+Version: 1.1.1
+Date: 2026-03-02
 Authors@R: 
     c(person("Rubén G.", "Mateo", role = c("aut", "cre"), email = "ruben.mateo@example.com"),
       person("Jennifer", "Morales-Barbero", role = "aut", email = "j.moralesbarbero@gmail.com"),
@@ -23,7 +24,7 @@ Imports:
     utils,
     methods,
     parallel,
-    biomod2 (>= 4.2.5),
+    biomod2 (>= 4.3-4.5),
     fs (>= 1.6.3),
     sf,
     terra (>= 1.7-55),
@@ -37,4 +38,5 @@ Suggests:
     gam,
     gbm,
     maxnet,
-    randomForest
+    randomForest,
+    glmnet

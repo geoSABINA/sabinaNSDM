@@ -272,17 +272,17 @@ general_nsdm_model <- function(nsdm.obj,
                                                CV.user.table = CV.user.table.arg,
                                                weights = NULL,
                                                var.import = 3,
-                                               metric.eval = c("ROC", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"),
+                                               metric.eval = c("AUCroc", "TSS", "KAPPA", "ACCURACY", "SR", "BOYCE", "MPA"),
                                                scale.models = FALSE,
                                                do.progress = TRUE,
                                                prevalence = 0.5,
                                                seed.val = 42,
                                                CV.do.full.models = FALSE)
 
-  # Replicates with ROC > metric.select.thresh
+  # Replicates with AUCroc > metric.select.thresh
   df <- myBiomodModelOut@models.evaluation
   df_slot <- methods::slot(df, "val")
-  df_slot <- df_slot[df_slot$metric.eval == "ROC", ]
+  df_slot <- df_slot[df_slot$metric.eval == "AUCroc", ]
   nreplicates<-sum(df_slot$validation >= metric.select.thresh)
   if(nreplicates == 0) {
     stop(paste0("\nNo replica for ", SpeciesName, " has reached an AUC value >= ", metric.select.thresh, ".\n"))
@@ -302,10 +302,10 @@ general_nsdm_model <- function(nsdm.obj,
                                                      models.chosen = 'all',
                                                      em.by = 'all',
                                                      em.algo = c("EMmean", "EMcv"),
-                                                     metric.select = c('ROC'),
+                                                     metric.select = c('AUCroc'),
                                                      metric.select.thresh = metric.select.thresh,
                                                      var.import = 0,
-                                                     metric.eval = c('ROC', "TSS", "KAPPA"),
+                                                     metric.eval = c('AUCroc', "TSS", "KAPPA"),
                                                      seed.val = 42)
 
   # Project the individual models to the study area at regional scale under training conditions
@@ -344,7 +344,7 @@ general_nsdm_model <- function(nsdm.obj,
 
   # Binary models
   proj_curr_prefix <- paste0(sp.name,"/proj_Current/proj_Current_",sp.name)
-  Pred.bin.ROC <- terra::rast(paste0(proj_curr_prefix, "_ensemble_ROCbin.tif"))
+  Pred.bin.ROC <- terra::rast(paste0(proj_curr_prefix, "_ensemble_AUCrocbin.tif"))
   Pred.bin.TSS <- terra::rast(paste0(proj_curr_prefix, "_ensemble_TSSbin.tif"))
   Pred.bin.ROC <- terra::rast(terra::wrap(Pred.bin.ROC))
   Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
@@ -410,7 +410,7 @@ general_nsdm_model <- function(nsdm.obj,
 
       # Binarized models
       scenario_prefix <- paste0(sp.name,"/proj_",Scenario.name,"/proj_", Scenario.name,"_",sp.name)
-      Pred.bin.ROC.Scenario <- terra::rast(paste0(scenario_prefix,"_ensemble_ROCbin.tif"))
+      Pred.bin.ROC.Scenario <- terra::rast(paste0(scenario_prefix,"_ensemble_AUCrocbin.tif"))
       Pred.bin.TSS.Scenario <- terra::rast(paste0(scenario_prefix,"_ensemble_TSSbin.tif"))
       Pred.bin.ROC.Scenario<-terra::rast(terra::wrap(Pred.bin.ROC.Scenario))
       Pred.bin.TSS.Scenario<-terra::rast(terra::wrap(Pred.bin.TSS.Scenario))
@@ -426,8 +426,8 @@ general_nsdm_model <- function(nsdm.obj,
   # Summary
   summary <- data.frame(Values = c(SpeciesName,
                                    paste(toupper(algorithms),collapse = ", "),
-                                   sum(sabina$myEMeval.replicates$metric.eval == "ROC" & sabina$myEMeval.replicates$validation >= metric.select.thresh),
-                                   myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="ROC")],
+                                   sum(sabina$myEMeval.replicates$metric.eval == "AUCroc" & sabina$myEMeval.replicates$validation >= metric.select.thresh),
+                                   myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="AUCroc")],
                                    myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="TSS")],
                                    myEMeval.Ensemble$calibration[which(myEMeval.Ensemble$metric.eval=="KAPPA")]))
 
@@ -475,7 +475,7 @@ general_nsdm_model <- function(nsdm.obj,
     # Pred
     file_path <- paste0(projection_path, SpeciesName, ".Current.bin.ROC.tif")
     terra::writeRaster(Pred.bin.ROC, file_path, overwrite=TRUE)
-    fs::file_delete(paste0(proj_curr_prefix, "_ensemble_ROCbin.tif"))
+    fs::file_delete(paste0(proj_curr_prefix, "_ensemble_AUCrocbin.tif"))
 
     file_path <- paste0(projection_path, SpeciesName,".Current.bin.TSS.tif")
     terra::writeRaster(Pred.bin.TSS, file_path, overwrite=TRUE)
@@ -507,7 +507,7 @@ general_nsdm_model <- function(nsdm.obj,
 
         file_path <- paste0(projection_path,SpeciesName,".",Scenario.name,".bin.ROC.tif")
         terra::writeRaster(terra::unwrap(sabina$new.projections$Pred.bin.ROC.Scenario[[i]]), file_path, overwrite = TRUE)
-        fs::file_delete(paste0(scenario_prefix,"_ensemble_ROCbin.tif"))
+        fs::file_delete(paste0(scenario_prefix,"_ensemble_AUCrocbin.tif"))
 
         file_path <- paste0(projection_path,SpeciesName,".",Scenario.name,".bin.TSS.tif")
         terra::writeRaster(terra::unwrap(sabina$new.projections$Pred.bin.TSS.Scenario[[i]]), file_path, overwrite = TRUE)
