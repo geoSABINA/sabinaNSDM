@@ -24,7 +24,7 @@ Imports:
     utils,
     methods,
     parallel,
-    biomod2 (>= 4.3-4.5),
+    biomod2 (>= 4.2-6),
     fs (>= 1.6.3),
     sf,
     terra (>= 1.7-55),
