@@ -1,4 +1,0 @@
-"","full.name","merged.by.PA","merged.by.run","merged.by.algo","filtered.by","algo","metric.eval","cutoff","sensitivity","specificity","calibration","validation","evaluation"
-"1","Fagus.sylvativa_EMmeanByAUCroc_mergedData_mergedRun_mergedAlgo","mergedData","mergedRun","mergedAlgo","AUCroc","EMmean","AUCroc",664.5,96.017,96,0.996,NA,NA
-"2","Fagus.sylvativa_EMmeanByAUCroc_mergedData_mergedRun_mergedAlgo","mergedData","mergedRun","mergedAlgo","AUCroc","EMmean","TSS",717,94.13,97.8,0.92,NA,NA
-"3","Fagus.sylvativa_EMmeanByAUCroc_mergedData_mergedRun_mergedAlgo","mergedData","mergedRun","mergedAlgo","AUCroc","EMmean","KAPPA",606,97.904,93.6,0.92,NA,NA
