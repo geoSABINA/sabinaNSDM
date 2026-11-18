@@ -1,3 +1,19 @@
+# sabinaNSDM 1.1.3 (2026-11-16)
+
+## Changed
+- Requires **biomod2 >= 4.3-4-8**.
+- **covsel** moved to `Depends`.
+- **randomForest**, **maxnet**, **earth** and **R.utils** moved to `Imports` (installed with sabinaNSDM).
+
+## Fixed
+- Compatibility with biomod2 4.3.
+- `NSDM.Global()`, `NSDM.Regional()` and `NSDM.Covariate()` can be called inside functions and parallel workflows.
+- `NSDM.Multiply()`: binary projections of current and new scenarios; compatibility with `spatialCV`.
+- `NSDM.SelectCovariates()`: output folder created when needed.
+- `spatialCV`: automatic block size estimation with longitude/latitude data.
+
+---
+
 # sabinaNSDM 1.1.1 (2026-03-02)
 
 ## Fixed
