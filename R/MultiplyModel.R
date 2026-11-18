@@ -219,8 +219,8 @@ NSDM.Multiply <- function(nsdm_global,
 
   calib.lines <- biomod2::bm_CrossValidation(bm.format = myBiomodData,
                                     strategy = "random",
-                                    nb.rep = nsdm_regional$args$CV.nb.rep,
-                                    perc =  nsdm_regional$args$CV.perc,
+                                    nb.rep = if(is.null(nsdm_regional$args$CV.nb.rep)) 10 else nsdm_regional$args$CV.nb.rep,
+                                    perc = if(is.null(nsdm_regional$args$CV.perc)) 0.8 else nsdm_regional$args$CV.perc,
                                     k = 0,
                                     balance = 'presences',
                                     env.var = NULL,
@@ -277,8 +277,8 @@ NSDM.Multiply <- function(nsdm_global,
     }
     Threshold.ROC <- metric.means$cutoff[which(metric.means$metric.eval=="AUCroc")]
     Threshold.TSS <- metric.means$cutoff[which(metric.means$metric.eval=="TSS")]
-    Pred.bin.ROC <- terra::classify(res.average,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
-    Pred.bin.TSS <- terra::classify(res.average,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
+    Pred.bin.ROC <- terra::classify(continuous,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
+    Pred.bin.TSS <- terra::classify(continuous,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
     Pred.bin.ROC <- terra::rast(terra::wrap(Pred.bin.ROC))
     Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
 
@@ -295,8 +295,8 @@ NSDM.Multiply <- function(nsdm_global,
 
     } else {
       Scenario.name<-projmodel
-      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- stats::setNames(Pred.bin.ROC, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
-      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- stats::setNames(Pred.bin.TSS, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
+      sabina$new.projections$Pred.bin.ROC.Scenario[[i-1]] <- stats::setNames(Pred.bin.ROC, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
+      sabina$new.projections$Pred.bin.TSS.Scenario[[i-1]] <- stats::setNames(Pred.bin.TSS, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
       if(save.output){
         file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif")
