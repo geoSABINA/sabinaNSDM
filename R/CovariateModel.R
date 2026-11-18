@@ -177,11 +177,17 @@ NSDM.Covariate <- function(nsdm_global,
       stop("nsdm_global must be an object of nsdm.predict.g class.")
   }
 
-  mod_call <- as.list(match.call()[-1])
-  mod_call$model.type = "Covariate"
-  names(mod_call) <- gsub("nsdm_global.*", "nsdm.obj",
-                          names(mod_call))
-  sabina <- do.call(general_nsdm_model, mod_call)
+  sabina <- general_nsdm_model(nsdm.obj = nsdm_global,
+                               model.type = "Covariate",
+                               algorithms = algorithms,
+                               rm.corr = rm.corr,
+                               CV.nb.rep = CV.nb.rep,
+                               CV.perc = CV.perc,
+                               CustomModelOptions = CustomModelOptions,
+                               metric.select.thresh = metric.select.thresh,
+                               spatialCV = spatialCV,
+                               save.output = save.output,
+                               rm.biomod.folder = rm.biomod.folder)
 
   attr(sabina, "class") <- "nsdm.predict"
 

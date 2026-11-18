@@ -199,11 +199,16 @@ NSDM.Regional <- function(nsdm_selvars,
                " Consider running NSDM.SelectCovariates() function")
   }
 
-  mod_call <- as.list(match.call()[-1])
-  mod_call$model.type = "Regional"
-  names(mod_call) <- gsub("nsdm_selvars.*", "nsdm.obj",
-                          names(mod_call))
-  sabina <- do.call(general_nsdm_model, mod_call)
+  sabina <- general_nsdm_model(nsdm.obj = nsdm_selvars,
+                               model.type = "Regional",
+                               algorithms = algorithms,
+                               CV.nb.rep = CV.nb.rep,
+                               CV.perc = CV.perc,
+                               CustomModelOptions = CustomModelOptions,
+                               metric.select.thresh = metric.select.thresh,
+                               spatialCV = spatialCV,
+                               save.output = save.output,
+                               rm.biomod.folder = rm.biomod.folder)
   attr(sabina, "class") <- "nsdm.predict.r"
   class(sabina) <- c("nsdm.predict.r", "nsdm.predict")
 
