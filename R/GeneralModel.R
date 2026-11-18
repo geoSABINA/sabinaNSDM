@@ -116,8 +116,8 @@ general_nsdm_model <- function(nsdm.obj,
   }
 
   # Prepare data required to calibrate the model with biomod2 package (Result: A BIOMOD.formated.data object)
-  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
-                                                resp.xy = myResp.xy,
+  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = terra::vect(cbind(myResp.xy, pa = myResp[, 1]),
+                                                                         geom = names(myResp.xy)[1:2]),
                                                 expl.var = myExpl,
                                                 resp.name = SpeciesName,
                                                 PA.nb.rep = ifelse(!is.null(trueabsences_data), 0, 1),
