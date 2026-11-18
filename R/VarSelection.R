@@ -265,6 +265,7 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
 
   # Save selected covariates for each species
   if(save.output){
+    fs::dir_create(paste0("Results/", scale, "/Values/"))
     utils::write.csv(Selected.Variables, paste0("Results/", scale, "/Values/", SpeciesName, ".variables.csv"))
   }
 
