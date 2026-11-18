@@ -171,6 +171,7 @@ general_nsdm_model <- function(nsdm.obj,
     size.m <- NA_real_
     if(is.null(size.user)) {
       # Auto-estimate meters via spatial autocorrelation (response)
+      s2.old <- suppressMessages(sf::sf_use_s2(FALSE))
       size.m <- tryCatch({
         if(IsLonLat) {
           ac <- blockCV::cv_spatial_autocor(x = pa.sf, column = "pa", deg_to_metre = m_per_deg, plot = FALSE, progress = FALSE)
@@ -179,6 +180,7 @@ general_nsdm_model <- function(nsdm.obj,
         }
         as.numeric(ac$range)
       }, error = function(e) NA_real_)
+      suppressMessages(sf::sf_use_s2(s2.old))
       if(!is.finite(size.m) || size.m <= 0) {
         stop("Spatial CV: could not auto-estimate block size. Please set spatialCV$size (in predictor CRS units).")
       } else {
