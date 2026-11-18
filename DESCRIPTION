@@ -3,7 +3,7 @@ Title: Spatially-nested hierarchical species distribution modeling
 Version: 1.1.2
 Date: 2026-03-02
 Authors@R: 
-    c(person("Rubén G.", "Mateo", role = c("aut", "cre"), email = "ruben.mateo@example.com"),
+    c(person("Rubén G.", "Mateo", role = c("aut", "cre"), email = "rubeng.mateo@uam.es"),
       person("Jennifer", "Morales-Barbero", role = "aut", email = "j.moralesbarbero@gmail.com"),
       person("Alejandra", "Zarzo-Arias", role = "aut", email = "alejandra.zarzo@gmail.com"),
       person("Herlander", "Lima", role = "aut", email = "limaherlander@gmail.com"),

@@ -144,7 +144,7 @@
 #' ## This line shows an example how to customize modeling options using `bm_ModelingOptions`
 #' ## `bm_ModelingOptions` from the `biomod2` package 
 #' # opt.b <- bm_ModelingOptions(data.type = 'binary', 
-#' #  				models = c("GAM", "GBM", "RF"),
+#' #  				models = c("GBM", "RF", "GLM"),
 #' #				strategy = 'bigboss')
 #'   
 #' # myRegionalModel <- NSDM.Regional(
