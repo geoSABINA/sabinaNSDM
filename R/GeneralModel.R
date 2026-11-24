@@ -81,15 +81,21 @@ general_nsdm_model <- function(nsdm.obj,
 
     if(rm.corr==TRUE) {
       # Remove correlated covariates with global model
-      myResp.covsel <- replace(myResp,
-                               is.na(myResp), 0)
-      myResp.covsel <- as.vector(myResp.covsel)[[1]]
-      myExpl.covsel <- myExpl
-      myExpl <- covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp.covsel,
-                                         force="SDM.global", corcut=nsdm.obj$corcut)
-      matching<-intersect(names(IndVar.Regional.Covariate),names(myExpl))
-      myExpl<-myExpl[,match( matching,names(myExpl))]
-      IndVar.Regional.Covariate<-IndVar.Regional.Covariate[[which(names(IndVar.Regional.Covariate) %in% colnames(myExpl))]]
+      cor.global <- abs(stats::cor(myExpl)[, "SDM.global"])
+      n.unique <- sapply(myExpl, function(x) length(unique(x)))
+      reg.keep <- setdiff(names(myExpl)[n.unique >= 10], c(names(which(cor.global > nsdm.obj$corcut)), "SDM.global"))
+      if(length(reg.keep) > 1) {
+        myResp.covsel <- replace(myResp,
+                                 is.na(myResp), 0)
+        myResp.covsel <- as.vector(myResp.covsel)[[1]]
+        myExpl <- covsel::covsel.filteralgo(covdata = myExpl, pa = myResp.covsel,
+                                            force = "SDM.global", corcut = nsdm.obj$corcut)
+        keep <- intersect(names(IndVar.Regional.Covariate), names(myExpl))
+      } else {
+        keep <- c(reg.keep, "SDM.global")
+      }
+      myExpl <- myExpl[, keep, drop = FALSE]
+      IndVar.Regional.Covariate <- IndVar.Regional.Covariate[[keep]]
 
     }
 
