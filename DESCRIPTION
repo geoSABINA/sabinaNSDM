@@ -1,9 +1,9 @@
 Package: sabinaNSDM
 Title: Spatially-nested hierarchical species distribution modeling
-Version: 1.1.2
-Date: 2026-03-02
+Version: 1.1.3
+Date: 2026-11-24
 Authors@R: 
-    c(person("Rubén G.", "Mateo", role = c("aut", "cre"), email = "ruben.mateo@example.com"),
+    c(person("Rubén G.", "Mateo", role = c("aut", "cre"), email = "rubeng.mateo@uam.es"),
       person("Jennifer", "Morales-Barbero", role = "aut", email = "j.moralesbarbero@gmail.com"),
       person("Alejandra", "Zarzo-Arias", role = "aut", email = "alejandra.zarzo@gmail.com"),
       person("Herlander", "Lima", role = "aut", email = "limaherlander@gmail.com"),
@@ -18,25 +18,26 @@ RoxygenNote: 7.3.2
 URL: https://github.com/geoSABINA/sabinaNSDM
 BugReports: https://github.com/geoSABINA/sabinaNSDM/issues
 Depends:
-    R (>= 4.3.0)
+    R (>= 4.3.0),
+    covsel
 Imports: 
     stats,
     utils,
     methods,
     parallel,
-    biomod2 (== 4.2-6),
+    biomod2 (>= 4.3-4-8),
     fs (>= 1.6.3),
     sf,
     terra (>= 1.7-55),
     sgsR (>= 1.4.4),
     blockCV (>= 3.2-0),
-    covsel
-Remotes: 
-   N-SDM/covsel
+    R.utils,
+    randomForest,
+    maxnet,
+    earth
+Remotes:
+    N-SDM/covsel
 Suggests:
-    earth,
     gam,
     gbm,
-    maxnet,
-    randomForest,
     glmnet

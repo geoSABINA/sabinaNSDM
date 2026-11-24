@@ -81,15 +81,21 @@ general_nsdm_model <- function(nsdm.obj,
 
     if(rm.corr==TRUE) {
       # Remove correlated covariates with global model
-      myResp.covsel <- replace(myResp,
-                               is.na(myResp), 0)
-      myResp.covsel <- as.vector(myResp.covsel)[[1]]
-      myExpl.covsel <- myExpl
-      myExpl <- covsel::covsel.filteralgo(covdata=myExpl.covsel, pa=myResp.covsel,
-                                         force="SDM.global", corcut=nsdm.obj$corcut)
-      matching<-intersect(names(IndVar.Regional.Covariate),names(myExpl))
-      myExpl<-myExpl[,match( matching,names(myExpl))]
-      IndVar.Regional.Covariate<-IndVar.Regional.Covariate[[which(names(IndVar.Regional.Covariate) %in% colnames(myExpl))]]
+      cor.global <- abs(stats::cor(myExpl)[, "SDM.global"])
+      n.unique <- sapply(myExpl, function(x) length(unique(x)))
+      reg.keep <- setdiff(names(myExpl)[n.unique >= 10], c(names(which(cor.global > nsdm.obj$corcut)), "SDM.global"))
+      if(length(reg.keep) > 1) {
+        myResp.covsel <- replace(myResp,
+                                 is.na(myResp), 0)
+        myResp.covsel <- as.vector(myResp.covsel)[[1]]
+        myExpl <- covsel::covsel.filteralgo(covdata = myExpl, pa = myResp.covsel,
+                                            force = "SDM.global", corcut = nsdm.obj$corcut)
+        keep <- intersect(names(IndVar.Regional.Covariate), names(myExpl))
+      } else {
+        keep <- c(reg.keep, "SDM.global")
+      }
+      myExpl <- myExpl[, keep, drop = FALSE]
+      IndVar.Regional.Covariate <- IndVar.Regional.Covariate[[keep]]
 
     }
 
@@ -116,8 +122,8 @@ general_nsdm_model <- function(nsdm.obj,
   }
 
   # Prepare data required to calibrate the model with biomod2 package (Result: A BIOMOD.formated.data object)
-  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = myResp,
-                                                resp.xy = myResp.xy,
+  myBiomodData <- biomod2::BIOMOD_FormatingData(resp.var = terra::vect(cbind(myResp.xy, pa = myResp[, 1]),
+                                                                         geom = names(myResp.xy)[1:2]),
                                                 expl.var = myExpl,
                                                 resp.name = SpeciesName,
                                                 PA.nb.rep = ifelse(!is.null(trueabsences_data), 0, 1),
@@ -171,6 +177,7 @@ general_nsdm_model <- function(nsdm.obj,
     size.m <- NA_real_
     if(is.null(size.user)) {
       # Auto-estimate meters via spatial autocorrelation (response)
+      s2.old <- suppressMessages(sf::sf_use_s2(FALSE))
       size.m <- tryCatch({
         if(IsLonLat) {
           ac <- blockCV::cv_spatial_autocor(x = pa.sf, column = "pa", deg_to_metre = m_per_deg, plot = FALSE, progress = FALSE)
@@ -179,6 +186,7 @@ general_nsdm_model <- function(nsdm.obj,
         }
         as.numeric(ac$range)
       }, error = function(e) NA_real_)
+      suppressMessages(sf::sf_use_s2(s2.old))
       if(!is.finite(size.m) || size.m <= 0) {
         stop("Spatial CV: could not auto-estimate block size. Please set spatialCV$size (in predictor CRS units).")
       } else {

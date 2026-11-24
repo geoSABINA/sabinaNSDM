@@ -20,7 +20,7 @@
 #' - `$args` A \code{list} containing the arguments used during modelling, including: `method`, and `rescale`.
 #' - `$current.projections` A \code{list} containing: \code{Pred}, a \code{\link[terra:rast]{PackedSpatRaster}} representing the current continuous (suitability) projection; \code{Pred.bin.ROC} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections generated through the optimization of the TSS statistic as a threshold.
 #' - `$new.projections` A \code{list} containing: \code{Pred.Scenario}, the continuous (suitability) projections onto new scenarios in a \code{\link[terra:rast]{PackedSpatRaster}} format; \code{Pred.bin.ROC.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the AUC statistic as a threshold; and \code{Pred.bin.TSS.Scenario} a \code{\link[terra:rast]{PackedSpatRaster}} representing binary projections onto new scenarios generated through the optimization of the TSS statistic as a threshold.
-#' - `$myEMeval.means` Evaluation statistics according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE). Please note that this is neither an independent evaluation nor a cross-validation, as the final model is the average of the global and regional models. Original occurrences and background data were used to validate the generated multiply model and to calculate optimal threshold for binary models. 
+#' - `$myEMeval.means` Evaluation statistics according to different evaluation metrics (ROC, TSS, KAPPA, ACCURACY, SR, and BOYCE). Please note that this is neither an independent evaluation nor a cross-validation, as the final model is the average of the global and regional models. Original occurrences and background data were used to validate the generated multiply model and to calculate optimal threshold for binary models. If the regional model was calibrated with spatial cross-validation, this evaluation uses 10 random repetitions with 80 percent of the data for calibration. 
 #'
 #'
 #' @details
@@ -219,8 +219,8 @@ NSDM.Multiply <- function(nsdm_global,
 
   calib.lines <- biomod2::bm_CrossValidation(bm.format = myBiomodData,
                                     strategy = "random",
-                                    nb.rep = nsdm_regional$args$CV.nb.rep,
-                                    perc =  nsdm_regional$args$CV.perc,
+                                    nb.rep = if(is.null(nsdm_regional$args$CV.nb.rep)) 10 else nsdm_regional$args$CV.nb.rep,
+                                    perc = if(is.null(nsdm_regional$args$CV.perc)) 0.8 else nsdm_regional$args$CV.perc,
                                     k = 0,
                                     balance = 'presences',
                                     env.var = NULL,
@@ -277,8 +277,8 @@ NSDM.Multiply <- function(nsdm_global,
     }
     Threshold.ROC <- metric.means$cutoff[which(metric.means$metric.eval=="AUCroc")]
     Threshold.TSS <- metric.means$cutoff[which(metric.means$metric.eval=="TSS")]
-    Pred.bin.ROC <- terra::classify(res.average,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
-    Pred.bin.TSS <- terra::classify(res.average,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
+    Pred.bin.ROC <- terra::classify(continuous,rbind(c(0,Threshold.ROC,0),c(Threshold.ROC,2000,1)))
+    Pred.bin.TSS <- terra::classify(continuous,rbind(c(0,Threshold.TSS,0),c(Threshold.TSS,2000,1)))
     Pred.bin.ROC <- terra::rast(terra::wrap(Pred.bin.ROC))
     Pred.bin.TSS <- terra::rast(terra::wrap(Pred.bin.TSS))
 
@@ -295,8 +295,8 @@ NSDM.Multiply <- function(nsdm_global,
 
     } else {
       Scenario.name<-projmodel
-      sabina$new.projections$Pred.bin.ROC.Scenario[[i]] <- stats::setNames(Pred.bin.ROC, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
-      sabina$new.projections$Pred.bin.TSS.Scenario[[i]] <- stats::setNames(Pred.bin.TSS, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
+      sabina$new.projections$Pred.bin.ROC.Scenario[[i-1]] <- stats::setNames(Pred.bin.ROC, paste0(SpeciesName,".",Scenario.name,".bin.ROC"))
+      sabina$new.projections$Pred.bin.TSS.Scenario[[i-1]] <- stats::setNames(Pred.bin.TSS, paste0(SpeciesName,".",Scenario.name,".bin.TSS"))
 
       if(save.output){
         file_path<-paste0("Results/Multiply/Projections/",SpeciesName,".",Scenario.name,".bin.ROC.tif")

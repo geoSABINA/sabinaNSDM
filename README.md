@@ -27,7 +27,7 @@
 
 The <strong>sabinaNSDM</strong> R package generates <strong>spatially-nested hierarchical species distribution models (NSDMs)</strong> that integrates species distribution models (SDMs) at various spatial scales to address niche truncation and produce more reliable predictions than traditional non-hierarchical SDMs. <strong>sabinaNSDM</strong> combines two SDMs calibrated with species occurrences and environmental covariates at global and regional scales. The global-scale model allows capturing extensive ecological niches, while the regional-scale model features high-resolution drivers of species distributions. This toolkit is designed to facilitate the implementation of NSDMs for ecologists, conservationists, and researchers aiming to produce more reliable species distribution predictions.
 
-<strong>sabinaNSDM</strong> streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrences and absences (if available), covariate selection, single-scale modelling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). <strong>sabinaNSDM</strong> models use an ensemble modelling approach that combines multiple statistical techniques with the <strong>biomod2</strong> package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009), thinning of species occurrences and absences with the <strong>ecospat</strong> package (*Ecography*, <https://doi.org/10.1111/ecog.02671.x>, Di Cola et al. 2017), and covariate selection of the <strong>covsel</strong>  package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
+<strong>sabinaNSDM</strong> streamlines the data preparation, calibration, integration, and projection of models across two scales. It automates (if necessary) the generation of background points, spatial thinning of species occurrences and absences (if available), covariate selection, single-scale modelling (global and regional), and the generation of NSDMs using two approaches (“covariate” and “multiply”). <strong>sabinaNSDM</strong> models use an ensemble modelling approach that combines multiple statistical techniques with the <strong>biomod2</strong> package (*Ecography*, <https://doi.org/10.1111/j.0906-7590.2004.03673.x>, Thuiller et al. 2009), and covariate selection of the <strong>covsel</strong>  package (*Ecological Informatics*,<https://doi.org/10.1016/j.ecoinf.2023.102080>, Adde et al. 2023b).
 
 More information about the package on our website: [🇬🇧 English](https://geosabina.com/sabinansdm-2/) | [🇪🇸 Español](https://geosabina.com/sabinansdm/)
 
@@ -49,9 +49,11 @@ You can install the released version of sabinaNSDM from
 [GitHub](https://github.com/geoSABINA/sabinaNSDM) with:
 
 ```{r echo=TRUE, eval=FALSE}
-library(remotes)
+install.packages("remotes")
 remotes::install_github("geoSABINA/sabinaNSDM")
 ```
+
+sabinaNSDM requires **biomod2 >= 4.3-4-8**, which is installed automatically from CRAN.
 
 
 ## Summary of main sabinaNSDM functions
@@ -87,22 +89,7 @@ First, set your working directory and load the required packages.
 # setwd("/path/to/your/project")
 #
 if(!requireNamespace("sabinaNSDM", quietly = TRUE)) {
-  install.packages("terra")
-  install.packages("biomod2")
-  install.packages("ecospat")
-  install.packages("fs")
-  install.packages("sgsR")
   install.packages("remotes")
-  if(!requireNamespace("covsel", quietly = TRUE)) {
-    remotes::install_github("N-SDM/covsel")
-  }
-  
-  library(terra)
-  library(covsel)
-  library(biomod2)
-  library(ecospat)
-  library(fs)
-  library(sgsR)
   remotes::install_github("geoSABINA/sabinaNSDM")
 }
 
@@ -111,7 +98,7 @@ library(sabinaNSDM)
 ```
 Define the species name
 ```{r eval = FALSE}
-SpeciesName <- "Fagus.sylvativa"
+SpeciesName <- "Fagus.sylvatica"
 ```
 Load species occurrence and environmental covariates data. Species occurrence *data.frame* must include only two columns: “x” and ”y” coordinates. No row names. The coordinate projection must match that used for the covariates.
 
