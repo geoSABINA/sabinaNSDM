@@ -57,7 +57,7 @@ biomod_format <- function(sp_data, background_data, trueabsences_data, indvar){
     }
     names(myResp)<-"pa"
     row.names(myResp)<-c(1:nrow(myResp.xy))
-    myExpl <- terra::extract(indvar, myResp.xy, as.df=TRUE)[, -1]
+    myExpl <- terra::extract(indvar, myResp.xy, as.df=TRUE)[, -1, drop = FALSE]
 
     return(list(myResp = myResp,
                 myResp.xy = myResp.xy,

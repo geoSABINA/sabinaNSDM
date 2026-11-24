@@ -243,7 +243,7 @@ select_cov <- function(nsdm_finput, scale, ClimaticVariablesBands,
   } else {
     myResp <- c(rep(1, nrow(nsdm_finput[[species_name]])), rep(0, nrow(nsdm_finput[[absences_name]])))
   }
-  myExpl.covsel <- terra::extract(IndVar, myResp.xy, as.df=TRUE)[, -1]
+  myExpl.covsel <- terra::extract(IndVar, myResp.xy, as.df=TRUE)[, -1, drop = FALSE]
 
   Covdata.filter <- covsel::covsel.filteralgo(covdata = myExpl.covsel,
                                               pa = myResp, corcut = corcut)
